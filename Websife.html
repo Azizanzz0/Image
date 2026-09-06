@@ -3,7 +3,7 @@
 <head> 
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>MoLang Animator V1.2</title> 
+    <title>Player Animator V1.2</title> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> 
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script> 
     <style> 
@@ -45,7 +45,7 @@
 </head> 
 <body> 
 <div class="left-panel"> 
-    <h1>MoLang Animator V1.2</h1> 
+    <h1>Player Animator V1.2</h1> 
     <div class="card flex-between"> 
         <label><input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms</label> 
         <label><input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs</label> 
@@ -74,7 +74,7 @@
 
     <div class="card" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 0;">
         <div class="flex-between" style="margin-bottom: 10px;">
-            <h2>Stop Expression (MoLang)</h2>
+            <h2>Stop_Expression (playanimation)</h2>
             <button onclick="copyCode()">Copy</button>
         </div>
         <textarea id="output" readonly style="flex: 1;"></textarea>
