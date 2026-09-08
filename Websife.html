@@ -1,815 +1,1209 @@
-<!DOCTYPE html> 
-<html lang="en"> 
-<head> 
-    <meta charset="UTF-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Player Animator V1.3</title> 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script> 
-    <style> 
-        :root { --bg: #36454f; --surface: #313244; --surface2: #45475a; --text: #cdd6f4; --primary: #89b4fa; --danger: #f38ba8; --border: #585b70; --success: #a6e3a1; --panel: #11111b; } 
-        * { box-sizing: border-box; } 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; gap: 20px; height: 100vh; overflow: hidden; } 
-        h1, h2, h3 { margin-top: 0; font-size: 18px; }
-        .left-panel { flex: 1; overflow-y: auto; padding-right: 15px; height: calc(100vh - 40px); pointer-events: auto; }
-        .right-panel { width: 420px; display: flex; flex-direction: column; gap: 15px; height: calc(100vh - 40px); overflow-y: auto; padding-right: 5px; }
-        .card { background: var(--surface); padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .bone-card { border-left: 5px solid var(--primary); }
-        .segment { background: var(--surface2); padding: 10px; border-radius: 6px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-        .form-group { display: flex; flex-direction: column; min-width: 80px; }
-        .form-group.start-group { position: relative; }
-        .form-group label { font-size: 11px; margin-bottom: 4px; color: #bac2de; }
-        input, select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 6px; border-radius: 4px; outline: none; font-size: 13px; transition: all 0.2s; }
-        input:focus, select:focus { border-color: var(--primary); }
-        button { background: var(--primary); color: #11111b; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; }
-        button:hover { opacity: 0.8; }
-        button.danger { background: var(--danger); padding: 6px 10px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        
-        .error-msg { color: var(--danger); font-size: 10px; position: absolute; top: 100%; left: 0; white-space: nowrap; margin-top: 3px; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: bold; }
-        .error-msg.show { opacity: 1; }
-
-        textarea { width: 100%; height: 130px; background: var(--panel); color: var(--success); font-family: monospace; border: 1px solid var(--border); padding: 10px; border-radius: 6px; resize: vertical; box-sizing: border-box; font-size: 13px; }
-        
-        #canvas-container { width: 100%; height: 320px; background: var(--panel); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); position: relative; }
-        #fileUpload { display: none; }
-
-        /* --- View switcher (Live Preview / Axis Editor) --- */
-        .view-tabs { display: flex; gap: 4px; background: var(--bg); padding: 3px; border-radius: 7px; }
-        .view-tab { background: transparent; color: var(--text); padding: 6px 10px; font-size: 12px; opacity: 0.65; border-radius: 5px; }
-        .view-tab.active { background: var(--primary); color: #11111b; opacity: 1; }
-        .view-tab:hover { opacity: 1; }
-
-        /* --- Axis Editor controls --- */
-        .mode-toggle { display: flex; gap: 6px; }
-        .mode-btn { background: var(--surface2); color: var(--text); padding: 7px 10px; font-size: 12px; opacity: 0.7; }
-        .mode-btn.active { background: var(--primary); color: #11111b; opacity: 1; }
-        .mode-btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-        .hint { font-size: 11px; color: #bac2de; margin: 8px 0 0 0; line-height: 1.4; }
-        .axis-readout { background: var(--surface2); border-radius: 6px; padding: 10px; margin-top: 10px; }
-        .readout-title { font-weight: bold; font-size: 13px; color: var(--primary); margin-bottom: 8px; }
-        .readout-group { margin-bottom: 8px; }
-        .readout-group:last-child { margin-bottom: 0; }
-        .group-label { font-size: 11px; color: #bac2de; display: block; margin-bottom: 4px; }
-        .readout-row { display: flex; gap: 8px; flex-wrap: wrap; }
-        .readout-row .form-group { min-width: 70px; }
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Animator V1.3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js">
+    </script>
+    <style>
+        :root {
+            --bg: #1e1e2e;
+            --surface: #313244;
+            --surface2: #45475a;
+            --text: #cdd6f4;
+            --primary: #89b4fa;
+            --danger: #f38ba8;
+            --border: #585b70;
+            --success: #a6e3a1;
+            --panel: #11111b;
+            --warn: #f9e2af;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1,
+        h2,
+        h3 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .left-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 15px;
+            height: calc(100vh - 40px);
+            pointer-events: auto;
+        }
+        .right-panel {
+            width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .card {
+            background: var(--surface);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .bone-card {
+            border-left: 5px solid var(--primary);
+        }
+        .segment {
+            background: var(--surface2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 80px;
+        }
+        .form-group.start-group {
+            position: relative;
+        }
+        .form-group label {
+            font-size: 11px;
+            margin-bottom: 4px;
+            color: #bac2de;
+        }
+        input,
+        select {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px;
+            border-radius: 4px;
+            outline: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+        }
+        button {
+            background: var(--primary);
+            color: #11111b;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        button.danger {
+            background: var(--danger);
+            padding: 6px 10px;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .error-msg {
+            color: var(--danger);
+            font-size: 10px;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            white-space: nowrap;
+            margin-top: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        .error-msg.show {
+            opacity: 1;
+        }
+        textarea {
+            width: 100%;
+            height: 130px;
+            background: var(--panel);
+            color: var(--success);
+            font-family: monospace;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 340px;
+            background: var(--panel);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        #fileUpload {
+            display: none;
+        }
+        .view-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 7px;
+        }
+        .view-tab {
+            background: transparent;
+            color: var(--text);
+            padding: 6px 10px;
+            font-size: 12px;
+            opacity: 0.65;
+            border-radius: 5px;
+        }
+        .view-tab.active {
+            background: var(--primary);
+            color: #11111b;
+            opacity: 1;
+        }
+        .view-tab:hover {
+            opacity: 1;
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 6px;
+        }
+        .mode-btn {
+            background: var(--surface2);
+            color: var(--text);
+            padding: 7px 10px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .mode-btn.active {
+            background: var(--primary);
+            color: #11111b;
+            opacity: 1;
+        }
+        .mode-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .hint {
+            font-size: 11px;
+            color: #bac2de;
+            margin: 8px 0 0 0;
+            line-height: 1.4;
+        }
+        .axis-readout {
+            background: var(--surface2);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .readout-title {
+            font-weight: bold;
+            font-size: 13px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .readout-group {
+            margin-bottom: 8px;
+        }
+        .readout-group:last-child {
+            margin-bottom: 0;
+        }
+        .group-label {
+            font-size: 11px;
+            color: #bac2de;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .readout-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .readout-row .form-group {
+            min-width: 70px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
         @media (max-width: 768px) {
-            body { flex-direction: column; padding: 10px; height: auto; overflow-y: auto; gap: 15px; }
-            .left-panel { width: 100%; height: auto; max-height: 60vh; padding-right: 5px; overflow-y: auto; }
-            .right-panel { width: 100%; height: auto; max-height: none; overflow-y: visible; }
-            #canvas-container { height: 280px; }
-            .card { margin-bottom: 10px; }
+            body {
+                flex-direction: column;
+                padding: 10px;
+                height: auto;
+                overflow-y: auto;
+                gap: 15px;
+            }
+            .left-panel {
+                width: 100%;
+                height: auto;
+                max-height: 60vh;
+                padding-right: 5px;
+                overflow-y: auto;
+            }
+            .right-panel {
+                width: 100%;
+                height: auto;
+                max-height: none;
+                overflow-y: visible;
+            }
+            #canvas-container {
+                height: 280px;
+            }
+            .card {
+                margin-bottom: 10px;
+            }
         }
     </style>
-</head> 
-<body> 
-<div class="left-panel"> 
-    <h1>Player Animator V1.3</h1> 
-    <div class="card flex-between"> 
-        <label><input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms</label> 
-        <label><input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs</label> 
-    </div> 
-    <div id="bonesContainer"></div> 
-    <button onclick="addBone()" style="margin-bottom: 30px; width: 100%;">+ Add New Bone</button> 
-</div> 
-<div class="right-panel"> 
-    <div class="card" style="margin-bottom: 0;"> 
-        <div class="flex-between"> 
-            <h2 id="viewportTitle">3D Live Preview</h2> 
-            <div class="view-tabs">
-                <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
-                <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
+</head>
+<body>
+    <div class="left-panel">
+        <h1>Player Animator V1.3</h1>
+        <div class="card">
+            <div class="toggle-group">
+                <label class="toggle-label">
+                    <input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="playerRiding" onchange="onRidingToggle()"> Player Riding
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs
+                </label>
             </div>
-        </div> 
-        <div id="canvas-container"></div> 
-
-        <div id="previewControls" class="flex-between" style="margin-top: 8px;">
-            <button onclick="togglePlay()">Pause / Play</button>
-            <p class="hint" style="margin:0;">Left click + drag: Rotate camera | Scroll: Zoom</p>
         </div>
-
-        <div id="axisControls" style="display:none; margin-top: 8px;">
-            <div class="flex-between" style="gap: 8px; flex-wrap: wrap;">
-                <select id="boneSelect" onchange="selectBone(this.value)" style="flex: 1; min-width: 130px;">
-                    <option value="root">Root</option>
-                    <option value="waist">Body / Waist</option>
-                    <option value="head">Head</option>
-                    <option value="rightArm">Right Arm</option>
-                    <option value="leftArm">Left Arm</option>
-                    <option value="rightLeg">Right Leg</option>
-                    <option value="leftLeg">Left Leg</option>
-                </select>
-                <div class="mode-toggle">
-                    <button class="mode-btn active" id="modeRotateBtn" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
-                    <button class="mode-btn" id="modeTranslateBtn" onclick="setGizmoMode('translate')">✥ Move</button>
+        <div id="bonesContainer"></div>
+        <button onclick="addBone()" style="margin-bottom:30px;width:100%;">+ Add New Bone</button>
+    </div>
+    <div class="right-panel">
+        <div class="card" style="margin-bottom:0;">
+            <div class="flex-between">
+                <h2 id="viewportTitle">3D Live Preview</h2>
+                <div class="view-tabs">
+                    <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
+                    <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
                 </div>
             </div>
-            <div id="axisReadout" class="axis-readout"></div>
-            <div class="flex-between" style="gap: 8px; margin-top: 8px;">
-                <button class="danger" style="flex:1;" onclick="resetBonePose()">Reset This Part</button>
-                <button style="flex:1;" onclick="resetAllPose()">Reset All Pose</button>
+            <div id="canvas-container"></div>
+            <div id="previewControls" class="flex-between" style="margin-top:8px;">
+                <button onclick="togglePlay()">Pause / Play</button>
+                <p class="hint" style="margin:0;">Left click + drag: Rotate camera | Scroll: Zoom</p>
             </div>
-            <p class="hint">Tap a body part (or use the dropdown) to select it, then drag the gizmo to pose it — only the axes that part actually has will show. Values are recorded live below. Drag empty space to orbit the camera.</p>
+            <div id="axisControls" style="display:none;margin-top:8px;">
+                <div class="flex-between" style="gap:8px;flex-wrap:wrap;">
+                    <select id="boneSelect" onchange="selectBone(this.value)" style="flex:1;min-width:130px;">
+                        <option value="root">Root</option>
+                        <option value="waist">Body / Waist</option>
+                        <option value="head">Head</option>
+                        <option value="rightArm">Right Arm</option>
+                        <option value="leftArm">Left Arm</option>
+                        <option value="rightLeg">Right Leg</option>
+                        <option value="leftLeg">Left Leg</option>
+                    </select>
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="modeRotateBtn" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
+                        <button class="mode-btn" id="modeTranslateBtn" onclick="setGizmoMode('translate')">✥ Move</button>
+                        <button class="mode-btn" id="modeScaleBtn" onclick="setGizmoMode('scale')" disabled>⤢ Scale</button>
+                    </div>
+                </div>
+                <div id="axisReadout" class="axis-readout"></div>
+                <div class="flex-between" style="gap:8px;margin-top:8px;">
+                    <button class="danger" style="flex:1;" onclick="resetBonePose()">Reset This Part</button>
+                    <button style="flex:1;" onclick="resetAllPose()">Reset All Pose</button>
+                </div>
+                <p class="hint">Tap a body part (or use the dropdown) to select it, then drag the gizmo to pose it — only the axes that part actually has will show. Values are recorded live below. Drag empty space to orbit the camera.</p>
+            </div>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+            <h2>Custom Skin</h2>
+            <div style="margin-top:10px;display:flex;gap:10px;">
+                <button onclick="document.getElementById('fileUpload').click()">Upload Image</button>
+                <button onclick="resetSkin()">Reset Default</button>
+                <input type="file" id="fileUpload" accept="image/*" onchange="uploadSkin(event)">
+            </div>
+        </div>
+        <div class="card" style="flex:1;display:flex;flex-direction:column;margin-bottom:0;">
+            <div class="flex-between" style="margin-bottom:10px;">
+                <h2>Stop_Expression (playanimation)</h2>
+                <button onclick="copyCode()">Copy</button>
+            </div>
+            <textarea id="output" readonly style="flex:1;"></textarea>
         </div>
     </div>
-
-    <div class="card" style="margin-bottom: 0;">
-        <h2>Custom Skin</h2>
-        <div style="margin-top: 10px; display: flex; gap: 10px;">
-            <button onclick="document.getElementById('fileUpload').click()">Upload Image</button>
-            <button onclick="resetSkin()">Reset Default</button>
-            <input type="file" id="fileUpload" accept="image/*" onchange="uploadSkin(event)">
-        </div>
-    </div>
-
-    <div class="card" style="flex: 1; display: flex; flex-direction: column; margin-bottom: 0;">
-        <div class="flex-between" style="margin-bottom: 10px;">
-            <h2>Stop_Expression (playanimation)</h2>
-            <button onclick="copyCode()">Copy</button>
-        </div>
-        <textarea id="output" readonly style="flex: 1;"></textarea>
-    </div>
-</div> 
-
-<script> 
-const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png"; 
-const boneVariables = [ "v.root.x", "v.root.z", "v.body.x", "v.body.y", "v.body.z", "v.head.x", "v.head.y", "v.head.z", "v.rightleg.x", "v.leftleg.x", "v.rightarm.x", "v.rightarm.y", "v.rightarm.z", "v.rightarm.ypos", "v.leftarm.x", "v.leftarm.y", "v.leftarm.z", "v.leftarm.ypos" ]; 
-const easeList = [
-    "lerp",
-    "ease_in_sine", "ease_out_sine", "ease_in_out_sine",
-    "ease_in_quad", "ease_out_quad", "ease_in_out_quad",
-    "ease_in_cubic", "ease_out_cubic", "ease_in_out_cubic",
-    "ease_in_quart", "ease_out_quart", "ease_in_out_quart",
-    "ease_in_quint", "ease_out_quint", "ease_in_out_quint",
-    "ease_in_expo", "ease_out_expo", "ease_in_out_expo",
-    "ease_in_circ", "ease_out_circ", "ease_in_out_circ",
-    "ease_in_back", "ease_out_back", "ease_in_out_back",
-    "ease_in_elastic", "ease_out_elastic", "ease_in_out_elastic",
-    "ease_in_bounce", "ease_out_bounce", "ease_in_out_bounce"
-];
-let data = [ { bone: 'v.rightarm.x', segments: [ { start: 0, dur: 0.5, val1: 0, val2: -90, ease: 'ease_out_back' }, { start: 0.5, dur: 0.5, val1: 0, val2: 0, ease: 'ease_in_out_sine' } ] } ]; 
-
-const trashIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#11111b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-const keyframeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>`;
-
-function renderBones() { 
-    const container = document.getElementById('bonesContainer'); 
-    container.innerHTML = ''; 
-    data.forEach((bData, bIndex) => { 
-        let boneOptions = boneVariables.map(v => `<option value="${v}" ${bData.bone === v ? 'selected' : ''}>${v}</option>`).join(''); 
-        let html = ` <div class="card bone-card"> <div class="flex-between"> <div class="form-group"> <select onchange="updateBone(${bIndex}, this.value)" style="font-weight: bold; font-size: 14px;">${boneOptions}</select> </div> <button class="danger" onclick="removeBone(${bIndex})" title="Remove Bone">${trashIcon}</button> </div> <div id="segments-${bIndex}"> `; 
-        bData.segments.forEach((seg, sIndex) => { 
-            let easeOptions = easeList.map(e => { 
-                let label = e === 'lerp' ? 'lerp (linear)' : e.replace(/_/g, ' '); 
-                return `<option value="${e}" ${seg.ease === e ? 'selected' : ''}>${label}</option>`; 
-            }).join(''); 
-            html += ` <div class="segment"> <div class="form-group" style="width: 20px;"><label>#${sIndex + 1}</label></div> <div class="form-group start-group" style="width: 55px;"><label>Start</label><input type="number" step="0.1" id="start-${bIndex}-${sIndex}" value="${seg.start}" onchange="validateStart(${bIndex}, ${sIndex}, this.value)"><span id="err-${bIndex}-${sIndex}" class="error-msg"></span></div> <div class="form-group" style="width: 55px;"><label>Dur</label><input type="number" step="0.1" value="${seg.dur}" oninput="updateSeg(${bIndex}, ${sIndex}, 'dur', this.value)"></div> ${sIndex === 0 ? `<div class="form-group" style="width: 60px;"><label>From</label><input type="number" value="${seg.val1}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val1', this.value)"></div>` : ''} <div class="form-group" style="width: 60px;"><label>To</label><input type="number" value="${seg.val2}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val2', this.value)"></div> <div class="form-group"><label>Ease</label><select onchange="updateSeg(${bIndex}, ${sIndex}, 'ease', this.value)">${easeOptions}</select></div> <div class="form-group"><button class="danger" style="margin-top: 15px;" onclick="removeSeg(${bIndex}, ${sIndex})" title="Remove Keyframe">${trashIcon}</button></div> </div> `; 
-        }); 
-        html += `</div><br><button onclick="addSeg(${bIndex})">${keyframeIcon} Add Keyframe</button></div>`; 
-        container.innerHTML += html; 
-    }); 
-    generate(); 
-} 
-
-function addBone() { data.push({ bone: boneVariables[0], segments: [{ start: 0, dur: 0.5, val1: 0, val2: 45, ease: 'lerp' }] }); renderBones(); } 
-function removeBone(i) { data.splice(i, 1); renderBones(); } 
-function addSeg(bIndex) { 
-    let segs = data[bIndex].segments; 
-    let start = segs.length > 0 ? parseFloat(segs[segs.length - 1].start) + parseFloat(segs[segs.length - 1].dur) : 0; 
-    segs.push({ start: Number(start.toFixed(2)), dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' }); 
-    renderBones(); 
-} 
-function removeSeg(bIndex, sIndex) { data[bIndex].segments.splice(sIndex, 1); renderBones(); } 
-function updateBone(bIndex, val) { data[bIndex].bone = val; generate(); } 
-function updateSeg(bIndex, sIndex, key, val) { data[bIndex].segments[sIndex][key] = key === 'ease' ? val : parseFloat(val) || 0; generate(); } 
-
-function validateStart(bIndex, sIndex, val) {
-    let numVal = parseFloat(val) || 0;
-    if (sIndex > 0) {
-        let prevSeg = data[bIndex].segments[sIndex - 1];
-        let minStart = Number((prevSeg.start + prevSeg.dur).toFixed(2));
-        
-        if (numVal < minStart) {
-            let inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
-            let errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
-            
-            inputEl.style.color = "var(--danger)";
-            inputEl.style.borderColor = "var(--danger)";
-            errEl.innerText = `Cannot be below ${minStart}`;
-            errEl.classList.add('show');
-            
-            data[bIndex].segments[sIndex].start = minStart;
-            generate();
-            
-            setTimeout(() => {
-                if(inputEl && errEl) {
-                    inputEl.style.color = "";
-                    inputEl.style.borderColor = "";
-                    errEl.classList.remove('show');
-                    inputEl.value = minStart;
-                }
-            }, 2000);
-            
-            return;
-        }
-    }
-    updateSeg(bIndex, sIndex, 'start', numVal);
-}
-
-function generate() { 
-    let mirrorArms = document.getElementById('mirrorArms').checked; 
-    let mirrorLegs = document.getElementById('mirrorLegs').checked; 
-    let outStr = ""; 
-    let used = new Set(); 
-    data.forEach(bData => { 
-        used.add(bData.bone); 
-        bData.segments.forEach((seg, index) => { 
-            let timeExpr = seg.start === 0 ? `q.state_time` : `(q.state_time-${seg.start})`; 
-            let easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease; 
-            if (index === 0) outStr += `q.state_time>=${seg.start}?{${bData.bone}=math.${easeFunc}(${seg.val1},${seg.val2},math.min(${timeExpr}/${seg.dur},1));};`; 
-            else outStr += `q.state_time>=${seg.start}?{${bData.bone}=math.${easeFunc}(${bData.bone},${seg.val2},math.min(${timeExpr}/${seg.dur},1));};`; 
-        }); 
-    }); 
-    
-    if (mirrorArms) { 
-        if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr += `v.leftarm.x=v.rightarm.x;`; 
-        else if (used.has("v.leftarm.x") && !used.has("v.rightarm.x")) outStr += `v.rightarm.x=v.leftarm.x;`; 
-
-        if (used.has("v.rightarm.y") && !used.has("v.leftarm.y")) outStr += `v.leftarm.y=-v.rightarm.y;`; 
-        else if (used.has("v.leftarm.y") && !used.has("v.rightarm.y")) outStr += `v.rightarm.y=-v.leftarm.y;`; 
-
-        if (used.has("v.rightarm.z") && !used.has("v.leftarm.z")) outStr += `v.leftarm.z=-v.rightarm.z;`; 
-        else if (used.has("v.leftarm.z") && !used.has("v.rightarm.z")) outStr += `v.rightarm.z=-v.leftarm.z;`; 
-
-        if (used.has("v.rightarm.ypos") && !used.has("v.leftarm.ypos")) outStr += `v.leftarm.ypos=v.rightarm.ypos;`; 
-        else if (used.has("v.leftarm.ypos") && !used.has("v.rightarm.ypos")) outStr += `v.rightarm.ypos=v.leftarm.ypos;`; 
-    } 
-    
-    if (mirrorLegs) { 
-        if (used.has("v.rightleg.x") && !used.has("v.leftleg.x")) outStr += `v.leftleg.x=v.rightleg.x;`; 
-        else if (used.has("v.leftleg.x") && !used.has("v.rightleg.x")) outStr += `v.rightleg.x=v.leftleg.x;`; 
-    } 
-    document.getElementById('output').value = outStr; 
-} 
-
-function copyCode() { 
-    let outputBox = document.getElementById('output'); 
-    outputBox.select(); 
-    document.execCommand('copy'); 
-} 
-
-const container = document.getElementById('canvas-container'); 
-const scene = new THREE.Scene(); 
-const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000); 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
-renderer.setSize(container.clientWidth, container.clientHeight); 
-container.appendChild(renderer.domElement); 
-const controls = new THREE.OrbitControls(camera, renderer.domElement); 
-camera.position.set(30, 24, 60); 
-controls.target.set(0, 15, 0); 
-controls.update(); 
-scene.add(new THREE.AmbientLight(0xffffff, 0.8)); 
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); 
-dirLight.position.set(10, 20, 10); 
-scene.add(dirLight); 
-
-function createMinecraftBoxGeometry(size, uvOffset, inflate = 0, mirror = false) { 
-    const [w, h, d] = size; 
-    const geom = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2); 
-    const [u, v] = uvOffset; 
-    const tw = 64, th = 64; 
-    let faces; 
-    if (!mirror) { 
-        faces = [ [u + d + w, v + d, d, h], [u, v + d, d, h], [u + d, v, w, d], [u + d + w, v, w, d], [u + d, v + d, w, h], [u + d + w + d, v + d, w, h] ]; 
-    } else { 
-        faces = [ [u, v + d, d, h], [u + d + w, v + d, d, h], [u + d + w, v, -w, d], [u + d + w + w, v, -w, d], [u + d + w, v + d, -w, h], [u + d + w + d + w, v + d, -w, h] ]; 
-    } 
-    const uvAttr = geom.attributes.uv; 
-    let pos = 0; 
-    faces.forEach(([x, y, fw, fh]) => { 
-        const u0 = x / tw, v0 = 1 - (y + fh) / th; 
-        const u1 = (x + fw) / tw, v1 = 1 - y / th; 
-        uvAttr.setXY(pos++, u0, v1); uvAttr.setXY(pos++, u1, v1); uvAttr.setXY(pos++, u0, v0); uvAttr.setXY(pos++, u1, v0); 
-    }); 
-    uvAttr.needsUpdate = true; 
-    return geom; 
-} 
-
-const textureLoader = new THREE.TextureLoader(); 
-let skinTexture = null; 
-const baseMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 }); 
-const outerMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide }); 
-const modelBones = [ 
-    { name: "root", pivot: [0, 0, 0] }, 
-    { name: "waist", parent: "root", pivot: [0, 12, 0] }, 
-    { name: "body", parent: "waist", pivot: [0, 24, 0], cubes: [ { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16], outer: false }, { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 32], outer: true, inflate: 0.25 } ] }, 
-    { name: "head", parent: "body", pivot: [0, 24, 0], cubes: [ { origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0], outer: false }, { origin: [-4, 24, -4], size: [8, 8, 8], uv: [32, 0], outer: true, inflate: 0.5 } ] }, 
-    { name: "leftArm", parent: "body", pivot: [5, 22, 0], cubes: [ { origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48], outer: false }, { origin: [4, 12, -2], size: [4, 12, 4], uv: [48, 48], outer: true, inflate: 0.25 } ] }, 
-    { name: "rightArm", parent: "body", pivot: [-5, 22, 0], cubes: [ { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16], outer: false }, { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 32], outer: true, inflate: 0.25 } ] }, 
-    { name: "leftLeg", parent: "root", pivot: [1.9, 12, 0], cubes: [ { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [16, 48], outer: false }, { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [0, 48], outer: true, inflate: 0.25 } ] }, 
-    { name: "rightLeg", parent: "root", pivot: [-1.9, 12, 0], cubes: [ { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 16], outer: false }, { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 32], outer: true, inflate: 0.25 } ] } 
-]; 
-
-// Meshes that can be raycast-picked in the Axis Editor, each tagged with the bone group it belongs to
-const selectableMeshes = [];
-
-const boneObjects = {}; 
-modelBones.forEach(b => { 
-    const group = new THREE.Group(); 
-    if (b.cubes) { 
-        b.cubes.forEach(c => { 
-            const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c.mirror || false); 
-            const mat = c.outer ? outerMaterial : baseMaterial; 
-            const mesh = new THREE.Mesh(geom, mat); 
-            mesh.position.set( c.origin[0] + c.size[0]/2 - b.pivot[0], c.origin[1] + c.size[1]/2 - b.pivot[1], c.origin[2] + c.size[2]/2 - b.pivot[2] ); 
-            mesh.userData.boneName = b.name;
-            selectableMeshes.push(mesh);
-            group.add(mesh); 
-        }); 
-    } 
-    boneObjects[b.name] = group; 
-}); 
-
-modelBones.forEach(b => { 
-    const group = boneObjects[b.name]; 
-    const parentPivot = b.parent ? (modelBones.find(x => x.name === b.parent).pivot || [0,0,0]) : [0,0,0]; 
-    const initX = b.pivot[0] - parentPivot[0];
-    const initY = b.pivot[1] - parentPivot[1];
-    const initZ = b.pivot[2] - parentPivot[2];
-    group.userData.initialPos = { x: initX, y: initY, z: initZ };
-    group.position.set(initX, initY, initZ); 
-    if (b.parent) boneObjects[b.parent].add(group); 
-    else scene.add(group); 
-}); 
-
-function applyTexture(texture) { 
-    texture.magFilter = THREE.NearestFilter; texture.minFilter = THREE.NearestFilter; 
-    baseMaterial.map = texture; baseMaterial.color.setHex(0xffffff); baseMaterial.needsUpdate = true; 
-    outerMaterial.map = texture; outerMaterial.color.setHex(0xffffff); outerMaterial.needsUpdate = true; 
-} 
-
-function loadTextureFromUrl(url) { 
-    textureLoader.load(url, (tex) => { skinTexture = tex; applyTexture(skinTexture); }); 
-} 
-
-function resetSkin() { loadTextureFromUrl(DEFAULT_TEXTURE_URL); } 
-
-function uploadSkin(event) { 
-    const file = event.target.files[0]; 
-    if (!file) return; 
-    const reader = new FileReader(); 
-    reader.onload = (e) => { 
-        const img = new Image(); 
-        img.onload = () => { const texture = new THREE.Texture(img); texture.needsUpdate = true; applyTexture(texture); }; 
-        img.src = e.target.result; 
-    }; 
-    reader.readAsDataURL(file); 
-    event.target.value = ''; 
-} 
-
-loadTextureFromUrl(DEFAULT_TEXTURE_URL); 
-
-/* =====================================================================
-   AXIS EDITOR (posing gizmo)
-   - v.body.* actually drives the "waist" pivot (body cubes just hang off
-     it visually), so clicking the body mesh is treated as selecting "waist".
-   - Only the axes that exist in boneVariables are exposed per bone.
-   ===================================================================== */
-
-let viewMode = 'preview'; // 'preview' | 'axis'
-let manualPose = {};      // e.g. { 'v.rightarm.x': 12.5, 'v.rightarm.ypos': 1.2 }
-let selectedBone = null;  // three.js bone group name: root/waist/head/rightArm/leftArm/rightLeg/leftLeg
-let gizmoMode = 'rotate'; // 'rotate' | 'translate'
-
-const boneVarPrefix = {
-    root: 'v.root', waist: 'v.body', head: 'v.head',
-    rightArm: 'v.rightarm', leftArm: 'v.leftarm',
-    rightLeg: 'v.rightleg', leftLeg: 'v.leftleg'
-};
-const boneAxisConfig = {
-    root:     { rotate: ['x', 'z'],      translate: [] },
-    waist:    { rotate: ['x', 'y', 'z'], translate: [] },
-    head:     { rotate: ['x', 'y', 'z'], translate: [] },
-    rightArm: { rotate: ['x', 'y', 'z'], translate: ['y'] },
-    leftArm:  { rotate: ['x', 'y', 'z'], translate: ['y'] },
-    rightLeg: { rotate: ['x'],           translate: [] },
-    leftLeg:  { rotate: ['x'],           translate: [] }
-};
-const boneDisplayName = {
-    root: 'Root', waist: 'Body / Waist', head: 'Head',
-    rightArm: 'Right Arm', leftArm: 'Left Arm',
-    rightLeg: 'Right Leg', leftLeg: 'Left Leg'
-};
-const invertedBones = ["v.rightarm.y", "v.leftarm.y", "v.rightarm.z", "v.leftarm.z", "v.head.y", "v.head.z", "v.body.y", "v.body.z"];
-
-function mapName(str) {
-    if (str.includes("rightarm")) return "rightArm";
-    if (str.includes("leftarm")) return "leftArm";
-    if (str.includes("rightleg")) return "rightLeg";
-    if (str.includes("leftleg")) return "leftLeg";
-    if (str.includes("body")) return "waist";
-    if (str.includes("head")) return "head";
-    return "root";
-}
-
-function resetBonesToBindPose() {
-    Object.values(boneObjects).forEach(b => {
-        b.rotation.set(0, 0, 0);
-        if (b.userData.initialPos) {
-            b.position.set(b.userData.initialPos.x, b.userData.initialPos.y, b.userData.initialPos.z);
-        }
-    });
-}
-
-function applyValuesToBones(values) {
-    for (const [key, val] of Object.entries(values)) {
-        const targetBone = boneObjects[mapName(key)];
-        if (!targetBone) continue;
-
-        if (key.endsWith(".ypos")) {
-            targetBone.position.y = targetBone.userData.initialPos.y + val;
-            continue;
-        }
-
-        let rad = val * (Math.PI / 180);
-        if (invertedBones.includes(key)) rad = -rad;
-
-        if (key.endsWith(".x")) targetBone.rotation.x = rad;
-        if (key.endsWith(".y")) targetBone.rotation.y = rad;
-        if (key.endsWith(".z")) targetBone.rotation.z = rad;
-    }
-}
-
-// Gizmo setup
-const transformControls = new THREE.TransformControls(camera, renderer.domElement);
-if (typeof transformControls.setSpace === 'function') transformControls.setSpace('local');
-else transformControls.space = 'local';
-if (typeof transformControls.setSize === 'function') transformControls.setSize(0.7);
-else transformControls.size = 0.7;
-transformControls.addEventListener('dragging-changed', (event) => {
-    controls.enabled = !event.value;
-});
-transformControls.addEventListener('objectChange', onGizmoChange);
-scene.add(transformControls);
-
-// Click-to-select a body part (Axis Editor only)
-const raycaster = new THREE.Raycaster();
-const pointerNDC = new THREE.Vector2();
-let pointerDownPos = null;
-
-renderer.domElement.addEventListener('pointerdown', (e) => {
-    pointerDownPos = { x: e.clientX, y: e.clientY };
-});
-
-renderer.domElement.addEventListener('pointerup', (e) => {
-    if (viewMode !== 'axis') return;
-    if (!pointerDownPos) return;
-    const wasGizmoInteraction = transformControls.dragging || transformControls.axis;
-    const dx = e.clientX - pointerDownPos.x;
-    const dy = e.clientY - pointerDownPos.y;
-    pointerDownPos = null;
-    if (wasGizmoInteraction) return;
-    if (Math.sqrt(dx * dx + dy * dy) > 4) return; // was a camera drag, not a click
-
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointerNDC, camera);
-    const intersects = raycaster.intersectObjects(selectableMeshes, false);
-    if (intersects.length > 0) {
-        let hitName = intersects[0].object.userData.boneName;
-        if (hitName === 'body') hitName = 'waist'; // v.body actually drives the waist pivot
-        selectBone(hitName);
-    }
-});
-
-function setViewMode(mode) {
-    viewMode = mode;
-    document.getElementById('tabPreview').classList.toggle('active', mode === 'preview');
-    document.getElementById('tabAxis').classList.toggle('active', mode === 'axis');
-    document.getElementById('previewControls').style.display = mode === 'preview' ? 'flex' : 'none';
-    document.getElementById('axisControls').style.display = mode === 'axis' ? 'block' : 'none';
-    document.getElementById('viewportTitle').textContent = mode === 'preview' ? '3D Live Preview' : 'Axis Editor';
-
-    if (mode === 'axis') {
-        if (!selectedBone) selectedBone = 'rightArm';
-        selectBone(selectedBone);
-    } else {
-        transformControls.detach();
-    }
-}
-
-function selectBone(name) {
-    selectedBone = name;
-    const sel = document.getElementById('boneSelect');
-    if (sel) sel.value = name;
-
-    const cfg = boneAxisConfig[name];
-    if (gizmoMode === 'translate' && cfg.translate.length === 0) {
-        gizmoMode = 'rotate';
-    }
-    updateModeButtons();
-    attachGizmo();
-    renderAxisReadout();
-}
-
-function setGizmoMode(mode) {
-    gizmoMode = mode;
-    updateModeButtons();
-    attachGizmo();
-}
-
-function updateModeButtons() {
-    const rotateBtn = document.getElementById('modeRotateBtn');
-    const translateBtn = document.getElementById('modeTranslateBtn');
-    if (!rotateBtn || !translateBtn) return;
-    rotateBtn.classList.toggle('active', gizmoMode === 'rotate');
-    translateBtn.classList.toggle('active', gizmoMode === 'translate');
-    const cfg = selectedBone ? boneAxisConfig[selectedBone] : null;
-    translateBtn.disabled = !cfg || cfg.translate.length === 0;
-}
-
-function attachGizmo() {
-    if (!selectedBone) { transformControls.detach(); return; }
-    const cfg = boneAxisConfig[selectedBone];
-    const axesForMode = gizmoMode === 'rotate' ? cfg.rotate : cfg.translate;
-
-    if (axesForMode.length === 0) {
-        transformControls.detach();
-        return;
-    }
-
-    if (typeof transformControls.setMode === 'function') transformControls.setMode(gizmoMode);
-    else transformControls.mode = gizmoMode;
-
-    transformControls.showX = axesForMode.includes('x');
-    transformControls.showY = axesForMode.includes('y');
-    transformControls.showZ = axesForMode.includes('z');
-
-    transformControls.attach(boneObjects[selectedBone]);
-}
-
-function onGizmoChange() {
-    if (!selectedBone) return;
-    const bone = boneObjects[selectedBone];
-    const prefix = boneVarPrefix[selectedBone];
-    const cfg = boneAxisConfig[selectedBone];
-    const axesForMode = gizmoMode === 'rotate' ? cfg.rotate : cfg.translate;
-
-    if (gizmoMode === 'rotate') {
-        axesForMode.forEach(axis => {
-            const key = `${prefix}.${axis}`;
-            let deg = bone.rotation[axis] * (180 / Math.PI);
-            if (invertedBones.includes(key)) deg = -deg;
-            manualPose[key] = Math.round(deg * 100) / 100;
-        });
-    } else {
-        axesForMode.forEach(axis => {
-            const key = `${prefix}.${axis}pos`;
-            const delta = bone.position[axis] - bone.userData.initialPos[axis];
-            manualPose[key] = Math.round(delta * 100) / 100;
-        });
-    }
-    renderAxisReadout();
-}
-
-function renderAxisReadout() {
-    const container = document.getElementById('axisReadout');
-    if (!container) return;
-    if (!selectedBone) {
-        container.innerHTML = '<p class="hint" style="margin:0;">Select a body part to edit.</p>';
-        return;
-    }
-    const prefix = boneVarPrefix[selectedBone];
-    const cfg = boneAxisConfig[selectedBone];
-    let html = `<div class="readout-title">${boneDisplayName[selectedBone]}</div>`;
-
-    if (cfg.rotate.length > 0) {
-        html += `<div class="readout-group"><label class="group-label">Rotation (degrees)</label><div class="readout-row">`;
-        cfg.rotate.forEach(axis => {
-            const key = `${prefix}.${axis}`;
-            const val = manualPose[key] !== undefined ? manualPose[key] : 0;
-            html += `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-        });
-        html += `</div></div>`;
-    }
-
-    if (cfg.translate.length > 0) {
-        html += `<div class="readout-group"><label class="group-label">Position</label><div class="readout-row">`;
-        cfg.translate.forEach(axis => {
-            const key = `${prefix}.${axis}pos`;
-            const val = manualPose[key] !== undefined ? manualPose[key] : 0;
-            html += `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" step="0.1" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-        });
-        html += `</div></div>`;
-    } else {
-        html += `<p class="hint" style="margin:0;">This part has no position variable.</p>`;
-    }
-
-    container.innerHTML = html;
-}
-
-function setPoseValue(key, valStr) {
-    manualPose[key] = parseFloat(valStr) || 0;
-    renderAxisReadout();
-}
-
-function resetBonePose() {
-    if (!selectedBone) return;
-    const prefix = boneVarPrefix[selectedBone];
-    const cfg = boneAxisConfig[selectedBone];
-    cfg.rotate.forEach(axis => delete manualPose[`${prefix}.${axis}`]);
-    cfg.translate.forEach(axis => delete manualPose[`${prefix}.${axis}pos`]);
-    renderAxisReadout();
-}
-
-function resetAllPose() {
-    manualPose = {};
-    renderAxisReadout();
-}
-
-/* ===================================================================== */
-
-let isPlaying = true; 
-let animTime = 0; 
-const clock = new THREE.Clock(); 
-
-function togglePlay() { isPlaying = !isPlaying; } 
-
-function bounceOut(t) {
-    const n1 = 7.5625;
-    const d1 = 2.75;
-    if (t < 1 / d1) {
-        return n1 * t * t;
-    } else if (t < 2 / d1) {
-        return n1 * (t -= 1.5 / d1) * t + 0.75;
-    } else if (t < 2.5 / d1) {
-        return n1 * (t -= 2.25 / d1) * t + 0.9375;
-    } else {
-        return n1 * (t -= 2.625 / d1) * t + 0.984375;
-    }
-}
-
-function getEase(name, t) { 
-    t = Math.max(0, Math.min(1, t)); 
-    
-    if (name === 'lerp') return t; 
-    
-    // Sine
-    if (name === 'ease_in_sine') return 1 - Math.cos((t * Math.PI) / 2);
-    if (name === 'ease_out_sine') return Math.sin((t * Math.PI) / 2); 
-    if (name === 'ease_in_out_sine') return -(Math.cos(Math.PI * t) - 1) / 2; 
-
-    // Quad
-    if (name === 'ease_in_quad') return t * t;
-    if (name === 'ease_out_quad') return 1 - (1 - t) * (1 - t);
-    if (name === 'ease_in_out_quad') return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-
-    // Cubic
-    if (name === 'ease_in_cubic') return t * t * t;
-    if (name === 'ease_out_cubic') return 1 - Math.pow(1 - t, 3);
-    if (name === 'ease_in_out_cubic') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    // Quart
-    if (name === 'ease_in_quart') return t * t * t * t;
-    if (name === 'ease_out_quart') return 1 - Math.pow(1 - t, 4);
-    if (name === 'ease_in_out_quart') return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
-
-    // Quint
-    if (name === 'ease_in_quint') return t * t * t * t * t;
-    if (name === 'ease_out_quint') return 1 - Math.pow(1 - t, 5);
-    if (name === 'ease_in_out_quint') return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-
-    // Expo
-    if (name === 'ease_in_expo') return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
-    if (name === 'ease_out_expo') return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-    if (name === 'ease_in_out_expo') {
-        if (t === 0) return 0;
-        if (t === 1) return 1;
-        return t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
-    }
-
-    // Circ
-    if (name === 'ease_in_circ') return 1 - Math.sqrt(1 - Math.pow(t, 2));
-    if (name === 'ease_out_circ') return Math.sqrt(1 - Math.pow(t - 1, 2));
-    if (name === 'ease_in_out_circ') return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
-
-    // Back
-    if (name === 'ease_in_back') {
-        const c1 = 1.70158;
-        const c3 = c1 + 1;
-        return c3 * t * t * t - c1 * t * t;
-    }
-    if (name === 'ease_out_back') {
-        const c1 = 1.70158;
-        const c3 = c1 + 1;
-        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-    if (name === 'ease_in_out_back') {
-        const c1 = 1.70158;
-        const c2 = c1 * 1.525;
-        return t < 0.5
-          ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2
-          : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
-    }
-
-    // Elastic
-    if (name === 'ease_in_elastic') {
-        const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
-    }
-    if (name === 'ease_out_elastic') {
-        const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-    }
-    if (name === 'ease_in_out_elastic') {
-        const c5 = (2 * Math.PI) / 4.5;
-        return t === 0 ? 0 : t === 1 ? 1 : t < 0.5
-          ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
-          : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
-    }
-
-    // Bounce
-    if (name === 'ease_in_bounce') return 1 - bounceOut(1 - t);
-    if (name === 'ease_out_bounce') return bounceOut(t);
-    if (name === 'ease_in_out_bounce') {
-        return t < 0.5
-          ? (1 - bounceOut(1 - 2 * t)) / 2
-          : (1 + bounceOut(2 * t - 1)) / 2;
-    }
-
-    return t; 
-} 
-
-function animate() { 
-    requestAnimationFrame(animate); 
-    let dt = clock.getDelta(); 
-
-    resetBonesToBindPose();
-
-    if (viewMode === 'preview') {
-        if (isPlaying) animTime += dt; 
-
-        let maxDur = 0;
-        data.forEach(bData => {
-            bData.segments.forEach(seg => {
-                let end = seg.start + seg.dur;
-                if (end > maxDur) maxDur = end;
+    <script>
+        const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png";
+        const boneVariables = [
+            "v.root.x", "v.root.z",
+            "v.root.xpos", "v.root.ypos", "v.root.zpos",
+            "v.body.x", "v.body.y", "v.body.z",
+            "v.body.xpos", "v.body.ypos",
+            "v.body_head.xzscale", "v.body_head.yscale",
+            "v.head.x", "v.head.y", "v.head.z",
+            "v.head.xpos", "v.head.ypos", "v.head.zpos",
+            "v.rightleg.x", "v.leftleg.x",
+            "v.rightarm.x", "v.rightarm.y", "v.rightarm.z", "v.rightarm.ypos",
+            "v.leftarm.x", "v.leftarm.y", "v.leftarm.z", "v.leftarm.ypos"
+        ];
+        const easeList = [
+            "lerp", "ease_in_sine", "ease_out_sine", "ease_in_out_sine",
+            "ease_in_quad", "ease_out_quad", "ease_in_out_quad",
+            "ease_in_cubic", "ease_out_cubic", "ease_in_out_cubic",
+            "ease_in_quart", "ease_out_quart", "ease_in_out_quart",
+            "ease_in_quint", "ease_out_quint", "ease_in_out_quint",
+            "ease_in_expo", "ease_out_expo", "ease_in_out_expo",
+            "ease_in_circ", "ease_out_circ", "ease_in_out_circ",
+            "ease_in_back", "ease_out_back", "ease_in_out_back",
+            "ease_in_elastic", "ease_out_elastic", "ease_in_out_elastic",
+            "ease_in_bounce", "ease_out_bounce", "ease_in_out_bounce"
+        ];
+        let data = [
+            { bone: 'v.rightarm.x', segments: [
+                { start: 0, dur: 0.5, val1: 0, val2: -90, ease: 'ease_out_back' },
+                { start: 0.5, dur: 0.5, val1: 0, val2: 0, ease: 'ease_in_out_sine' }
+            ] }
+        ];
+
+        const trashIcon =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#11111b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+        const keyframeIcon =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>`;
+
+        function renderBones() {
+            const container = document.getElementById('bonesContainer');
+            container.innerHTML = '';
+            data.forEach((bData, bIndex) => {
+                let boneOptions = boneVariables.map(v =>
+                    `<option value="${v}" ${bData.bone === v ? 'selected' : ''}>${v}</option>`).join('');
+                let html =
+                    `<div class="card bone-card"><div class="flex-between"><div class="form-group"><select onchange="updateBone(${bIndex}, this.value)" style="font-weight:bold;font-size:14px;">${boneOptions}</select></div><button class="danger" onclick="removeBone(${bIndex})" title="Remove Bone">${trashIcon}</button></div><div id="segments-${bIndex}">`;
+                bData.segments.forEach((seg, sIndex) => {
+                    let easeOptions = easeList.map(e => {
+                        let label = e === 'lerp' ? 'lerp (linear)' : e.replace(/_/g, ' ');
+                        return `<option value="${e}" ${seg.ease === e ? 'selected' : ''}>${label}</option>`;
+                    }).join('');
+                    html +=
+                        `<div class="segment"><div class="form-group" style="width:20px;"><label>#${sIndex + 1}</label></div><div class="form-group start-group" style="width:55px;"><label>Start</label><input type="number" step="0.1" id="start-${bIndex}-${sIndex}" value="${seg.start}" onchange="validateStart(${bIndex}, ${sIndex}, this.value)"><span id="err-${bIndex}-${sIndex}" class="error-msg"></span></div><div class="form-group" style="width:55px;"><label>Dur</label><input type="number" step="0.1" value="${seg.dur}" oninput="updateSeg(${bIndex}, ${sIndex}, 'dur', this.value)"></div>${sIndex === 0 ? `<div class="form-group" style="width:60px;"><label>From</label><input type="number" value="${seg.val1}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val1', this.value)"></div>` : ''}<div class="form-group" style="width:60px;"><label>To</label><input type="number" value="${seg.val2}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val2', this.value)"></div><div class="form-group"><label>Ease</label><select onchange="updateSeg(${bIndex}, ${sIndex}, 'ease', this.value)">${easeOptions}</select></div><div class="form-group"><button class="danger" style="margin-top:15px;" onclick="removeSeg(${bIndex}, ${sIndex})" title="Remove Keyframe">${trashIcon}</button></div></div>`;
+                });
+                html += `</div><br><button onclick="addSeg(${bIndex})">${keyframeIcon} Add Keyframe</button></div>`;
+                container.innerHTML += html;
             });
+            generate();
+        }
+
+        function addBone() { data.push({ bone: boneVariables[0], segments: [{ start: 0, dur: 0.5, val1: 0,
+                val2: 45, ease: 'lerp' }] }); renderBones(); }
+
+        function removeBone(i) { data.splice(i, 1); renderBones(); }
+
+        function addSeg(bIndex) {
+            let segs = data[bIndex].segments;
+            let start = segs.length > 0 ? parseFloat(segs[segs.length - 1].start) + parseFloat(segs[segs
+                .length - 1].dur) : 0;
+            segs.push({ start: Number(start.toFixed(2)), dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' });
+            renderBones();
+        }
+
+        function removeSeg(bIndex, sIndex) { data[bIndex].segments.splice(sIndex, 1); renderBones(); }
+
+        function updateBone(bIndex, val) { data[bIndex].bone = val; generate(); }
+
+        function updateSeg(bIndex, sIndex, key, val) { data[bIndex].segments[sIndex][key] = key === 'ease' ?
+                val : parseFloat(val) || 0; generate(); }
+
+        function validateStart(bIndex, sIndex, val) {
+            let numVal = parseFloat(val) || 0;
+            if (sIndex > 0) {
+                let prevSeg = data[bIndex].segments[sIndex - 1];
+                let minStart = Number((prevSeg.start + prevSeg.dur).toFixed(2));
+                if (numVal < minStart) {
+                    let inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
+                    let errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
+                    inputEl.style.color = "var(--danger)";
+                    inputEl.style.borderColor = "var(--danger)";
+                    errEl.innerText = `Cannot be below ${minStart}`;
+                    errEl.classList.add('show');
+                    data[bIndex].segments[sIndex].start = minStart;
+                    generate();
+                    setTimeout(() => {
+                        if (inputEl && errEl) {
+                            inputEl.style.color = "";
+                            inputEl.style.borderColor = "";
+                            errEl.classList.remove('show');
+                            inputEl.value = minStart;
+                        }
+                    }, 2000);
+                    return;
+                }
+            }
+            updateSeg(bIndex, sIndex, 'start', numVal);
+        }
+
+        function generate() {
+            let mirrorArms = document.getElementById('mirrorArms').checked;
+            let mirrorLegs = document.getElementById('mirrorLegs').checked;
+            let outStr = "";
+            let used = new Set();
+            data.forEach(bData => {
+                used.add(bData.bone);
+                bData.segments.forEach((seg, index) => {
+                    let timeExpr = seg.start === 0 ? `q.state_time` :
+                    `(q.state_time-${seg.start})`;
+                    let easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease;
+                    if (index === 0) outStr +=
+                        `q.state_time>=${seg.start}?{${bData.bone}=math.${easeFunc}(${seg.val1},${seg.val2},math.min(${timeExpr}/${seg.dur},1));};`;
+                    else outStr +=
+                        `q.state_time>=${seg.start}?{${bData.bone}=math.${easeFunc}(${bData.bone},${seg.val2},math.min(${timeExpr}/${seg.dur},1));};`;
+                });
+            });
+            if (mirrorArms) {
+                if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr +=
+                    `v.leftarm.x=v.rightarm.x;`;
+                else if (used.has("v.leftarm.x") && !used.has("v.rightarm.x")) outStr +=
+                    `v.rightarm.x=v.leftarm.x;`;
+                if (used.has("v.rightarm.y") && !used.has("v.leftarm.y")) outStr +=
+                    `v.leftarm.y=-v.rightarm.y;`;
+                else if (used.has("v.leftarm.y") && !used.has("v.rightarm.y")) outStr +=
+                    `v.rightarm.y=-v.leftarm.y;`;
+                if (used.has("v.rightarm.z") && !used.has("v.leftarm.z")) outStr +=
+                    `v.leftarm.z=-v.rightarm.z;`;
+                else if (used.has("v.leftarm.z") && !used.has("v.rightarm.z")) outStr +=
+                    `v.rightarm.z=-v.leftarm.z;`;
+                if (used.has("v.rightarm.ypos") && !used.has("v.leftarm.ypos")) outStr +=
+                    `v.leftarm.ypos=v.rightarm.ypos;`;
+                else if (used.has("v.leftarm.ypos") && !used.has("v.rightarm.ypos")) outStr +=
+                    `v.rightarm.ypos=v.leftarm.ypos;`;
+            }
+            if (mirrorLegs) {
+                if (used.has("v.rightleg.x") && !used.has("v.leftleg.x")) outStr +=
+                    `v.leftleg.x=v.rightleg.x;`;
+                else if (used.has("v.leftleg.x") && !used.has("v.rightleg.x")) outStr +=
+                    `v.rightleg.x=v.leftleg.x;`;
+            }
+            document.getElementById('output').value = outStr;
+        }
+
+        function onRidingToggle() {
+            // 3D view updates automatically via animation loop.
+            // Riding pose does NOT affect variables or Stop_Expression output.
+            // No generate() call here per user requirement.
+        }
+
+        function copyCode() {
+            let outputBox = document.getElementById('output');
+            outputBox.select();
+            document.execCommand('copy');
+        }
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1,
+        1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(30, 24, 60);
+        controls.target.set(0, 15, 0);
+        controls.update();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        function createMinecraftBoxGeometry(size, uvOffset, inflate = 0, mirror = false) {
+            const [w, h, d] = size;
+            const geom = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2);
+            const [u, v] = uvOffset;
+            const tw = 64,
+                th = 64;
+            let faces;
+            if (!mirror) {
+                faces = [
+                    [u + d + w, v + d, d, h],
+                    [u, v + d, d, h],
+                    [u + d, v, w, d],
+                    [u + d + w, v, w, d],
+                    [u + d, v + d, w, h],
+                    [u + d + w + d, v + d, w, h]
+                ];
+            } else {
+                faces = [
+                    [u, v + d, d, h],
+                    [u + d + w, v + d, d, h],
+                    [u + d + w, v, -w, d],
+                    [u + d + w + w, v, -w, d],
+                    [u + d + w, v + d, -w, h],
+                    [u + d + w + d + w, v + d, -w, h]
+                ];
+            }
+            const uvAttr = geom.attributes.uv;
+            let pos = 0;
+            faces.forEach(([x, y, fw, fh]) => {
+                const u0 = x / tw,
+                    v0 = 1 - (y + fh) / th;
+                const u1 = (x + fw) / tw,
+                    v1 = 1 - y / th;
+                uvAttr.setXY(pos++, u0, v1);
+                uvAttr.setXY(pos++, u1, v1);
+                uvAttr.setXY(pos++, u0, v0);
+                uvAttr.setXY(pos++, u1, v0);
+            });
+            uvAttr.needsUpdate = true;
+            return geom;
+        }
+
+        const textureLoader = new THREE.TextureLoader();
+        let skinTexture = null;
+        const baseMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 });
+        const outerMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true,
+            alphaTest: 0.5, side: THREE.DoubleSide });
+
+        const modelBones = [
+            { name: "root", pivot: [0, 0, 0] },
+            { name: "waist", parent: "root", pivot: [0, 12, 0] },
+            { name: "body", parent: "waist", pivot: [0, 24, 0], cubes: [
+                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16], outer: false },
+                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 32], outer: true, inflate: 0.25 }
+            ] },
+            { name: "head", parent: "body", pivot: [0, 24, 0], cubes: [
+                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0], outer: false },
+                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [32, 0], outer: true, inflate: 0.5 }
+            ] },
+            { name: "leftArm", parent: "body", pivot: [5, 22, 0], cubes: [
+                { origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48], outer: false },
+                { origin: [4, 12, -2], size: [4, 12, 4], uv: [48, 48], outer: true, inflate: 0.25 }
+            ] },
+            { name: "rightArm", parent: "body", pivot: [-5, 22, 0], cubes: [
+                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16], outer: false },
+                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 32], outer: true, inflate: 0.25 }
+            ] },
+            { name: "leftLeg", parent: "root", pivot: [1.9, 12, 0], cubes: [
+                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [16, 48], outer: false },
+                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [0, 48], outer: true, inflate: 0.25 }
+            ] },
+            { name: "rightLeg", parent: "root", pivot: [-1.9, 12, 0], cubes: [
+                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 16], outer: false },
+                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 32], outer: true, inflate: 0.25 }
+            ] }
+        ];
+
+        const selectableMeshes = [];
+        const boneObjects = {};
+        modelBones.forEach(b => {
+            const group = new THREE.Group();
+            if (b.cubes) {
+                b.cubes.forEach(c => {
+                    const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c
+                        .mirror || false);
+                    const mat = c.outer ? outerMaterial : baseMaterial;
+                    const mesh = new THREE.Mesh(geom, mat);
+                    mesh.position.set(
+                        c.origin[0] + c.size[0] / 2 - b.pivot[0],
+                        c.origin[1] + c.size[1] / 2 - b.pivot[1],
+                        c.origin[2] + c.size[2] / 2 - b.pivot[2]
+                    );
+                    mesh.userData.boneName = b.name;
+                    selectableMeshes.push(mesh);
+                    group.add(mesh);
+                });
+            }
+            boneObjects[b.name] = group;
         });
-        let totalAnimDuration = Math.max(maxDur, 0.1); 
 
-        let t = animTime % totalAnimDuration; 
+        modelBones.forEach(b => {
+            const group = boneObjects[b.name];
+            const parentPivot = b.parent ? (modelBones.find(x => x.name === b.parent).pivot || [0, 0,
+                0]) : [0, 0, 0];
+            const initX = b.pivot[0] - parentPivot[0];
+            const initY = b.pivot[1] - parentPivot[1];
+            const initZ = b.pivot[2] - parentPivot[2];
+            group.userData.initialPos = { x: initX, y: initY, z: initZ };
+            group.position.set(initX, initY, initZ);
+            if (b.parent) boneObjects[b.parent].add(group);
+            else scene.add(group);
+        });
 
-        let currentValues = {}; 
-        data.forEach(bData => { 
-            let val = 0; 
-            bData.segments.forEach((seg, idx) => { 
-                if (idx === 0) val = seg.val1; 
-                if (t >= seg.start) { 
-                    let progress = Math.min((t - seg.start) / seg.dur, 1); 
-                    val = val + (seg.val2 - val) * getEase(seg.ease, progress); 
-                } 
-            }); 
-            currentValues[bData.bone] = val; 
-        }); 
+        function applyTexture(texture) {
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            baseMaterial.map = texture;
+            baseMaterial.color.setHex(0xffffff);
+            baseMaterial.needsUpdate = true;
+            outerMaterial.map = texture;
+            outerMaterial.color.setHex(0xffffff);
+            outerMaterial.needsUpdate = true;
+        }
 
-        if (document.getElementById('mirrorArms').checked) { 
-            if(currentValues["v.rightarm.x"] !== undefined && currentValues["v.leftarm.x"] === undefined) currentValues["v.leftarm.x"] = currentValues["v.rightarm.x"]; 
-            else if(currentValues["v.leftarm.x"] !== undefined && currentValues["v.rightarm.x"] === undefined) currentValues["v.rightarm.x"] = currentValues["v.leftarm.x"]; 
+        function loadTextureFromUrl(url) {
+            textureLoader.load(url, (tex) => { skinTexture = tex;
+                applyTexture(skinTexture); });
+        }
 
-            if(currentValues["v.rightarm.y"] !== undefined && currentValues["v.leftarm.y"] === undefined) currentValues["v.leftarm.y"] = -currentValues["v.rightarm.y"]; 
-            else if(currentValues["v.leftarm.y"] !== undefined && currentValues["v.rightarm.y"] === undefined) currentValues["v.rightarm.y"] = -currentValues["v.leftarm.y"]; 
+        function resetSkin() { loadTextureFromUrl(DEFAULT_TEXTURE_URL); }
 
-            if(currentValues["v.rightarm.z"] !== undefined && currentValues["v.leftarm.z"] === undefined) currentValues["v.leftarm.z"] = -currentValues["v.rightarm.z"]; 
-            else if(currentValues["v.leftarm.z"] !== undefined && currentValues["v.rightarm.z"] === undefined) currentValues["v.rightarm.z"] = -currentValues["v.leftarm.z"]; 
+        function uploadSkin(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => { const texture = new THREE.Texture(img);
+                    texture.needsUpdate = true;
+                    applyTexture(texture); };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+        loadTextureFromUrl(DEFAULT_TEXTURE_URL);
 
-            if(currentValues["v.rightarm.ypos"] !== undefined && currentValues["v.leftarm.ypos"] === undefined) currentValues["v.leftarm.ypos"] = currentValues["v.rightarm.ypos"]; 
-            else if(currentValues["v.leftarm.ypos"] !== undefined && currentValues["v.rightarm.ypos"] === undefined) currentValues["v.rightarm.ypos"] = currentValues["v.leftarm.ypos"]; 
-        } 
+        /* =====================================================================
+           AXIS EDITOR (posing gizmo) — extended with scale + riding support
+           ===================================================================== */
+        let viewMode = 'preview';
+        let manualPose = {};
+        let selectedBone = null;
+        let gizmoMode = 'rotate';
 
-        if (document.getElementById('mirrorLegs').checked) { 
-            if(currentValues["v.rightleg.x"] !== undefined && currentValues["v.leftleg.x"] === undefined) currentValues["v.leftleg.x"] = currentValues["v.rightleg.x"]; 
-            else if(currentValues["v.leftleg.x"] !== undefined && currentValues["v.rightleg.x"] === undefined) currentValues["v.rightleg.x"] = currentValues["v.leftleg.x"]; 
-        } 
+        const boneVarPrefix = {
+            root: 'v.root',
+            waist: 'v.body',
+            head: 'v.head',
+            rightArm: 'v.rightarm',
+            leftArm: 'v.leftarm',
+            rightLeg: 'v.rightleg',
+            leftLeg: 'v.leftleg'
+        };
+        const boneAxisConfig = {
+            root: { rotate: ['x', 'z'], translate: ['x', 'y', 'z'], scale: [] },
+            waist: { rotate: ['x', 'y', 'z'], translate: ['x', 'y'], scale: ['xz', 'y'] },
+            head: { rotate: ['x', 'y', 'z'], translate: ['x', 'y', 'z'], scale: [] },
+            rightArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
+            leftArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
+            rightLeg: { rotate: ['x'], translate: [], scale: [] },
+            leftLeg: { rotate: ['x'], translate: [], scale: [] }
+        };
+        const scaleVarMap = {
+            waist: { xz: 'v.body_head.xzscale', y: 'v.body_head.yscale' }
+        };
+        const boneDisplayName = {
+            root: 'Root',
+            waist: 'Body / Waist',
+            head: 'Head',
+            rightArm: 'Right Arm',
+            leftArm: 'Left Arm',
+            rightLeg: 'Right Leg',
+            leftLeg: 'Left Leg'
+        };
+        const invertedBones = ["v.rightarm.y", "v.leftarm.y", "v.rightarm.z", "v.leftarm.z", "v.head.y",
+            "v.head.z", "v.body.y", "v.body.z"
+        ];
 
-        applyValuesToBones(currentValues);
-    } else {
-        // Axis Editor mode: pose comes straight from manualPose (kept in sync by the gizmo / inputs)
-        applyValuesToBones(manualPose);
-    }
+        function mapName(str) {
+            if (str.includes("rightarm")) return "rightArm";
+            if (str.includes("leftarm")) return "leftArm";
+            if (str.includes("rightleg")) return "rightLeg";
+            if (str.includes("leftleg")) return "leftLeg";
+            if (str.includes("body")) return "waist";
+            if (str.includes("head")) return "head";
+            return "root";
+        }
 
-    controls.update(); 
-    renderer.render(scene, camera); 
-} 
+        function isRidingEnabled() {
+            const el = document.getElementById('playerRiding');
+            return el ? el.checked : false;
+        }
 
-renderBones(); 
-animate(); 
-window.addEventListener('resize', () => { const w = container.clientWidth; const h = container.clientHeight; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h); }); 
-window.togglePlay = togglePlay; window.copyCode = copyCode; window.addBone = addBone; window.removeBone = removeBone; window.addSeg = addSeg; window.removeSeg = removeSeg; window.updateBone = updateBone; window.updateSeg = updateSeg; window.generate = generate; window.resetSkin = resetSkin; window.uploadSkin = uploadSkin; window.validateStart = validateStart;
-window.setViewMode = setViewMode; window.selectBone = selectBone; window.setGizmoMode = setGizmoMode; window.setPoseValue = setPoseValue; window.resetBonePose = resetBonePose; window.resetAllPose = resetAllPose;
-</script> 
-</body> 
+        function getRidingOffsetDeg(boneName, axis) {
+            if (!isRidingEnabled()) return 0;
+            if (boneName === 'rightLeg' && axis === 'x') return -81;
+            if (boneName === 'rightLeg' && axis === 'z') return -18;
+            if (boneName === 'leftLeg' && axis === 'x') return -81;
+            if (boneName === 'leftLeg' && axis === 'z') return 18;
+            return 0;
+        }
+
+        function resetBonesToBindPose() {
+            Object.values(boneObjects).forEach(b => {
+                b.rotation.set(0, 0, 0);
+                b.scale.set(1, 1, 1);
+                if (b.userData.initialPos) {
+                    b.position.set(b.userData.initialPos.x, b.userData.initialPos.y, b.userData
+                        .initialPos.z);
+                }
+            });
+            if (isRidingEnabled()) {
+                const rightLeg = boneObjects['rightLeg'];
+                const leftLeg = boneObjects['leftLeg'];
+                if (rightLeg) {
+                    rightLeg.rotation.x = -81 * (Math.PI / 180);
+                    rightLeg.rotation.z = -18 * (Math.PI / 180);
+                }
+                if (leftLeg) {
+                    leftLeg.rotation.x = -81 * (Math.PI / 180);
+                    leftLeg.rotation.z = 18 * (Math.PI / 180);
+                }
+            }
+        }
+
+        function applyValuesToBones(values) {
+            for (const [key, val] of Object.entries(values)) {
+                const targetBone = boneObjects[mapName(key)];
+                if (!targetBone) continue;
+                if (key.endsWith(".ypos")) {
+                    targetBone.position.y = targetBone.userData.initialPos.y + val;
+                    continue;
+                }
+                if (key.endsWith(".xpos")) {
+                    targetBone.position.x = targetBone.userData.initialPos.x + val;
+                    continue;
+                }
+                if (key.endsWith(".zpos")) {
+                    targetBone.position.z = targetBone.userData.initialPos.z + val;
+                    continue;
+                }
+                if (key === 'v.body_head.xzscale') {
+                    targetBone.scale.x = val;
+                    targetBone.scale.z = val;
+                    continue;
+                }
+                if (key === 'v.body_head.yscale') {
+                    targetBone.scale.y = val;
+                    continue;
+                }
+                let rad = val * (Math.PI / 180);
+                if (invertedBones.includes(key)) rad = -rad;
+                if (key.endsWith(".x")) targetBone.rotation.x += rad;
+                if (key.endsWith(".y")) targetBone.rotation.y += rad;
+                if (key.endsWith(".z")) targetBone.rotation.z += rad;
+            }
+        }
+
+        const transformControls = new THREE.TransformControls(camera, renderer.domElement);
+        if (typeof transformControls.setSpace === 'function') transformControls.setSpace('local');
+        else transformControls.space = 'local';
+        if (typeof transformControls.setSize === 'function') transformControls.setSize(1.5);
+        else transformControls.size = 1.5;
+        transformControls.addEventListener('dragging-changed', (event) => {
+            controls.enabled = !event.value;
+        });
+        transformControls.addEventListener('objectChange', onGizmoChange);
+        scene.add(transformControls);
+
+        const raycaster = new THREE.Raycaster();
+        const pointerNDC = new THREE.Vector2();
+        let pointerDownPos = null;
+
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            pointerDownPos = { x: e.clientX, y: e.clientY };
+        });
+
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            if (viewMode !== 'axis') return;
+            if (!pointerDownPos) return;
+            const wasGizmoInteraction = transformControls.dragging || transformControls.axis;
+            const dx = e.clientX - pointerDownPos.x;
+            const dy = e.clientY - pointerDownPos.y;
+            pointerDownPos = null;
+            if (wasGizmoInteraction) return;
+            if (Math.sqrt(dx * dx + dy * dy) > 4) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(pointerNDC, camera);
+            const intersects = raycaster.intersectObjects(selectableMeshes, false);
+            if (intersects.length > 0) {
+                let hitName = intersects[0].object.userData.boneName;
+                if (hitName === 'body') hitName = 'waist';
+                selectBone(hitName);
+            }
+        });
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('tabPreview').classList.toggle('active', mode === 'preview');
+            document.getElementById('tabAxis').classList.toggle('active', mode === 'axis');
+            document.getElementById('previewControls').style.display = mode === 'preview' ? 'flex' :
+                'none';
+            document.getElementById('axisControls').style.display = mode === 'axis' ? 'block' : 'none';
+            document.getElementById('viewportTitle').textContent = mode === 'preview' ? '3D Live Preview' :
+                'Axis Editor';
+            if (mode === 'axis') {
+                if (!selectedBone) selectedBone = 'rightArm';
+                selectBone(selectedBone);
+            } else {
+                transformControls.detach();
+            }
+        }
+
+        function selectBone(name) {
+            selectedBone = name;
+            const sel = document.getElementById('boneSelect');
+            if (sel) sel.value = name;
+            const cfg = boneAxisConfig[name];
+            if (gizmoMode === 'translate' && cfg.translate.length === 0) {
+                gizmoMode = 'rotate';
+            }
+            if (gizmoMode === 'scale' && cfg.scale.length === 0) {
+                gizmoMode = 'rotate';
+            }
+            updateModeButtons();
+            attachGizmo();
+            renderAxisReadout();
+        }
+
+        function setGizmoMode(mode) {
+            gizmoMode = mode;
+            updateModeButtons();
+            attachGizmo();
+            renderAxisReadout();
+        }
+
+        function updateModeButtons() {
+            const rotateBtn = document.getElementById('modeRotateBtn');
+            const translateBtn = document.getElementById('modeTranslateBtn');
+            const scaleBtn = document.getElementById('modeScaleBtn');
+            if (!rotateBtn || !translateBtn || !scaleBtn) return;
+            rotateBtn.classList.toggle('active', gizmoMode === 'rotate');
+            translateBtn.classList.toggle('active', gizmoMode === 'translate');
+            scaleBtn.classList.toggle('active', gizmoMode === 'scale');
+            const cfg = selectedBone ? boneAxisConfig[selectedBone] : null;
+            translateBtn.disabled = !cfg || cfg.translate.length === 0;
+            scaleBtn.disabled = !cfg || cfg.scale.length === 0;
+        }
+
+        function attachGizmo() {
+            if (!selectedBone) { transformControls.detach(); return; }
+            const cfg = boneAxisConfig[selectedBone];
+            let axesForMode;
+            if (gizmoMode === 'rotate') axesForMode = cfg.rotate;
+            else if (gizmoMode === 'translate') axesForMode = cfg.translate;
+            else axesForMode = cfg.scale;
+            if (!axesForMode || axesForMode.length === 0) { transformControls.detach(); return; }
+            if (typeof transformControls.setMode === 'function') transformControls.setMode(gizmoMode);
+            else transformControls.mode = gizmoMode;
+            if (gizmoMode === 'scale') {
+                transformControls.showX = axesForMode.includes('xz') || axesForMode.includes('x');
+                transformControls.showY = axesForMode.includes('y');
+                transformControls.showZ = false;
+            } else {
+                transformControls.showX = axesForMode.includes('x');
+                transformControls.showY = axesForMode.includes('y');
+                transformControls.showZ = axesForMode.includes('z');
+            }
+            transformControls.attach(boneObjects[selectedBone]);
+        }
+
+        function onGizmoChange() {
+            if (!selectedBone) return;
+            const bone = boneObjects[selectedBone];
+            const prefix = boneVarPrefix[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+
+            if (gizmoMode === 'rotate') {
+                cfg.rotate.forEach(axis => {
+                    const key = `${prefix}.${axis}`;
+                    const offset = getRidingOffsetDeg(selectedBone, axis);
+                    let deg = bone.rotation[axis] * (180 / Math.PI);
+                    deg = deg - offset;
+                    if (invertedBones.includes(key)) deg = -deg;
+                    manualPose[key] = Math.round(deg * 100) / 100;
+                });
+            } else if (gizmoMode === 'translate') {
+                cfg.translate.forEach(axis => {
+                    const key = `${prefix}.${axis}pos`;
+                    const delta = bone.position[axis] - bone.userData.initialPos[axis];
+                    manualPose[key] = Math.round(delta * 100) / 100;
+                });
+            } else if (gizmoMode === 'scale') {
+                const varMap = scaleVarMap[selectedBone];
+                if (varMap) {
+                    cfg.scale.forEach(axis => {
+                        if (axis === 'xz') {
+                            bone.scale.z = bone.scale.x;
+                            manualPose[varMap.xz] = Math.round(bone.scale.x * 100) / 100;
+                        } else if (axis === 'y') {
+                            manualPose[varMap.y] = Math.round(bone.scale.y * 100) / 100;
+                        }
+                    });
+                }
+            }
+            renderAxisReadout();
+        }
+
+        function renderAxisReadout() {
+            const cont = document.getElementById('axisReadout');
+            if (!cont) return;
+            if (!selectedBone) {
+                cont.innerHTML = '<p class="hint" style="margin:0;">Select a body part to edit.</p>';
+                return;
+            }
+            const prefix = boneVarPrefix[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+            let html = `<div class="readout-title">${boneDisplayName[selectedBone]}</div>`;
+            if (cfg.rotate.length > 0) {
+                html +=
+                    `<div class="readout-group"><label class="group-label">Rotation (degrees)</label><div class="readout-row">`;
+                cfg.rotate.forEach(axis => {
+                    const key = `${prefix}.${axis}`;
+                    const val = manualPose[key] !== undefined ? manualPose[key] : 0;
+                    html +=
+                        `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
+                });
+                html += `</div></div>`;
+            }
+            if (cfg.translate.length > 0) {
+                html +=
+                    `<div class="readout-group"><label class="group-label">Position</label><div class="readout-row">`;
+                cfg.translate.forEach(axis => {
+                    const key = `${prefix}.${axis}pos`;
+                    const val = manualPose[key] !== undefined ? manualPose[key] : 0;
+                    html +=
+                        `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" step="0.1" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
+                });
+                html += `</div></div>`;
+            }
+            if (cfg.scale.length > 0) {
+                const varMap = scaleVarMap[selectedBone];
+                html +=
+                    `<div class="readout-group"><label class="group-label">Scale</label><div class="readout-row">`;
+                cfg.scale.forEach(axis => {
+                    const key = varMap[axis];
+                    const val = manualPose[key] !== undefined ? manualPose[key] : 1;
+                    const label = axis === 'xz' ? 'XZ' : axis.toUpperCase();
+                    html +=
+                        `<div class="form-group"><label>${label}</label><input type="number" step="0.01" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
+                });
+                html += `</div></div>`;
+            }
+            cont.innerHTML = html;
+        }
+
+        function setPoseValue(key, valStr) {
+            manualPose[key] = parseFloat(valStr) || 0;
+            renderAxisReadout();
+        }
+
+        function resetBonePose() {
+            if (!selectedBone) return;
+            const prefix = boneVarPrefix[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+            cfg.rotate.forEach(axis => delete manualPose[`${prefix}.${axis}`]);
+            cfg.translate.forEach(axis => delete manualPose[`${prefix}.${axis}pos`]);
+            cfg.scale.forEach(axis => {
+                const varMap = scaleVarMap[selectedBone];
+                if (varMap && varMap[axis]) delete manualPose[varMap[axis]];
+            });
+            renderAxisReadout();
+        }
+
+        function resetAllPose() {
+            manualPose = {};
+            renderAxisReadout();
+        }
+
+        /* ===================================================================== */
+        let isPlaying = true;
+        let animTime = 0;
+        const clock = new THREE.Clock();
+
+        function togglePlay() { isPlaying = !isPlaying; }
+
+        function bounceOut(t) {
+            const n1 = 7.5625,
+                d1 = 2.75;
+            if (t < 1 / d1) return n1 * t * t;
+            else if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+            else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+            else return n1 * (t -= 2.625 / d1) * t + 0.984375;
+        }
+
+        function getEase(name, t) {
+            t = Math.max(0, Math.min(1, t));
+            if (name === 'lerp') return t;
+            if (name === 'ease_in_sine') return 1 - Math.cos((t * Math.PI) / 2);
+            if (name === 'ease_out_sine') return Math.sin((t * Math.PI) / 2);
+            if (name === 'ease_in_out_sine') return -(Math.cos(Math.PI * t) - 1) / 2;
+            if (name === 'ease_in_quad') return t * t;
+            if (name === 'ease_out_quad') return 1 - (1 - t) * (1 - t);
+            if (name === 'ease_in_out_quad') return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) /
+                2;
+            if (name === 'ease_in_cubic') return t * t * t;
+            if (name === 'ease_out_cubic') return 1 - Math.pow(1 - t, 3);
+            if (name === 'ease_in_out_cubic') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2,
+                3) / 2;
+            if (name === 'ease_in_quart') return t * t * t * t;
+            if (name === 'ease_out_quart') return 1 - Math.pow(1 - t, 4);
+            if (name === 'ease_in_out_quart') return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t +
+                2, 4) / 2;
+            if (name === 'ease_in_quint') return t * t * t * t * t;
+            if (name === 'ease_out_quint') return 1 - Math.pow(1 - t, 5);
+            if (name === 'ease_in_out_quint') return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 *
+                t + 2, 5) / 2;
+            if (name === 'ease_in_expo') return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+            if (name === 'ease_out_expo') return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+            if (name === 'ease_in_out_expo') { if (t === 0) return 0; if (t === 1) return 1; return t <
+                    0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2; }
+            if (name === 'ease_in_circ') return 1 - Math.sqrt(1 - Math.pow(t, 2));
+            if (name === 'ease_out_circ') return Math.sqrt(1 - Math.pow(t - 1, 2));
+            if (name === 'ease_in_out_circ') return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) /
+                2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+            if (name === 'ease_in_back') { const c1 = 1.70158,
+                    c3 = c1 + 1; return c3 * t * t * t - c1 * t * t; }
+            if (name === 'ease_out_back') { const c1 = 1.70158,
+                    c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+            if (name === 'ease_in_out_back') { const c1 = 1.70158,
+                    c2 = c1 * 1.525; return t < 0.5 ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) /
+                    2 : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2; }
+            if (name === 'ease_in_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
+                    1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4); }
+            if (name === 'ease_out_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
+                    1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1; }
+            if (name === 'ease_in_out_elastic') { const c5 = (2 * Math.PI) / 4.5; return t === 0 ? 0 : t ===
+                    1 ? 1 : t < 0.5 ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) /
+                    2 : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1; }
+            if (name === 'ease_in_bounce') return 1 - bounceOut(1 - t);
+            if (name === 'ease_out_bounce') return bounceOut(t);
+            if (name === 'ease_in_out_bounce') return t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 +
+                bounceOut(2 * t - 1)) / 2;
+            return t;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            let dt = clock.getDelta();
+            resetBonesToBindPose();
+            if (viewMode === 'preview') {
+                if (isPlaying) animTime += dt;
+                let maxDur = 0;
+                data.forEach(bData => {
+                    bData.segments.forEach(seg => { let end = seg.start + seg.dur; if (end >
+                            maxDur) maxDur = end; });
+                });
+                let totalAnimDuration = Math.max(maxDur, 0.1);
+                let t = animTime % totalAnimDuration;
+                let currentValues = {};
+                data.forEach(bData => {
+                    let val = 0;
+                    bData.segments.forEach((seg, idx) => {
+                        if (idx === 0) val = seg.val1;
+                        if (t >= seg.start) {
+                            let progress = Math.min((t - seg.start) / seg.dur, 1);
+                            val = val + (seg.val2 - val) * getEase(seg.ease, progress);
+                        }
+                    });
+                    currentValues[bData.bone] = val;
+                });
+                if (document.getElementById('mirrorArms').checked) {
+                    if (currentValues["v.rightarm.x"] !== undefined && currentValues["v.leftarm.x"] ===
+                        undefined) currentValues["v.leftarm.x"] = currentValues["v.rightarm.x"];
+                    else if (currentValues["v.leftarm.x"] !== undefined && currentValues["v.rightarm.x"] ===
+                        undefined) currentValues["v.rightarm.x"] = currentValues["v.leftarm.x"];
+                    if (currentValues["v.rightarm.y"] !== undefined && currentValues["v.leftarm.y"] ===
+                        undefined) currentValues["v.leftarm.y"] = -currentValues["v.rightarm.y"];
+                    else if (currentValues["v.leftarm.y"] !== undefined && currentValues["v.rightarm.y"] ===
+                        undefined) currentValues["v.rightarm.y"] = -currentValues["v.leftarm.y"];
+                    if (currentValues["v.rightarm.z"] !== undefined && currentValues["v.leftarm.z"] ===
+                        undefined) currentValues["v.leftarm.z"] = -currentValues["v.rightarm.z"];
+                    else if (currentValues["v.leftarm.z"] !== undefined && currentValues["v.rightarm.z"] ===
+                        undefined) currentValues["v.rightarm.z"] = -currentValues["v.leftarm.z"];
+                    if (currentValues["v.rightarm.ypos"] !== undefined && currentValues["v.leftarm.ypos"] ===
+                        undefined) currentValues["v.leftarm.ypos"] = currentValues["v.rightarm.ypos"];
+                    else if (currentValues["v.leftarm.ypos"] !== undefined && currentValues[
+                        "v.rightarm.ypos"] === undefined) currentValues["v.rightarm.ypos"] = currentValues[
+                        "v.leftarm.ypos"];
+                }
+                if (document.getElementById('mirrorLegs').checked) {
+                    if (currentValues["v.rightleg.x"] !== undefined && currentValues["v.leftleg.x"] ===
+                        undefined) currentValues["v.leftleg.x"] = currentValues["v.rightleg.x"];
+                    else if (currentValues["v.leftleg.x"] !== undefined && currentValues["v.rightleg.x"] ===
+                        undefined) currentValues["v.rightleg.x"] = currentValues["v.leftleg.x"];
+                }
+                applyValuesToBones(currentValues);
+            } else {
+                applyValuesToBones(manualPose);
+            }
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        renderBones();
+        animate();
+        window.addEventListener('resize', () => { const w = container.clientWidth; const h = container
+                .clientHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h); });
+        window.togglePlay = togglePlay;
+        window.copyCode = copyCode;
+        window.addBone = addBone;
+        window.removeBone = removeBone;
+        window.addSeg = addSeg;
+        window.removeSeg = removeSeg;
+        window.updateBone = updateBone;
+        window.updateSeg = updateSeg;
+        window.generate = generate;
+        window.resetSkin = resetSkin;
+        window.uploadSkin = uploadSkin;
+        window.validateStart = validateStart;
+        window.setViewMode = setViewMode;
+        window.selectBone = selectBone;
+        window.setGizmoMode = setGizmoMode;
+        window.setPoseValue = setPoseValue;
+        window.resetBonePose = resetBonePose;
+        window.resetAllPose = resetAllPose;
+        window.onRidingToggle = onRidingToggle;
+    </script>
+</body>
 </html>
