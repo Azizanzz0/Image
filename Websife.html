@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Animator V1.3</title>
+    <title>Player Animator V1.4</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
@@ -277,6 +277,54 @@
             flex-wrap: wrap;
             align-items: center;
         }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .modal-box textarea {
+            width: 100%;
+            height: 160px;
+        }
+        .modal-box label {
+            font-size: 12px;
+            color: #bac2de;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-cancel {
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .import-error {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
@@ -309,7 +357,7 @@
 </head>
 <body>
     <div class="left-panel">
-        <h1>Player Animator V1.3</h1>
+        <h1>Player Animator V1.4</h1>
         <div class="card">
             <div class="toggle-group">
                 <label class="toggle-label">
@@ -376,11 +424,39 @@
         <div class="card" style="flex:1;display:flex;flex-direction:column;margin-bottom:0;">
             <div class="flex-between" style="margin-bottom:10px;">
                 <h2>Stop_Expression (playanimation)</h2>
-                <button onclick="copyCode()">Copy</button>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="copyCode()">Copy</button>
+                    <button onclick="openImportModal()">Import</button>
+                </div>
             </div>
             <textarea id="output" readonly style="flex:1;"></textarea>
         </div>
     </div>
+
+    <div id="importOverlay" class="modal-overlay">
+        <div class="modal-box">
+            <div id="importPhaseInput">
+                <h2>Import Stop_Expression</h2>
+                <p class="hint" style="margin-top:0;">Paste a Stop_Expression code below, then tap Import.</p>
+                <label for="importInput">Stop_Expression code</label>
+                <textarea id="importInput" placeholder="Paste your Stop_Expression here..."></textarea>
+                <div id="importError" class="import-error"></div>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+                    <button onclick="attemptImport()">Import</button>
+                </div>
+            </div>
+            <div id="importPhaseConfirm" style="display:none;">
+                <h2>Replace all keyframes?</h2>
+                <p class="hint" style="margin-top:0;">Do you want to import this? If you continue, all of your current keyframe progress will be lost and replaced with the imported data.</p>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="cancelImportConfirm()">Cancel</button>
+                    <button class="danger" onclick="confirmReplaceImport()">Replace</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png";
         const boneVariables = [
@@ -489,6 +565,22 @@
             updateSeg(bIndex, sIndex, 'start', numVal);
         }
 
+        function buildBoneExpr(segments, idx, boneVarName) {
+            const seg = segments[idx];
+            const timeExpr = seg.start === 0 ? `q.state_time` : `(q.state_time-${seg.start})`;
+            const easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease;
+            const fromVal = idx === 0 ? seg.val1 : boneVarName;
+            const thisExpr =
+                `math.${easeFunc}(${fromVal},${seg.val2},math.min(${timeExpr}/${seg.dur},1))`;
+            const isLast = idx === segments.length - 1;
+            if (isLast) return thisExpr;
+            const nextStart = segments[idx + 1].start;
+            const nestedIsLast = (idx + 1) === segments.length - 1;
+            const elseExpr = buildBoneExpr(segments, idx + 1, boneVarName);
+            const wrappedElse = nestedIsLast ? elseExpr : `(${elseExpr})`;
+            return `q.state_time<${nextStart}?${thisExpr}:${wrappedElse}`;
+        }
+
         function generate() {
             let mirrorArms = document.getElementById('mirrorArms').checked;
             let mirrorLegs = document.getElementById('mirrorLegs').checked;
@@ -496,15 +588,9 @@
             let used = new Set();
             data.forEach(bData => {
                 used.add(bData.bone);
-                bData.segments.forEach((seg, index) => {
-                    let timeExpr = seg.start === 0 ? `q.state_time` :
-                    `(q.state_time-${seg.start})`;
-                    let easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease;
-                    if (index === 0) outStr +=
-                        `q.state_time>=${seg.start}?{${bData.bone}=math.${easeFunc}(${seg.val1},${seg.val2},math.min(${timeExpr}/${seg.dur},1));};`;
-                    else outStr +=
-                        `q.state_time>=${seg.start}?{${bData.bone}=math.${easeFunc}(${bData.bone},${seg.val2},math.min(${timeExpr}/${seg.dur},1));};`;
-                });
+                if (!bData.segments || bData.segments.length === 0) return;
+                const expr = buildBoneExpr(bData.segments, 0, bData.bone);
+                outStr += `${bData.bone}=${expr};`;
             });
             if (mirrorArms) {
                 if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr +=
@@ -543,6 +629,193 @@
             let outputBox = document.getElementById('output');
             outputBox.select();
             document.execCommand('copy');
+        }
+
+        /* =====================================================================
+           IMPORT FEATURE — parse a pasted Stop_Expression back into keyframe data
+           ===================================================================== */
+        let pendingImportResult = null;
+
+        function splitTopLevelCommas(str) {
+            let depth = 0;
+            let parts = [];
+            let last = 0;
+            for (let i = 0; i < str.length; i++) {
+                const c = str[i];
+                if (c === '(') depth++;
+                else if (c === ')') depth--;
+                else if (c === ',' && depth === 0) {
+                    parts.push(str.slice(last, i));
+                    last = i + 1;
+                }
+            }
+            parts.push(str.slice(last));
+            return parts;
+        }
+
+        function splitTopLevelTernary(str) {
+            let depth = 0;
+            let qIndex = -1,
+                colonIndex = -1;
+            for (let i = 0; i < str.length; i++) {
+                const c = str[i];
+                if (c === '(') depth++;
+                else if (c === ')') depth--;
+                else if (c === '?' && depth === 0 && qIndex === -1) qIndex = i;
+                else if (c === ':' && depth === 0 && qIndex !== -1 && colonIndex === -1) colonIndex =
+                    i;
+            }
+            if (qIndex === -1 || colonIndex === -1) return null;
+            return {
+                truePart: str.slice(qIndex + 1, colonIndex).trim(),
+                falsePart: str.slice(colonIndex + 1).trim()
+            };
+        }
+
+        function stripOuterParens(str) {
+            str = str.trim();
+            while (str[0] === '(' && str[str.length - 1] === ')') {
+                let depth = 0,
+                    fullyWraps = true;
+                for (let i = 0; i < str.length; i++) {
+                    if (str[i] === '(') depth++;
+                    else if (str[i] === ')') {
+                        depth--;
+                        if (depth === 0 && i !== str.length - 1) { fullyWraps = false; break; }
+                    }
+                }
+                if (!fullyWraps) break;
+                str = str.slice(1, -1).trim();
+            }
+            return str;
+        }
+
+        function parseMathCall(str) {
+            str = stripOuterParens(str.trim());
+            const m = str.match(/^math\.([a-zA-Z_]+)\((.*)\)$/s);
+            if (!m) return null;
+            const easeRaw = m[1];
+            const args = splitTopLevelCommas(m[2]);
+            if (args.length < 3) return null;
+            const val1Expr = args[0].trim();
+            const val2Expr = args[1].trim();
+            const minExpr = stripOuterParens(args.slice(2).join(',').trim());
+            const minMatch = minExpr.match(/^math\.min\((.+)\/([\d.]+)\s*,\s*1\)$/s);
+            if (!minMatch) return null;
+            let timeExpr = minMatch[1].trim();
+            const dur = parseFloat(minMatch[2]);
+            let start = 0;
+            let sub = timeExpr.match(/^\(?\s*q\.state_time\s*-\s*([\d.]+)\s*\)?$/);
+            if (sub) start = parseFloat(sub[1]);
+            return { val1Expr, val2Expr, ease: easeRaw, dur, start };
+        }
+
+        function parseBoneChain(str) {
+            str = stripOuterParens(str.trim());
+            const split = splitTopLevelTernary(str);
+            if (!split) {
+                const call = parseMathCall(str);
+                return call ? [call] : null;
+            }
+            const trueCall = parseMathCall(split.truePart);
+            if (!trueCall) return null;
+            const restChain = parseBoneChain(split.falsePart);
+            if (!restChain) return null;
+            return [trueCall, ...restChain];
+        }
+
+        function parseStopExpression(text) {
+            const statements = text.split(';').map(s => s.trim()).filter(s => s.length > 0);
+            const boneMap = {};
+            const order = [];
+            let mirrorArms = false;
+            let mirrorLegs = false;
+            const mirrorArmVars = new Set([
+                'v.leftarm.x', 'v.rightarm.x', 'v.leftarm.y', 'v.rightarm.y',
+                'v.leftarm.z', 'v.rightarm.z', 'v.leftarm.ypos', 'v.rightarm.ypos'
+            ]);
+            statements.forEach(st => {
+                const m = st.match(/^(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\s*=\s*(.+)$/s);
+                if (!m) return;
+                const boneName = m[1];
+                const rhs = m[2].trim();
+                const mirrorMatch = rhs.match(/^-?\s*(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)$/);
+                if (mirrorMatch) {
+                    const refBone = mirrorMatch[1];
+                    if (mirrorArmVars.has(boneName) && refBone.includes('arm')) mirrorArms = true;
+                    if (boneName.includes('leg') && refBone.includes('leg')) mirrorLegs = true;
+                    return;
+                }
+                const chain = parseBoneChain(rhs);
+                if (!chain) return;
+                if (!boneMap[boneName]) order.push(boneName);
+                boneMap[boneName] = chain;
+            });
+            const parsedData = order.map(boneName => {
+                const chain = boneMap[boneName];
+                const segments = chain.map((call, idx) => {
+                    let val1 = 0;
+                    if (idx === 0) {
+                        const n = parseFloat(call.val1Expr);
+                        val1 = isNaN(n) ? 0 : n;
+                    }
+                    const n2 = parseFloat(call.val2Expr);
+                    const val2 = isNaN(n2) ? 0 : n2;
+                    const ease = easeList.includes(call.ease) ? call.ease : 'lerp';
+                    return { start: call.start, dur: call.dur, val1, val2, ease };
+                });
+                return { bone: boneName, segments };
+            });
+            return { data: parsedData, mirrorArms, mirrorLegs };
+        }
+
+        function openImportModal() {
+            document.getElementById('importInput').value = '';
+            document.getElementById('importError').style.display = 'none';
+            document.getElementById('importPhaseInput').style.display = 'block';
+            document.getElementById('importPhaseConfirm').style.display = 'none';
+            document.getElementById('importOverlay').style.display = 'flex';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importOverlay').style.display = 'none';
+            pendingImportResult = null;
+        }
+
+        function attemptImport() {
+            const text = document.getElementById('importInput').value.trim();
+            const errEl = document.getElementById('importError');
+            if (!text) {
+                errEl.textContent = 'Please paste a Stop_Expression first.';
+                errEl.style.display = 'block';
+                return;
+            }
+            const parsed = parseStopExpression(text);
+            if (!parsed.data.length) {
+                errEl.textContent =
+                    "This doesn't look like a valid Stop_Expression. Please check the code and try again.";
+                errEl.style.display = 'block';
+                return;
+            }
+            errEl.style.display = 'none';
+            pendingImportResult = parsed;
+            document.getElementById('importPhaseInput').style.display = 'none';
+            document.getElementById('importPhaseConfirm').style.display = 'block';
+        }
+
+        function cancelImportConfirm() {
+            document.getElementById('importPhaseInput').style.display = 'block';
+            document.getElementById('importPhaseConfirm').style.display = 'none';
+        }
+
+        function confirmReplaceImport() {
+            if (!pendingImportResult) return;
+            data = pendingImportResult.data;
+            document.getElementById('mirrorArms').checked = pendingImportResult.mirrorArms;
+            document.getElementById('mirrorLegs').checked = pendingImportResult.mirrorLegs;
+            pendingImportResult = null;
+            closeImportModal();
+            renderBones();
         }
 
         const container = document.getElementById('canvas-container');
@@ -1204,6 +1477,11 @@
         window.resetBonePose = resetBonePose;
         window.resetAllPose = resetAllPose;
         window.onRidingToggle = onRidingToggle;
+        window.openImportModal = openImportModal;
+        window.closeImportModal = closeImportModal;
+        window.attemptImport = attemptImport;
+        window.cancelImportConfirm = cancelImportConfirm;
+        window.confirmReplaceImport = confirmReplaceImport;
     </script>
 </body>
 </html>
