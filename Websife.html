@@ -915,6 +915,12 @@
         const boneObjects = {};
         modelBones.forEach(b => {
             const group = new THREE.Group();
+            // Minecraft Bedrock composes bone rotation in Z, then Y, then X order (ZYX),
+            // not three.js's default XYZ. With only one axis active this makes no visible
+            // difference, but combining two or three axes at once produced a preview that
+            // no longer matched in-game behavior. Matching the order here keeps the Axis
+            // Editor / Live Preview an exact match for what Minecraft actually renders.
+            group.rotation.order = 'ZYX';
             if (b.cubes) {
                 b.cubes.forEach(c => {
                     const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c
