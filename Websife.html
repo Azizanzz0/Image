@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Animator V1.4</title>
+    <title>Player Animator V1.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
@@ -357,7 +357,7 @@
 </head>
 <body>
     <div class="left-panel">
-        <h1>Player Animator V1.4</h1>
+        <h1>Player Animator V1.3</h1>
         <div class="card">
             <div class="toggle-group">
                 <label class="toggle-label">
@@ -565,20 +565,43 @@
             updateSeg(bIndex, sIndex, 'start', numVal);
         }
 
-        function buildBoneExpr(segments, idx, boneVarName) {
+        function buildDescendingTernary(segments, idx) {
+            // Walks from the LAST segment back to the FIRST. Each segment is gated on its
+            // OWN start time (">="), exactly like the original per-segment blocks — so
+            // editing any segment's start (including the first one) can never desync the
+            // logic the way a "next segment's start" cutoff could. Segment 0 is the final,
+            // unconditional fallback (its own gating is handled by the outer wrapper in
+            // buildBoneStatement). Nested ternaries are always wrapped in parentheses:
+            // Molang's docs note that unparenthesized nested ternaries were mis-parsed
+            // before a past versioned fix, so parentheses keep this safe on any version.
             const seg = segments[idx];
             const timeExpr = seg.start === 0 ? `q.state_time` : `(q.state_time-${seg.start})`;
             const easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease;
-            const fromVal = idx === 0 ? seg.val1 : boneVarName;
+            // Every segment interpolates between two literal numbers we already know at
+            // generation time: its own val1 (segment 0) or the PREVIOUS segment's val2
+            // (any later segment). Using the bone variable itself as the "from" value here
+            // would re-lerp toward the target on every single game tick, which makes the
+            // value race to the target almost immediately instead of moving at a constant,
+            // duration-matched rate — that's what made later keyframes look sped up even
+            // though their duration matched the first one.
+            const fromVal = idx === 0 ? seg.val1 : segments[idx - 1].val2;
             const thisExpr =
                 `math.${easeFunc}(${fromVal},${seg.val2},math.min(${timeExpr}/${seg.dur},1))`;
-            const isLast = idx === segments.length - 1;
-            if (isLast) return thisExpr;
-            const nextStart = segments[idx + 1].start;
-            const nestedIsLast = (idx + 1) === segments.length - 1;
-            const elseExpr = buildBoneExpr(segments, idx + 1, boneVarName);
-            const wrappedElse = nestedIsLast ? elseExpr : `(${elseExpr})`;
-            return `q.state_time<${nextStart}?${thisExpr}:${wrappedElse}`;
+            if (idx === 0) return thisExpr;
+            const rest = buildDescendingTernary(segments, idx - 1);
+            const wrappedRest = (idx - 1 === 0) ? rest : `(${rest})`;
+            return `q.state_time>=${seg.start}?${thisExpr}:${wrappedRest}`;
+        }
+
+        function buildBoneStatement(segments, boneVarName) {
+            const lastIdx = segments.length - 1;
+            const valueExpr = buildDescendingTernary(segments, lastIdx);
+            const firstStart = segments[0].start;
+            if (firstStart === 0) return `${boneVarName}=${valueExpr};`;
+            // First keyframe doesn't start at 0: gate the whole assignment in a block so
+            // nothing is written to the variable before its start time is reached, just
+            // like the original format did for every segment.
+            return `q.state_time>=${firstStart}?{${boneVarName}=${valueExpr};};`;
         }
 
         function generate() {
@@ -589,8 +612,7 @@
             data.forEach(bData => {
                 used.add(bData.bone);
                 if (!bData.segments || bData.segments.length === 0) return;
-                const expr = buildBoneExpr(bData.segments, 0, bData.bone);
-                outStr += `${bData.bone}=${expr};`;
+                outStr += buildBoneStatement(bData.segments, bData.bone);
             });
             if (mirrorArms) {
                 if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr +=
@@ -724,8 +746,39 @@
             return [trueCall, ...restChain];
         }
 
+        function splitTopLevelStatements(text) {
+            // Splits on ';' but only where it sits outside both ( ) and { } nesting, so a
+            // gate block like "q.state_time>=1?{bone=expr;};" is kept as ONE statement
+            // instead of being cut at the semicolon that lives inside its braces.
+            let depth = 0;
+            let parts = [];
+            let last = 0;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (c === '(' || c === '{') depth++;
+                else if (c === ')' || c === '}') depth--;
+                else if (c === ';' && depth === 0) {
+                    parts.push(text.slice(last, i));
+                    last = i + 1;
+                }
+            }
+            const tail = text.slice(last);
+            parts.push(tail);
+            return parts.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function unwrapGateBlock(statement) {
+            // Recognizes "q.state_time>=NUM?{ ... }" and returns just the interior.
+            // Plain (ungated) statements are returned unchanged.
+            const m = statement.match(/^q\.state_time\s*>=\s*[\d.]+\s*\?\s*\{(.+)\}$/s);
+            if (!m) return statement;
+            let inner = m[1].trim();
+            if (inner.endsWith(';')) inner = inner.slice(0, -1).trim();
+            return inner;
+        }
+
         function parseStopExpression(text) {
-            const statements = text.split(';').map(s => s.trim()).filter(s => s.length > 0);
+            const statements = splitTopLevelStatements(text);
             const boneMap = {};
             const order = [];
             let mirrorArms = false;
@@ -734,7 +787,8 @@
                 'v.leftarm.x', 'v.rightarm.x', 'v.leftarm.y', 'v.rightarm.y',
                 'v.leftarm.z', 'v.rightarm.z', 'v.leftarm.ypos', 'v.rightarm.ypos'
             ]);
-            statements.forEach(st => {
+            statements.forEach(rawSt => {
+                const st = unwrapGateBlock(rawSt);
                 const m = st.match(/^(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\s*=\s*(.+)$/s);
                 if (!m) return;
                 const boneName = m[1];
@@ -748,12 +802,17 @@
                 }
                 const chain = parseBoneChain(rhs);
                 if (!chain) return;
-                if (!boneMap[boneName]) order.push(boneName);
-                boneMap[boneName] = chain;
+                // Appended (not overwritten) so bones exported as several separate gated
+                // statements (the older format) are merged back into one full chain.
+                if (!boneMap[boneName]) { boneMap[boneName] = []; order.push(boneName); }
+                boneMap[boneName].push(...chain);
             });
             const parsedData = order.map(boneName => {
-                const chain = boneMap[boneName];
-                const segments = chain.map((call, idx) => {
+                // A chain can come out in descending start order (current format) or
+                // already-ascending order (older/legacy format) depending on how it was
+                // written — sorting here makes reconstruction correct either way.
+                const sortedChain = boneMap[boneName].slice().sort((a, b) => a.start - b.start);
+                const segments = sortedChain.map((call, idx) => {
                     let val1 = 0;
                     if (idx === 0) {
                         const n = parseFloat(call.val1Expr);
