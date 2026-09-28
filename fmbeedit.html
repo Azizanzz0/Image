@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#ffab05">
+<title>FMBE Edit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--ui:14px;--bar:clamp(46px,8.5vh,68px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  position:fixed;inset:0;color:#fff;
+  font-family:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  background-color:#101115;
+  background-image:conic-gradient(#14151a 25%,transparent 0 50%,#14151a 0 75%,transparent 0);
+  background-size:44px 44px;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:radial-gradient(ellipse at 50% 58%,transparent 42%,rgba(0,0,0,.5))}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit;user-select:text;-webkit-user-select:text}
+
+/* ---------- Top bar ---------- */
+#topbar{position:fixed;top:0;left:0;right:0;height:var(--bar);z-index:5;background:#ffab05;
+  display:flex;align-items:center;gap:calc(var(--bar)*.28);padding:0 calc(var(--bar)*.3);
+  box-shadow:0 .25em 1em rgba(0,0,0,.45);overflow:hidden;color:#000}
+#topbar::after{content:'';position:absolute;top:0;bottom:0;width:22%;left:-30%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);
+  animation:sweep 7s ease-in-out 1.2s infinite}
+@keyframes sweep{0%{left:-30%}35%,100%{left:120%}}
+#topbar svg{height:calc(var(--bar)*.74);width:auto;flex:none;image-rendering:pixelated;shape-rendering:crispEdges}
+#topbar h1{margin:0;font:900 calc(var(--bar)*.66)/1 'Nunito',sans-serif;letter-spacing:-.025em;white-space:nowrap}
+#topbar .by{margin-left:auto;text-align:center;font:800 calc(var(--bar)*.3)/1.12 'Nunito',sans-serif;white-space:nowrap}
+
+/* ---------- 3D canvas ---------- */
+#view{position:fixed;left:0;right:0;bottom:0;top:var(--bar);width:100%;height:calc(100% - var(--bar));z-index:0;display:block;touch-action:none;outline:none}
+
+/* ---------- GUI base ---------- */
+.gui{position:fixed;left:0;top:0;width:var(--w);font-size:var(--ui);border-radius:.95em;overflow:hidden;z-index:10;
+  box-shadow:0 .5em 1.5em rgba(0,0,0,.5),0 0 0 .07em rgba(255,255,255,.07);
+  transition:box-shadow .2s,transform .2s;
+  animation:guiIn .65s cubic-bezier(.2,.9,.25,1.12) backwards;animation-delay:var(--d,0s)}
+.gui.dragging{box-shadow:0 1em 2.4em rgba(0,0,0,.6),0 0 0 .1em rgba(255,255,255,.18);transform:scale(1.015)}
+@keyframes guiIn{from{opacity:0;transform:translateY(1.4em) scale(.94)}}
+.title{position:relative;height:2.7em;display:flex;align-items:center;justify-content:center;
+  cursor:grab;touch-action:none;color:#fff}
+.gui.dragging .title{cursor:grabbing}
+.ttl{font:600 1.3em/1 'Fredoka','Nunito',sans-serif;text-shadow:0 .06em .12em rgba(0,0,0,.25);pointer-events:none}
+.fold{position:absolute;right:.55em;top:50%;width:1.9em;height:1.9em;margin-top:-.95em;border:0;border-radius:50%;
+  background:rgba(255,255,255,.22);padding:0;transition:background .2s,transform .15s}
+.fold:hover{background:rgba(255,255,255,.36)}
+.fold:active{transform:scale(.88)}
+.fold i{position:absolute;left:50%;top:50%;width:.95em;height:.17em;margin:-.085em 0 0 -.475em;border-radius:1em;background:#fff;
+  transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
+.fold i.v{transform:rotate(90deg) scaleX(0)}
+.gui.collapsed .fold i.v{transform:rotate(90deg) scaleX(1)}
+.collapsible{display:grid;grid-template-rows:1fr;transition:grid-template-rows .38s cubic-bezier(.3,.9,.3,1),visibility 0s}
+.gui.collapsed .collapsible{grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .38s cubic-bezier(.3,.9,.3,1),visibility 0s .38s}
+.inner{min-height:0;overflow:hidden}
+
+/* ---------- GUI 1 : Block Entity ---------- */
+.g-be{--w:15.5em;background:#9a5535}
+.g-be .title{background:#ffbb5c}
+.be-body{padding:.9em;min-height:12.5em}
+.be-list{--rowH:2.6em;--gap:.65em;position:relative;margin:-.4em;
+  height:calc(.8em + (var(--n,1) + 1) * (var(--rowH) + var(--gap)) - var(--gap));
+  max-height:50vh;overflow-y:auto;overflow-x:hidden;transition:height .4s cubic-bezier(.3,1.2,.5,1);
+  scrollbar-width:none}
+.be-list::-webkit-scrollbar{display:none}
+.row{position:absolute;left:.4em;right:.4em;top:0;height:var(--rowH);
+  transform:translateY(calc(.4em + var(--i,0) * (var(--rowH) + var(--gap))));
+  transition:transform .45s cubic-bezier(.34,1.35,.5,1)}
+.fox-btn{display:flex;align-items:center;height:100%;padding:0 .3em 0 .6em;border-radius:.8em;background:#ff7622;
+  box-shadow:0 .18em 0 rgba(110,35,0,.35);cursor:pointer;position:relative;
+  transition:transform .2s,background .25s,box-shadow .25s}
+.pw{height:100%;transition:transform .22s,opacity .22s;animation:pop .42s cubic-bezier(.2,1.5,.4,1) backwards}
+.fox-btn:active{transform:scale(.97)}
+.fox-btn .cube{width:1.85em;height:1.85em;flex:none;transition:transform .3s cubic-bezier(.3,1.6,.5,1),filter .25s}
+.fox-btn .name,.fox-btn .name-edit{flex:1;min-width:0;text-align:center;font:600 1.15em/1 'Fredoka','Nunito',sans-serif;color:#fff}
+.fox-btn .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 .3em}
+.name-edit{background:rgba(0,0,0,.22);border:0;border-bottom:.12em solid #fff;border-radius:.4em;outline:none;padding:.2em .3em;margin:0 .3em}
+.fox-btn.sel{background:linear-gradient(180deg,#ffa347,#ff7a22);
+  box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.85);animation:glow 1.9s ease-in-out infinite alternate}
+.fox-btn.sel .cube{transform:scale(1.12) rotate(-6deg);filter:brightness(1.7)}
+.fox-btn.add{justify-content:center;padding:0 .6em}
+.fox-btn.add .name{font-size:1.1em}
+.row.removing .pw{transform:scale(.7);opacity:0}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+@keyframes glow{from{box-shadow:0 0 0 .17em #fff3b8,0 0 .5em 0 rgba(255,222,110,.6)}to{box-shadow:0 0 0 .17em #fff3b8,0 0 1em .15em rgba(255,222,110,.95)}}
+.dots{flex:none;width:2em;height:100%;margin-right:.1em;border:0;background:none;padding:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.2em}
+.dots i{width:.36em;height:.36em;border-radius:50%;background:#fff;transition:transform .2s}
+.dots:hover i{transform:scale(1.25)}
+
+/* dim + menu (Rename / Delete) */
+.dim{position:absolute;inset:0;z-index:20;background:rgba(28,10,0,.66);opacity:0;pointer-events:none;transition:opacity .28s}
+.menu-open .dim{opacity:1;pointer-events:auto}
+.menu{position:absolute;z-index:21;width:0;height:0;pointer-events:none}
+.menu .yb{position:absolute;left:0;top:0;width:2.5em;height:2.5em;margin:-1.25em 0 0 -1.25em;border:0;padding:0;border-radius:50%;
+  background:#ffe24f;box-shadow:0 .12em .5em rgba(0,0,0,.35);transform:scale(0);transition:transform .38s cubic-bezier(.2,1.8,.4,1)}
+.menu .yb i{position:absolute;top:50%;width:.42em;height:.42em;margin-top:-.21em;border-radius:50%;background:#fff8cf}
+.menu .yb i:first-child{left:32%;margin-left:-.21em}
+.menu .yb i:last-child{left:68%;margin-left:-.21em}
+.menu .ln{position:absolute;left:0;top:0;height:.16em;margin-top:-.08em;width:var(--len,0px);border-radius:1em;background:#fff;
+  transform-origin:0 50%;transform:rotate(var(--ang,0deg)) scaleX(0);transition:transform .26s ease .06s}
+.menu .pill{position:absolute;border:0;border-radius:2em;background:#fff;color:#4a2a12;padding:.5em 1em;
+  font:700 .85em/1 'Nunito',sans-serif;white-space:nowrap;box-shadow:0 .12em .4em rgba(0,0,0,.3);
+  transform:translate(-50%,-50%) scale(0);transition:transform .34s cubic-bezier(.2,1.7,.4,1) .12s,background .15s}
+.menu .pill.dl{color:#c2321f}
+.menu .pill:active{background:#ffe9c8}
+.menu-open .menu .yb{transform:scale(1);pointer-events:auto}
+.menu-open .menu .ln{transform:rotate(var(--ang,0deg)) scaleX(1)}
+.menu-open .menu .pill{transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.menu .pill.dl{transition-delay:.18s}
+
+/* ---------- GUI 2 : Main ---------- */
+.g-main{--w:23em;background:#474747}
+.g-main .title{background:#555}
+.tabs{display:flex;justify-content:space-between;gap:.5em}
+.tab{border:0;padding:.4em 1.5em .45em;border-radius:0 0 .85em .85em;background:#505050;color:#b4b4b4;
+  font:600 1.12em/1.1 'Fredoka','Nunito',sans-serif;transition:background .25s,color .25s}
+.tab.active{background:#727272;color:#fff}
+.panes{display:grid}
+.pane{grid-area:1/1;opacity:0;visibility:hidden;transform:translateY(.7em);pointer-events:none;
+  transition:opacity .25s,transform .3s cubic-bezier(.3,1,.4,1),visibility 0s .25s}
+.pane.active{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition:opacity .28s .05s,transform .32s cubic-bezier(.3,1,.4,1) .05s,visibility 0s}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:.4em;padding:.6em .7em .9em}
+.col{border-radius:.85em;padding:.15em .3em .4em;transition:background .3s}
+.col.active{background:rgba(255,255,255,.055)}
+.colhead{display:block;width:100%;border:0;background:none;color:#cfcfcf;font:600 1em/1 'Nunito',sans-serif;padding:.55em 0 .5em;
+  position:relative;transition:color .25s}
+.colhead::after{content:'';position:absolute;left:28%;right:28%;bottom:.1em;height:.17em;border-radius:1em;background:#4fe0f0;
+  transform:scaleX(0);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
+.col.active .colhead{color:#fff}
+.col.active .colhead::after{transform:scaleX(1)}
+.fld{display:flex;gap:.3em;margin-top:.5em}
+.bdg{flex:0 0 1.95em;height:2.1em;border-radius:.65em;background:#000;display:flex;align-items:center;justify-content:center;
+  font:700 .95em/1 'Nunito',sans-serif}
+.bdg b{font-weight:700}
+.bdg.x{color:#ff2f2f}.bdg.y{color:#b4ff2b}.bdg.z{color:#6b7bff}.bdg.s{color:#fff;font-size:.8em}
+.bdg.xz b:first-child{color:#ff2f2f}.bdg.xz b:last-child{color:#6b7bff;margin-left:-.28em}
+.fld input{min-width:0;flex:1;height:2.1em;border:0;border-radius:.7em;background:#000;color:#80e4ff;padding:0 .55em;
+  font:600 .95em/1 'Nunito',sans-serif;outline:none;transition:box-shadow .2s,opacity .2s}
+.fld input:focus{box-shadow:0 0 0 .14em rgba(79,224,240,.7)}
+.fld input:disabled{opacity:.4}
+.exp-wrap{padding:.9em 1em 1em}
+.exp{height:8em;overflow-y:auto;background:#000;border-radius:.9em;padding:.8em .95em;color:#e8f6a4;
+  font:500 .98em/1.35 'Nunito',sans-serif;word-break:break-all;user-select:text;-webkit-user-select:text;
+  scrollbar-width:thin;scrollbar-color:#444 transparent}
+.copy{display:block;width:100%;margin-top:.9em;border:0;border-radius:.9em;background:#506fff;color:#52e3f5;
+  font:700 1.6em/1 'Fredoka','Nunito',sans-serif;padding:.5em 0;transition:transform .15s,background .25s,color .25s}
+.copy:active{transform:scale(.97)}
+.copy.done{background:#2fbf7a;color:#eafff4;animation:bump .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes bump{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+
+/* ---------- GUI 3 : Texture changer ---------- */
+.g-tex{--w:15.5em;background:#0298b3}
+.g-tex .title{background:#0dc0e0}
+.g-tex .ttl{font-family:'Nunito',sans-serif;font-weight:600;font-size:1.22em}
+.tex-body{padding:1em 1em 1em}
+.preview{width:82%;aspect-ratio:1;margin:.2em auto 1em;border-radius:.4em;outline:.07em dashed rgba(255,255,255,.14)}
+.preview canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.up{display:block;width:100%;border:0;border-radius:.75em;background:#6cf5ff;color:#0a86d6;
+  font:600 1.08em/1 'Fredoka','Nunito',sans-serif;padding:.9em 0;transition:transform .15s,background .2s}
+.up:hover{background:#8afaff}
+.up:active{transform:scale(.97)}
+.note{margin-top:.55em;text-align:center;font:400 .88em/1.2 'Bree Serif',Georgia,serif;color:#fff;transition:color .25s}
+.note.bad{color:#ff2b2b;font-weight:700;text-shadow:0 0 .5em rgba(0,0,0,.4);animation:shake .42s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-.4em)}40%{transform:translateX(.4em)}60%{transform:translateX(-.25em)}80%{transform:translateX(.25em)}}
+
+#fatal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:99;padding:2em;text-align:center;background:#101115;color:#ffab05;font:700 1.1em 'Nunito',sans-serif}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;transition-delay:0s!important}
+}
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <svg viewBox="0 0 12 11" aria-hidden="true">
+    <rect x="1" y="0" width="1" height="1" fill="#1d0d00"/>
+    <rect x="10" y="0" width="1" height="1" fill="#1d0d00"/>
+    <rect x="0" y="1" width="12" height="10" fill="#1d0d00"/>
+    <rect x="0" y="8" width="12" height="3" fill="#3a1e08"/>
+    <rect x="2" y="6" width="1.4" height="1.4" fill="#fff"/>
+    <rect x="8.6" y="6" width="1.4" height="1.4" fill="#fff"/>
+    <rect x="4.5" y="8" width="3" height="1.3" fill="#000"/>
+  </svg>
+  <h1>FMBE Edit</h1>
+  <div class="by">Made by:<br>ZeLuckyMc</div>
+</header>
+
+<canvas id="view"></canvas>
+
+<!-- GUI 1 : Block Entity -->
+<section class="gui g-be" id="guiBE" style="--d:.05s">
+  <div class="title"><span class="ttl">Block Entity</span><button class="fold" aria-label="Buka / tutup"><i class="h"></i><i class="v"></i></button></div>
+  <div class="collapsible"><div class="inner">
+    <div class="be-body"><div class="be-list" id="beList"></div></div>
+  </div></div>
+  <div class="dim" id="beDim"></div>
+  <div class="menu" id="beMenu">
+    <i class="ln l1"></i><i class="ln l2"></i>
+    <button class="pill rn" id="pillRn">Rename</button>
+    <button class="pill dl" id="pillDl">Delete</button>
+    <button class="yb" id="yb" aria-label="Tutup menu"><i></i><i></i></button>
+  </div>
+</section>
+
+<!-- GUI 2 : Main -->
+<section class="gui g-main" id="guiMain" style="--d:.15s">
+  <div class="title"><span class="ttl">Main</span><button class="fold" aria-label="Buka / tutup"><i class="h"></i><i class="v"></i></button></div>
+  <div class="collapsible"><div class="inner">
+    <div class="tabs">
+      <button class="tab active" data-tab="prs">P&amp;R&amp;S</button>
+      <button class="tab" data-tab="expr">Stop Expression</button>
+    </div>
+    <div class="panes">
+      <div class="pane active" id="pane-prs">
+        <div class="cols">
+          <div class="col active" data-mode="position">
+            <button class="colhead">Position</button>
+            <div class="fld"><span class="bdg x">X</span><input data-k="px" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><span class="bdg y">Y</span><input data-k="py" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><span class="bdg z">Z</span><input data-k="pz" autocomplete="off" spellcheck="false"></div>
+          </div>
+          <div class="col" data-mode="rotation">
+            <button class="colhead">Rotation</button>
+            <div class="fld"><span class="bdg x">X</span><input data-k="rx" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><span class="bdg y">Y</span><input data-k="ry" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><span class="bdg z">Z</span><input data-k="rz" autocomplete="off" spellcheck="false"></div>
+          </div>
+          <div class="col" data-mode="scale">
+            <button class="colhead">Scale</button>
+            <div class="fld"><span class="bdg xz"><b>X</b><b>Z</b></span><input data-k="sxz" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><span class="bdg y">Y</span><input data-k="sy" autocomplete="off" spellcheck="false"></div>
+            <div class="fld"><span class="bdg s">Snp</span><input data-k="snap" autocomplete="off" spellcheck="false"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pane" id="pane-expr">
+        <div class="exp-wrap">
+          <div class="exp" id="exp"></div>
+          <button class="copy" id="copyBtn">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- GUI 3 : Texture changer -->
+<section class="gui g-tex" id="guiTex" style="--d:.25s">
+  <div class="title"><span class="ttl">Texture changer</span><button class="fold" aria-label="Buka / tutup"><i class="h"></i><i class="v"></i></button></div>
+  <div class="collapsible"><div class="inner">
+    <div class="tex-body">
+      <div class="preview"><canvas id="texPrev" width="64" height="64"></canvas></div>
+      <button class="up" id="upBtn">Upload Image</button>
+      <div class="note" id="note">Must be 64x64</div>
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+  </div></div>
+</section>
+
+<div id="fatal">Gagal memuat three.js. Periksa koneksi internet lalu muat ulang halaman.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+if (typeof THREE === 'undefined') { document.getElementById('fatal').style.display = 'flex'; return; }
+
+/* ================= helpers & config ================= */
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rad = d => d * Math.PI / 180;
+const deg = r => r * 180 / Math.PI;
+const fmt = n => { let v = Math.round(n * 10000) / 10000; if (v === 0) v = 0; return String(v); };
+
+const DEFAULT_TEX_URL = 'https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/texture.png';
+const ADD_LABEL = '+ Add New Block';   // ganti ke '+ Add New Fox' kalau mau
+
+const state = { foxes: [], selected: null, counter: 0, mode: 'position', snap: 0.1 };
+
+/* ================= texture ================= */
+const texCanvas = document.createElement('canvas');
+texCanvas.width = texCanvas.height = 64;
+const tctx = texCanvas.getContext('2d');
+tctx.imageSmoothingEnabled = false;
+
+function drawFallbackTexture() {
+  tctx.clearRect(0, 0, 64, 64);
+  const tiles = [
+    [0, 0,  '#22e622', '#78ff78'],   // east  (hijau)
+    [16, 0, '#ff5c5c', '#ff7878'],   // north (merah)
+    [32, 0, '#ffff3c', '#ffff78'],   // west  (kuning)
+    [48, 0, '#5a5aff', '#7878ff'],   // south (biru tua)
+    [16, 16, '#3cf0ff', '#78f5ff'],  // up    (biru muda)
+    [48, 16, '#ff8c5a', '#ffa078']   // down  (oren)
+  ];
+  tiles.forEach(t => {
+    tctx.fillStyle = t[2]; tctx.fillRect(t[0], t[1], 16, 16);
+    tctx.fillStyle = t[3]; tctx.fillRect(t[0] + 1, t[1] + 1, 14, 14);
+  });
+}
+
+const tex = new THREE.CanvasTexture(texCanvas);
+tex.magFilter = THREE.NearestFilter;
+tex.minFilter = THREE.NearestFilter;
+tex.generateMipmaps = false;
+
+const prevCanvas = $('#texPrev');
+const pctx = prevCanvas.getContext('2d');
+pctx.imageSmoothingEnabled = false;
+
+function commitTexture() {
+  tex.needsUpdate = true;
+  pctx.clearRect(0, 0, 64, 64);
+  pctx.drawImage(texCanvas, 0, 0);
+}
+drawFallbackTexture();
+commitTexture();
+
+(function loadDefaultTexture() {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function () {
+    try {
+      tctx.clearRect(0, 0, 64, 64);
+      tctx.drawImage(img, 0, 0, 64, 64);
+      commitTexture();
+    } catch (e) { /* tetap pakai fallback */ }
+  };
+  img.src = DEFAULT_TEX_URL;
+})();
+
+const note = $('#note');
+function setNote(bad) {
+  note.classList.remove('bad');
+  if (bad) { void note.offsetWidth; note.classList.add('bad'); }
+}
+$('#upBtn').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', function () {
+  const file = this.files && this.files[0];
+  this.value = '';
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  i
