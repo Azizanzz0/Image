@@ -95,39 +95,84 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .inner::-webkit-scrollbar{display:none}
 
 /* ---------- GUI 1 : Block Entity ---------- */
-.g-be{--w:15.5em;background:#9a5535}
+.g-be{--w:16.5em;background:#9a5535}
 .g-be .title{background:#ffbb5c}
 .be-body{padding:.9em;min-height:12.5em}
 .be-list{--rowH:2.6em;--gap:.65em;position:relative;margin:-.4em;
   height:calc(.8em + (var(--n,1) + 1) * (var(--rowH) + var(--gap)) - var(--gap));
   max-height:50vh;overflow-y:auto;overflow-x:hidden;transition:height .4s cubic-bezier(.3,1.2,.5,1);scrollbar-width:none}
 .be-list::-webkit-scrollbar{display:none}
-.row{position:absolute;left:.4em;right:.4em;top:0;height:var(--rowH);
+.row{position:absolute;left:.4em;right:.4em;top:0;height:var(--rowH);z-index:1;
   transform:translateY(calc(.4em + var(--i,0) * (var(--rowH) + var(--gap))));
-  transition:transform .45s cubic-bezier(.34,1.35,.5,1)}
+  transition:transform .45s cubic-bezier(.34,1.35,.5,1),opacity .28s,left .3s}
+.row.grp-row{z-index:2}
+.row.child{left:1.55em}
+.row.child::before{content:'';position:absolute;left:-.85em;top:-.7em;width:.6em;height:calc(50% + .7em);pointer-events:none;
+  border-left:.14em solid rgba(255,255,255,.38);border-bottom:.14em solid rgba(255,255,255,.38);border-radius:0 0 0 .45em}
+.row.hid{opacity:0;pointer-events:none;z-index:0}
+.row.cancel-row{opacity:0;pointer-events:none;z-index:0}
+#beList.selmode .row.cancel-row{opacity:1;pointer-events:auto;z-index:1}
 .pw{height:100%;transition:transform .22s,opacity .22s;animation:pop .42s cubic-bezier(.2,1.5,.4,1) backwards}
+.row.removing .pw{transform:scale(.7);opacity:0}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+
 .fox-btn{display:flex;align-items:center;height:100%;padding:0 .3em 0 .6em;border-radius:.8em;background:#ff7622;
   box-shadow:0 .18em 0 rgba(110,35,0,.35);cursor:pointer;position:relative;
   transition:transform .2s,background .25s,box-shadow .25s}
 .fox-btn:active{transform:scale(.97)}
-.fox-btn .cube{width:1.85em;height:1.85em;flex:none;transition:transform .3s cubic-bezier(.3,1.6,.5,1),filter .25s}
-.fox-btn .name,.fox-btn .name-edit{flex:1 1 0;min-width:0;text-align:center;font:600 1.15em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;color:#fff}
-.fox-btn .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 .3em}
-.name-edit{width:0;background:rgba(0,0,0,.22);border:0;border-bottom:.12em solid #fff;border-radius:.4em;outline:none;padding:.2em .3em;margin:0 .3em}
+.fox-btn.grp{background:#e2521a;padding-left:.55em}
+.fox-btn .ico{width:1.85em;height:1.85em;flex:none;transition:transform .3s cubic-bezier(.3,1.6,.5,1),filter .25s}
+.fox-btn .name{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 .3em;
+  font:600 1.1em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;color:#fff}
 .fox-btn.sel{background:linear-gradient(180deg,#ffa347,#ff7a22);
   box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.85);animation:glow 1.9s ease-in-out infinite alternate}
-.fox-btn.sel .cube{transform:scale(1.12) rotate(-6deg);filter:brightness(1.7)}
-.fox-btn.add{justify-content:center;padding:0 .6em}
-.fox-btn.add .name{font-size:1.1em}
-.row.removing .pw{transform:scale(.7);opacity:0}
-@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+.fox-btn.target{box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.7)}
+.fox-btn.grp.sel{background:linear-gradient(180deg,#ff8a3d,#ee5f1c)}
+.fox-btn.sel .ico{transform:scale(1.12) rotate(-6deg);filter:brightness(1.7)}
 @keyframes glow{from{box-shadow:0 0 0 .17em #fff3b8,0 0 .5em 0 rgba(255,222,110,.6)}to{box-shadow:0 0 0 .17em #fff3b8,0 0 1em .15em rgba(255,222,110,.95)}}
-.dots{flex:none;width:2em;height:100%;margin-right:.1em;border:0;background:none;padding:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:.2em}
+
+/* tombol buka/tutup Group */
+.chev{flex:none;width:1.9em;height:1.9em;border:0;border-radius:50%;background:rgba(255,255,255,.16);padding:0;margin-right:.15em;
+  display:grid;place-items:center;transition:background .2s,opacity .2s}
+.chev:hover{background:rgba(255,255,255,.3)}
+.chev svg{width:1.1em;height:1.1em;transition:transform .36s cubic-bezier(.3,1.4,.5,1)}
+.chev path{fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.row.open .chev svg{transform:rotate(180deg)}
+.chev.empty{opacity:.35;pointer-events:none}
+
+/* ":" <-> kotak centang */
+.tail{position:relative;flex:none;width:2em;height:100%;margin-right:.1em}
+.dots{position:absolute;inset:0;border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;
+  transition:transform .3s cubic-bezier(.3,1.4,.5,1),opacity .2s}
 .dots i{width:.36em;height:.36em;border-radius:50%;background:#fff;transition:transform .2s}
 .dots:hover i{transform:scale(1.25)}
+#beList.selmode .dots{transform:scale(0) rotate(90deg);opacity:0;pointer-events:none}
+.chk{position:absolute;left:50%;top:50%;width:1.6em;height:1.6em;margin:-.8em 0 0 -.8em;opacity:0;transform:scale(0) rotate(-45deg);pointer-events:none;
+  transition:transform .36s cubic-bezier(.2,1.7,.4,1),opacity .2s}
+#beList.selmode .chk{opacity:1;transform:none;pointer-events:auto}
+#beList.selmode .chk.dis{opacity:.35}
+#beList.selmode .chk.hide{opacity:0;transform:scale(0);pointer-events:none}
+.chk .box{width:100%;height:100%;border-radius:.42em;background:#fff5da;border:.2em solid #ffbf87;display:flex;align-items:center;justify-content:center;
+  transition:background .2s}
+.chk .box svg{width:80%;height:80%;overflow:visible}
+.chk .box path{fill:none;stroke:#111;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16;stroke-dashoffset:16;
+  transition:stroke-dashoffset .32s ease .08s}
+.chk.on .box{background:#ffe9b8;animation:chkpop .42s cubic-bezier(.2,1.6,.4,1)}
+.chk.on .box path{stroke-dashoffset:0}
+@keyframes chkpop{0%{transform:scale(.7)}55%{transform:scale(1.22)}100%{transform:scale(1)}}
 
-/* dim + menu (Rename / Delete) */
+/* tombol Add <-> Add Group, dan Cancel */
+.fox-btn.add{position:relative;justify-content:center;padding:0}
+.fox-btn.add .lbl{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#fff;
+  font:600 1.1em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;transition:opacity .25s,transform .34s cubic-bezier(.3,1.3,.5,1)}
+.fox-btn.add .lbl.g,.fox-btn.add .lbl.m{opacity:0;transform:translateY(.9em)}
+#beList.selmode .add .lbl.a{opacity:0;transform:translateY(-.9em)}
+#beList.selnew .add .lbl.g{opacity:1;transform:none}
+#beList.seladd .add .lbl.m{opacity:1;transform:none}
+.fox-btn.cancel{justify-content:center;background:#c25a2c;padding:0}
+.fox-btn.cancel .name{flex:none;font-size:1.1em;padding:0}
+
+/* dim + menu (Duplicate / Select / Delete) */
 .dim{position:absolute;inset:0;z-index:20;background:rgba(28,10,0,.66);opacity:0;pointer-events:none;transition:opacity .28s}
 .menu-open .dim{opacity:1;pointer-events:auto}
 .menu{position:absolute;z-index:21;width:0;height:0;pointer-events:none}
@@ -141,7 +186,8 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .menu .pill{position:absolute;border:0;border-radius:2em;background:#fff;color:#4a2a12;padding:.5em 1em;
   font:700 .85em/1 'Nunito',ui-rounded,system-ui,sans-serif;white-space:nowrap;box-shadow:0 .12em .4em rgba(0,0,0,.3);
   transform:translate(-50%,-50%) scale(0);transition:transform .34s cubic-bezier(.2,1.7,.4,1) .12s,background .15s}
-.menu .pill.dl{color:#c2321f;transition-delay:.18s}
+.menu .pill.p2{transition-delay:.17s}
+.menu .pill.p3{transition-delay:.22s;color:#c2321f}
 .menu .pill:active{background:#ffe9c8}
 .menu-open .menu .yb{transform:scale(1);pointer-events:auto}
 .menu-open .menu .ln{transform:rotate(var(--ang,0deg)) scaleX(1)}
@@ -151,9 +197,11 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .g-main{--w:23em;background:#474747}
 .g-main .title{background:#555}
 .tabs{display:flex;justify-content:space-between;gap:.5em}
-.tab{border:0;padding:.4em 1.5em .45em;border-radius:0 0 .85em .85em;background:#505050;color:#b4b4b4;
-  font:600 1.12em/1.1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;transition:background .25s,color .25s;white-space:nowrap}
+.tab{border:0;padding:.4em 1.5em .45em;border-radius:0 0 .85em .85em;background:#505050;color:#b4b4b4;max-width:14em;overflow:hidden;
+  font:600 1.12em/1.1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;white-space:nowrap;
+  transition:background .25s,color .25s,max-width .34s cubic-bezier(.3,.9,.3,1),padding .34s,opacity .25s,margin .34s}
 .tab.active{background:#727272;color:#fff}
+.tab.gone{max-width:0;padding-left:0;padding-right:0;opacity:0;margin-left:-.5em;pointer-events:none}
 .panes{display:grid}
 .pane{grid-area:1/1;min-width:0;opacity:0;visibility:hidden;transform:translateY(.7em);pointer-events:none;
   transition:opacity .25s,transform .3s cubic-bezier(.3,1,.4,1),visibility 0s .25s}
@@ -162,12 +210,14 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .col{min-width:0;border-radius:.85em;padding:.15em .3em .4em;transition:background .3s}
 .col.active{background:rgba(255,255,255,.055)}
 .colhead{display:block;width:100%;border:0;background:none;color:#cfcfcf;font:600 1em/1 'Nunito',ui-rounded,system-ui,sans-serif;padding:.55em 0 .5em;
-  position:relative;transition:color .25s}
+  position:relative;transition:color .25s,opacity .25s}
 .colhead::after{content:'';position:absolute;left:28%;right:28%;bottom:.1em;height:.17em;border-radius:1em;background:#4fe0f0;
   transform:scaleX(0);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
 .col.active .colhead{color:#fff}
 .col.active .colhead::after{transform:scaleX(1)}
-.fld{display:flex;gap:.3em;margin-top:.5em;min-width:0}
+.col.locked .colhead{opacity:.4;pointer-events:none}
+.col.locked .fld:not(.snapf){opacity:.4}
+.fld{display:flex;gap:.3em;margin-top:.5em;min-width:0;transition:opacity .25s}
 .bdg{flex:0 0 1.95em;height:2.1em;border-radius:.65em;background:#000;display:flex;align-items:center;justify-content:center;
   font:700 .95em/1 'Nunito',ui-rounded,system-ui,sans-serif}
 .bdg b{font-weight:700}
@@ -237,9 +287,10 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
   </div></div>
   <div class="dim" id="beDim"></div>
   <div class="menu" id="beMenu">
-    <i class="ln l1"></i><i class="ln l2"></i>
-    <button class="pill rn" id="pillRn">Rename</button>
-    <button class="pill dl" id="pillDl">Delete</button>
+    <i class="ln l1"></i><i class="ln l2"></i><i class="ln l3"></i>
+    <button class="pill p1" id="pillDup">Duplicate</button>
+    <button class="pill p2" id="pillSel">Select</button>
+    <button class="pill p3" id="pillDl">Delete</button>
     <button class="yb" id="yb" aria-label="Tutup menu"><i></i><i></i></button>
   </div>
 </section>
@@ -267,11 +318,11 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
             <div class="fld"><span class="bdg y">Y</span><input data-k="ry" autocomplete="off" spellcheck="false"></div>
             <div class="fld"><span class="bdg z">Z</span><input data-k="rz" autocomplete="off" spellcheck="false"></div>
           </div>
-          <div class="col" data-mode="scale">
+          <div class="col" data-mode="scale" id="scaleCol">
             <button class="colhead">Scale</button>
             <div class="fld"><span class="bdg xz"><b>X</b><b>Z</b></span><input data-k="sxz" autocomplete="off" spellcheck="false"></div>
             <div class="fld"><span class="bdg y">Y</span><input data-k="sy" autocomplete="off" spellcheck="false"></div>
-            <div class="fld"><span class="bdg s">Snp</span><input data-k="snap" autocomplete="off" spellcheck="false"></div>
+            <div class="fld snapf"><span class="bdg s">Snp</span><input data-k="snap" autocomplete="off" spellcheck="false"></div>
           </div>
         </div>
       </div>
@@ -304,8 +355,9 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 
 /* =====================================================================
    FMBE Edit  -  satu file, tanpa library eksternal.
-   Bagian 3D memakai WebGL murni (cadangan: Canvas 2D). Semua GUI berdiri
-   sendiri, jadi tetap jalan walaupun bagian 3D bermasalah.
+   3D memakai WebGL murni (cadangan: Canvas 2D). Semua GUI berdiri sendiri,
+   jadi tetap jalan walaupun bagian 3D bermasalah.
+   Rotation order: ZYX  ->  R = Rz * Ry * Rx
    ===================================================================== */
 
 /* ================= util ================= */
@@ -315,6 +367,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const rad = d => d * Math.PI / 180;
 const deg = r => r * 180 / Math.PI;
 const fmt = n => { let v = Math.round(n * 10000) / 10000; if (v === 0) v = 0; return String(v); };
+const r4 = n => { const v = Math.round(n * 10000) / 10000; return v === 0 ? 0 : v; };
 function fail(where, err) {
   try { console.error(where, err); } catch (_) {}
   if (window.__showError) window.__showError(where + ': ' + ((err && err.message) || err));
@@ -343,6 +396,7 @@ const V = {
   norm: a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
 };
 // matriks 3x3 (row-major, 9 angka)
+const I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 const rotX = a => { const c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; };
 const rotY = a => { const c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; };
 const rotZ = a => { const c = Math.cos(a), s = Math.sin(a); return [c, -s, 0, s, c, 0, 0, 0, 1]; };
@@ -354,6 +408,8 @@ function mul3(a, b) {
 }
 const mulv3 = (m, v) => [m[0] * v[0] + m[1] * v[1] + m[2] * v[2], m[3] * v[0] + m[4] * v[1] + m[5] * v[2], m[6] * v[0] + m[7] * v[1] + m[8] * v[2]];
 const col3 = (m, j) => [m[j], m[3 + j], m[6 + j]];
+// urutan ZYX:  R = Rz * Ry * Rx   (derajat)
+const eulerR = rot => mul3(rotZ(rad(rot[2])), mul3(rotY(rad(rot[1])), rotX(rad(rot[0]))));
 // matriks 4x4 (column-major, 16 angka)
 function mul4(a, b) {
   const o = new Array(16);
@@ -365,16 +421,48 @@ function mul4(a, b) {
   return o;
 }
 
-/* ================= state ================= */
-const state = { foxes: [], selected: null, counter: 0, mode: 'position', snap: 0.1 };
-const foxes = state.foxes;
+/* ================= state & transform ================= */
+// node: fox {type:'fox', name, pos, rot, sxz, sy, group}  |  group {type:'group', name, pos, rot, children[], open}
+const state = { items: [], selected: null, mode: 'position', snap: 0.1, selMode: null, selTarget: null };
+const items = state.items;                 // daftar tingkat atas (Fox atau Group)
+let renderFoxes = [];                      // semua Fox (rata) yang digambar
 let dirty = true;
 function requestRender() { dirty = true; }
 
-/* rotation order ZYX  ->  R = Rz * Ry * Rx */
-function blockXform(f) {
-  const R = mul3(rotZ(rad(f.rot[2])), mul3(rotY(rad(f.rot[1])), rotX(rad(f.rot[0]))));
-  return { R: R, c: [f.pos[0], 8 + f.pos[1], f.pos[2]], ex: col3(R, 0), ey: col3(R, 1), ez: col3(R, 2), sx: f.sxz, sy: f.sy, sz: f.sxz };
+function flatNodes() {
+  const out = [];
+  items.forEach(it => { out.push(it); if (it.type === 'group') it.children.forEach(c => out.push(c)); });
+  return out;
+}
+function rebuildFlat() { renderFoxes = flatNodes().filter(n => n.type === 'fox'); }
+
+// nomor terkecil yang belum dipakai (Fox #1 dihapus -> yang baru kembali jadi Fox #1)
+function nextNum(type) {
+  const used = {};
+  flatNodes().forEach(n => { if (n.type === type) used[n.num] = true; });
+  let i = 1;
+  while (used[i]) i++;
+  return i;
+}
+function newFox() {
+  const f = { type: 'fox', num: nextNum('fox'), name: '', pos: [0, 0, 0], rot: [0, 0, 0], sxz: 1, sy: 1, group: null, row: null };
+  f.name = 'Fox #' + f.num;
+  return f;
+}
+function newGroup() {                       // group = null: mulai di pos/rot 0, skala tidak bisa diubah
+  const g = { type: 'group', num: nextNum('group'), name: '', pos: [0, 0, 0], rot: [0, 0, 0], sxz: 1, sy: 1, children: [], open: true, row: null };
+  g.name = 'Group #' + g.num;
+  return g;
+}
+function cloneFox(f) {
+  const c = newFox();
+  c.pos = f.pos.slice(); c.rot = f.rot.slice(); c.sxz = f.sxz; c.sy = f.sy;
+  return c;
+}
+
+function blockXform(f) {                    // Fox selalu berputar/berpindah di titik pusatnya sendiri
+  const R = eulerR(f.rot);
+  return { R: R, c: [f.pos[0], 8 + f.pos[1], f.pos[2]], ex: col3(R, 0), ey: col3(R, 1), ez: col3(R, 2), sx: f.sxz, sy: f.sy, sz: f.sxz, PR: I3 };
 }
 function toWorld(x, p) {
   const a = p[0] * x.sx, b = p[1] * x.sy, c = p[2] * x.sz;
@@ -388,6 +476,7 @@ function modelMat(x) {
           x.ez[0] * x.sz, x.ez[1] * x.sz, x.ez[2] * x.sz, 0,
           x.c[0], x.c[1], x.c[2], 1];
 }
+
 function getVal(f, k) {
   switch (k) {
     case 'px': return f.pos[0]; case 'py': return f.pos[1]; case 'pz': return f.pos[2];
@@ -396,19 +485,35 @@ function getVal(f, k) {
   }
   return 0;
 }
+const r6 = x => Math.round(x * 1e6) / 1e6;
+// Ubah nilai pos/rot. Kalau yang diubah Group, semua Fox anggotanya ikut berubah sebesar selisihnya
+// (tiap Fox tetap di titik pusatnya sendiri, bukan berputar mengelilingi pusat Group).
+function setInternal(n, kind, idx, v) {
+  const old = n[kind][idx];
+  n[kind][idx] = v;
+  if (n.type === 'group') {
+    const d = v - old;
+    if (d !== 0) n.children.forEach(c => { c[kind][idx] = r6(c[kind][idx] + d); });
+  }
+}
 function setVal(f, k, v) {
   switch (k) {
-    case 'px': f.pos[0] = v; break; case 'py': f.pos[1] = v; break; case 'pz': f.pos[2] = v; break;
-    case 'rx': f.rot[0] = v; break; case 'ry': f.rot[1] = v; break; case 'rz': f.rot[2] = v; break;
+    case 'px': setInternal(f, 'pos', 0, v); break; case 'py': setInternal(f, 'pos', 1, v); break; case 'pz': setInternal(f, 'pos', 2, v); break;
+    case 'rx': setInternal(f, 'rot', 0, v); break; case 'ry': setInternal(f, 'rot', 1, v); break; case 'rz': setInternal(f, 'rot', 2, v); break;
     case 'sxz': f.sxz = v; break;   case 'sy': f.sy = v; break;
   }
 }
-// variabel yang di-invers aditif: xpos, zpos, xrot, yrot
+/* Invers aditif: xpos, zpos, xrot, yrot dibaca berlawanan tanda oleh P&R&S dan Stop Expression.
+   Contoh: rotasi Y model = 90  ->  P&R&S dan Stop Expression membaca -90. */
+const INV = { px: true, pz: true, rx: true, ry: true };
+const toDisp = (k, v) => INV[k] ? -v : v;      // nilai model -> angka yang ditampilkan
+const fromDisp = (k, v) => INV[k] ? -v : v;    // angka yang diketik -> nilai model
 function exprFor(f) {
-  if (!f) return '""';
-  return '"v.xpos=' + fmt(-f.pos[0]) + ';v.ypos=' + fmt(f.pos[1]) + ';v.zpos=' + fmt(-f.pos[2]) +
-         ';v.xrot=' + fmt(-f.rot[0]) + ';v.yrot=' + fmt(-f.rot[1]) + ';v.zrot=' + fmt(f.rot[2]) +
-         ';v.xzscale=' + fmt(f.sxz) + ';v.yscale=' + fmt(f.sy) + ';"';
+  if (!f || f.type !== 'fox') return '""';
+  const d = k => fmt(toDisp(k, getVal(f, k)));
+  return '"v.xpos=' + d('px') + ';v.ypos=' + d('py') + ';v.zpos=' + d('pz') +
+         ';v.xrot=' + d('rx') + ';v.yrot=' + d('ry') + ';v.zrot=' + d('rz') +
+         ';v.xzscale=' + d('sxz') + ';v.yscale=' + d('sy') + ';"';
 }
 
 /* ================= texture ================= */
@@ -522,7 +627,7 @@ function fitDistance() {
   orbit.radius = 23 / Math.sin(Math.min(vf, hf) / 2);
 }
 function viewZ(p) { return V.dot(V.sub(p, cam.eye), cam.f); }
-function project(p) {                       // -> [x, y] dalam px CSS kanvas, atau null
+function project(p) {                       // -> [x, y, z] (px CSS kanvas), atau null
   const d = V.sub(p, cam.eye);
   const z = V.dot(d, cam.f);
   if (z < 0.3) return null;
@@ -553,7 +658,7 @@ function projMat() {
 }
 function panBy(dx, dy) {
   const upp = (2 * orbit.radius * cam.tanV) / Math.max(1, cam.H);
-  let t = V.madd(V.madd(orbit.target, cam.r, -dx * upp), cam.u, dy * upp);
+  const t = V.madd(V.madd(orbit.target, cam.r, -dx * upp), cam.u, dy * upp);
   orbit.target = [clamp(t[0], -200, 200), clamp(t[1], -50, 200), clamp(t[2], -200, 200)];
 }
 
@@ -563,7 +668,7 @@ let cMain = $('#cGL');
 const gctx = cGrid.getContext('2d');
 const octx = cOv.getContext('2d');
 let mctx = null;      // konteks 2D (hanya kalau WebGL tidak ada)
-let GL = null;        // {gl, prog, ...}
+let GL = null;
 let dpr = 1, fitted = false;
 
 /* ---------- WebGL ---------- */
@@ -623,8 +728,8 @@ function drawBlocksGL() {
   gl.bindTexture(gl.TEXTURE_2D, GL.tex);
   gl.uniform1i(GL.uTex, 0);
   const VP = mul4(projMat(), viewMat());
-  for (let i = 0; i < foxes.length; i++) {
-    const mvp = mul4(VP, modelMat(blockXform(foxes[i])));
+  for (let i = 0; i < renderFoxes.length; i++) {
+    const mvp = mul4(VP, modelMat(blockXform(renderFoxes[i])));
     gl.uniformMatrix4fv(GL.uMVP, false, new Float32Array(mvp));
     gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
   }
@@ -636,10 +741,10 @@ function drawBlocksFallback() {
   ctx.clearRect(0, 0, cam.W, cam.H);
   const data = getTexData();
   if (!data) return;
-  const items = foxes.map(f => { const xf = blockXform(f); return { xf: xf, d: V.len(V.sub(xf.c, cam.eye)) }; })
-                     .sort((a, b) => b.d - a.d);
+  const list = renderFoxes.map(f => { const xf = blockXform(f); return { xf: xf, d: V.len(V.sub(xf.c, cam.eye)) }; })
+                          .sort((a, b) => b.d - a.d);
   ctx.lineWidth = 0.8; ctx.lineJoin = 'round';
-  items.forEach(it => {
+  list.forEach(it => {
     const xf = it.xf;
     FACES.forEach(face => {
       const fcw = toWorld(xf, [face.n[0] * H8, face.n[1] * H8, face.n[2] * H8]);
@@ -732,9 +837,21 @@ const AX_IDX = { x: 0, y: 1, z: 2 };
 const GZ_LEN = 0.17;
 let hoverAxis = null, dragAxis = null;
 
-function gimbal(f) {                        // sumbar cincin rotasi untuk urutan ZYX
-  const Rz = rotZ(rad(f.rot[2])), Ry = rotY(rad(f.rot[1]));
-  return { z: [0, 0, 1], y: mulv3(Rz, [0, 1, 0]), x: mulv3(mul3(Rz, Ry), [1, 0, 0]) };
+// info transform dari node terpilih (Fox atau Group)
+function selInfo(s) {
+  if (s.type === 'group') return { c: s.pos.slice(), PR: I3, R: eulerR(s.rot) };
+  const x = blockXform(s);
+  return { c: x.c, PR: x.PR, R: x.R, ex: x.ex, ey: x.ey, ez: x.ez };
+}
+function effMode() { return (state.selected && state.selected.type === 'group' && state.mode === 'scale') ? 'position' : state.mode; }
+// sumbu cincin rotasi untuk urutan ZYX (R = Rz*Ry*Rx), sudah dalam ruang dunia
+function gimbal(s, PR) {
+  const Rz = rotZ(rad(s.rot[2])), Ry = rotY(rad(s.rot[1]));
+  return {
+    z: mulv3(PR, [0, 0, 1]),
+    y: mulv3(PR, mulv3(Rz, [0, 1, 0])),
+    x: mulv3(PR, mulv3(mul3(Rz, Ry), [1, 0, 0]))
+  };
 }
 function planeBasis(a) {
   const helper = Math.abs(a[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
@@ -742,31 +859,32 @@ function planeBasis(a) {
   return { u: u, v: V.cross(a, u) };
 }
 function computeGizmo() {
-  const f = state.selected;
-  if (!f) return null;
-  const xf = blockXform(f), c = xf.c;
+  const s = state.selected;
+  if (!s) return null;
+  const info = selInfo(s), c = info.c;
   if (viewZ(c) < 0.5) return null;
   const sc = project(c);
   if (!sc) return null;
   const k = V.len(V.sub(c, cam.eye)) * cam.tanV * 2 * GZ_LEN;
-  const g = { c: c, k: k, sc: sc, h: {}, mode: state.mode };
-  if (state.mode === 'rotation') {
-    const ax = gimbal(f);
+  const mode = effMode();
+  const g = { c: c, k: k, sc: sc, h: {}, mode: mode };
+  if (mode === 'rotation') {
+    const ax = gimbal(s, info.PR);
     ['x', 'y', 'z'].forEach(a => {
-      const b = planeBasis(ax[a]), pts = [];
+      const b = planeBasis(V.norm(ax[a])), pts = [];
       let ok = true;
       for (let i = 0; i <= 72; i++) {
         const t = i / 72 * Math.PI * 2;
         const p = V.add(c, V.add(V.mul(b.u, Math.cos(t) * 0.8 * k), V.mul(b.v, Math.sin(t) * 0.8 * k)));
-        const s = project(p);
-        if (!s) { ok = false; break; }
-        pts.push(s);
+        const sp = project(p);
+        if (!sp) { ok = false; break; }
+        pts.push(sp);
       }
       if (ok) g.h[a] = { kind: 'ring', pts: pts };
     });
   } else {
-    const pos = state.mode === 'position';
-    const dirs = pos ? { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] } : { x: xf.ex, y: xf.ey, z: xf.ez };
+    const pos = mode === 'position';
+    const dirs = pos ? { x: col3(info.PR, 0), y: col3(info.PR, 1), z: col3(info.PR, 2) } : { x: info.ex, y: info.ey, z: info.ez };
     ['x', 'y', 'z'].forEach(a => {
       const s1 = project(V.madd(c, dirs[a], k));
       if (s1) g.h[a] = { kind: pos ? 'arrow' : 'box', s0: sc, s1: s1 };
@@ -844,7 +962,7 @@ function drawGizmo(ctx) {
   ctx.fillStyle = '#fff';
   ctx.beginPath(); ctx.arc(g.sc[0], g.sc[1], 3.4, 0, Math.PI * 2); ctx.fill();
 }
-function drawOutline(ctx, f) {              // garis biru di sisi block yang terlihat
+function drawOutline(ctx, f, color, lw) {     // garis di sisi block yang terlihat
   const xf = blockXform(f);
   const corners = [];
   for (let i = 0; i < 8; i++) corners.push(toWorld(xf, [(i & 1) ? H8 : -H8, (i & 2) ? H8 : -H8, (i & 4) ? H8 : -H8]));
@@ -854,7 +972,7 @@ function drawOutline(ctx, f) {              // garis biru di sisi block yang ter
     const v = V.mul(axes[a], (s ? 1 : -1) * H8 * scl[a]);
     front[a][s] = V.dot(V.sub(V.add(xf.c, v), cam.eye), v) < 0;
   }
-  ctx.lineWidth = 2.6; ctx.strokeStyle = '#4da3ff'; ctx.lineCap = 'round';
+  ctx.lineWidth = lw; ctx.strokeStyle = color; ctx.lineCap = 'round';
   ctx.beginPath();
   for (let a = 0; a < 3; a++) {
     const b = (a + 1) % 3, c = (a + 2) % 3;
@@ -867,11 +985,28 @@ function drawOutline(ctx, f) {              // garis biru di sisi block yang ter
   }
   ctx.stroke();
 }
+function drawGroupMarkers(ctx) {              // penanda "null" untuk tiap Group
+  ctx.lineCap = 'round';
+  items.forEach(g => {
+    if (g.type !== 'group') return;
+    const p = project(g.pos);
+    if (!p) return;
+    ctx.strokeStyle = state.selected === g ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.5)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], 6, 0, Math.PI * 2);
+    ctx.moveTo(p[0] - 11, p[1]); ctx.lineTo(p[0] + 11, p[1]);
+    ctx.moveTo(p[0], p[1] - 11); ctx.lineTo(p[0], p[1] + 11);
+    ctx.stroke();
+  });
+}
 function drawOverlay() {
   octx.clearRect(0, 0, cam.W, cam.H);
-  const f = state.selected;
-  if (!f) return;
-  drawOutline(octx, f);
+  drawGroupMarkers(octx);
+  const s = state.selected;
+  if (!s) return;
+  if (s.type === 'group') s.children.forEach(c => drawOutline(octx, c, 'rgba(77,163,255,.6)', 1.8));
+  else drawOutline(octx, s, '#4da3ff', 2.6);
   drawGizmo(octx);
 }
 
@@ -915,20 +1050,20 @@ function localXY(e) {
 let drag = null;
 
 function startDrag(axis, e) {
-  const f = state.selected, mode = state.mode;
+  const s = state.selected, mode = effMode();
   updateCam();
-  const xf = blockXform(f), P = xf.c;
+  const info = selInfo(s), P = info.c;
   const p = localXY(e), ray = pointerRay(p[0], p[1]);
-  const d = { id: e.pointerId, f: f, mode: mode, axis: axis, P: P };
+  const d = { id: e.pointerId, f: s, mode: mode, axis: axis, P: P };
   if (mode !== 'rotation') {
-    let dir = axis === 'x' ? [1, 0, 0] : axis === 'y' ? [0, 1, 0] : [0, 0, 1];
-    if (mode === 'scale') dir = mulv3(xf.R, dir);
+    const u = axis === 'x' ? [1, 0, 0] : axis === 'y' ? [0, 1, 0] : [0, 0, 1];
+    const dir = mulv3(mode === 'scale' ? info.R : info.PR, u);
     const t0 = lineParam(P, dir, ray);
     if (t0 === null) return false;
     d.dir = dir; d.t0 = t0;
-    d.start = mode === 'position' ? f.pos[AX_IDX[axis]] : (axis === 'y' ? f.sy : f.sxz);
+    d.start = mode === 'position' ? s.pos[AX_IDX[axis]] : (axis === 'y' ? s.sy : s.sxz);
   } else {
-    const a = V.norm(gimbal(f)[axis]), b = planeBasis(a);
+    const a = V.norm(gimbal(s, info.PR)[axis]), b = planeBasis(a);
     d.angleAt = function (rr) {
       const den = V.dot(a, rr.d);
       if (Math.abs(den) < 1e-3) return null;
@@ -938,7 +1073,7 @@ function startDrag(axis, e) {
     };
     const a0 = d.angleAt(ray);
     if (a0 === null) return false;
-    d.last = a0; d.acc = 0; d.start = f.rot[AX_IDX[axis]];
+    d.last = a0; d.acc = 0; d.start = s.rot[AX_IDX[axis]];
   }
   drag = d; dragAxis = axis; requestRender();
   return true;
@@ -949,7 +1084,7 @@ function updateDrag(e) {
   const p = localXY(e), ray = pointerRay(p[0], p[1]);
   if (d.mode === 'position') {
     const t = lineParam(d.P, d.dir, ray); if (t === null) return;
-    f.pos[AX_IDX[d.axis]] = snapVal(d.start + (t - d.t0));
+    setInternal(f, 'pos', AX_IDX[d.axis], snapVal(d.start + (t - d.t0)));
   } else if (d.mode === 'scale') {
     const t = lineParam(d.P, d.dir, ray); if (t === null) return;
     const v = snapVal(d.start + (t - d.t0) / 8);
@@ -960,7 +1095,7 @@ function updateDrag(e) {
     while (dl > Math.PI) dl -= 2 * Math.PI;
     while (dl < -Math.PI) dl += 2 * Math.PI;
     d.acc += dl; d.last = ang;
-    f.rot[AX_IDX[d.axis]] = snapVal(d.start + deg(d.acc));
+    setInternal(f, 'rot', AX_IDX[d.axis], snapVal(d.start + deg(d.acc)));
   }
   syncFields(); syncExpr(); requestRender();
 }
@@ -1109,134 +1244,323 @@ function relayout() {
   });
 }
 
-/* ================= GUI 1 : daftar Fox ================= */
+/* ================= GUI 1 : daftar Fox & Group ================= */
 const beList = $('#beList');
-const CUBE_SVG = '<svg class="cube" viewBox="0 0 24 24" aria-hidden="true">' +
+const CUBE_SVG = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">' +
   '<polygon points="12,2 22,7.5 12,13 2,7.5" fill="#5e5e5e"/>' +
   '<polygon points="2,7.5 12,13 12,23.5 2,18" fill="#363636"/>' +
   '<polygon points="12,13 22,7.5 22,18 12,23.5" fill="#202020"/></svg>';
+const GROUP_SVG = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<circle cx="12" cy="12" r="6.2" fill="none" stroke="#3b3b3b" stroke-width="2.6"/>' +
+  '<path d="M12 1.8v5M12 17.2v5M1.8 12h5M17.2 12h5" stroke="#555" stroke-width="2.6" stroke-linecap="round"/>' +
+  '<circle cx="12" cy="12" r="1.9" fill="#222"/></svg>';
+const CHEV_HTML = '<button class="chev" aria-label="Buka / tutup group"><svg viewBox="0 0 16 16"><path d="M3.5 6L8 10.5L12.5 6"/></svg></button>';
+const TAIL_HTML = '<div class="tail"><button class="dots" aria-label="Menu"><i></i><i></i><i></i></button>' +
+  '<div class="chk"><div class="box"><svg viewBox="0 0 16 16"><path d="M3.2 8.6L6.6 12L12.8 4.4"/></svg></div></div></div>';
 
+/* tombol Add (berubah jadi Add Group saat mode select) dan Cancel */
 const addRow = document.createElement('div');
 addRow.className = 'row add-row';
-addRow.innerHTML = '<div class="pw"><div class="fox-btn add"><span class="name"></span></div></div>';
-$('.name', addRow).textContent = ADD_LABEL;
-addRow.addEventListener('click', () => addFox());
+addRow.innerHTML = '<div class="pw"><div class="fox-btn add"><span class="lbl a"></span><span class="lbl g">+ Add Group</span><span class="lbl m">+ Add Members</span></div></div>';
+$('.lbl.a', addRow).textContent = ADD_LABEL;
+addRow.addEventListener('click', () => {
+  if (state.selMode === 'new') makeGroupFromChecked();
+  else if (state.selMode === 'add') addMembersToTarget();
+  else addFoxTop();
+});
 beList.appendChild(addRow);
 
+const cancelRow = document.createElement('div');
+cancelRow.className = 'row cancel-row';
+cancelRow.innerHTML = '<div class="pw"><div class="fox-btn cancel"><span class="name">Cancel</span></div></div>';
+cancelRow.addEventListener('click', () => { if (state.selMode) exitSelect(); });
+beList.appendChild(cancelRow);
+
 function layoutList() {
-  foxes.forEach((f, i) => f.row.style.setProperty('--i', i));
-  addRow.style.setProperty('--i', foxes.length);
-  beList.style.setProperty('--n', foxes.length);
-}
-function makeRow(f) {
-  const row = document.createElement('div');
-  row.className = 'row';
-  row.innerHTML = '<div class="pw"><div class="fox-btn">' + CUBE_SVG + '<span class="name"></span>' +
-    '<button class="dots" aria-label="Menu"><i></i><i></i><i></i></button></div></div>';
-  $('.name', row).textContent = f.name;
-  row.style.setProperty('--i', foxes.length - 1);
-  $('.fox-btn', row).addEventListener('click', e => {
-    if (e.target.closest && (e.target.closest('.dots') || e.target.closest('.name-edit'))) return;
-    select(f);
+  let vis = 0;
+  items.forEach(it => {
+    const gi = vis;
+    setRowState(it, false, gi, false);
+    vis++;
+    if (it.type === 'group') {
+      it.row.classList.toggle('open', it.open);
+      it.chev.classList.toggle('empty', it.children.length === 0);
+      it.children.forEach(ch => {
+        const hidden = !it.open;
+        setRowState(ch, true, hidden ? gi : vis, hidden);
+        if (!hidden) vis++;
+      });
+    }
   });
-  $('.dots', row).addEventListener('click', e => { e.stopPropagation(); openMenu(f, e.currentTarget); });
-  beList.insertBefore(row, addRow);
-  return row;
+  addRow.style.setProperty('--i', vis);
+  cancelRow.style.setProperty('--i', state.selMode ? vis + 1 : vis);
+  beList.style.setProperty('--n', vis + (state.selMode ? 1 : 0));
 }
-function createFox() {
-  const f = { id: ++state.counter, name: '', pos: [0, 0, 0], rot: [0, 0, 0], sxz: 1, sy: 1, row: null };
-  f.name = 'Fox #' + f.id;
-  foxes.push(f);
-  f.row = makeRow(f);
-  layoutList();
-  return f;
+function setRowState(n, child, i, hidden) {
+  n.row.style.setProperty('--i', i);
+  n.row.classList.toggle('child', child);
+  n.row.classList.toggle('hid', hidden);
 }
-function addFox() {
-  const f = createFox();
-  select(f);
-  setTimeout(() => { try { beList.scrollTo({ top: beList.scrollHeight, behavior: 'smooth' }); } catch (_) {} }, 60);
+function syncSel() {
+  flatNodes().forEach(n => n.btn.classList.toggle('sel', n === state.selected));
 }
-function select(f) {
-  state.selected = f;
-  foxes.forEach(x => $('.fox-btn', x.row).classList.toggle('sel', x === f));
-  syncFields(); syncExpr(); requestRender();
-}
-function deleteFox(f) {
-  const idx = foxes.indexOf(f);
-  if (idx < 0) return;
-  f.row.classList.add('removing');
-  foxes.splice(idx, 1);
-  if (state.selected === f) select(foxes[Math.min(idx, foxes.length - 1)] || null);
-  requestRender();
-  setTimeout(() => { f.row.remove(); layoutList(); }, 230);
-}
-function startRename(f) {
-  const nameEl = $('.name', f.row);
-  if (!nameEl) return;
-  const input = document.createElement('input');
-  input.className = 'name-edit'; input.value = f.name; input.maxLength = 24;
-  input.setAttribute('autocomplete', 'off'); input.spellcheck = false;
-  nameEl.replaceWith(input);
-  input.focus(); input.select();
-  let done = false;
-  function finish(commit) {
-    if (done) return; done = true;
-    const v = input.value.trim();
-    if (commit && v) f.name = v.slice(0, 24);
-    const span = document.createElement('span');
-    span.className = 'name'; span.textContent = f.name;
-    input.replaceWith(span);
-  }
-  input.addEventListener('keydown', ev => {
-    if (ev.key === 'Enter') finish(true); else if (ev.key === 'Escape') finish(false);
-    ev.stopPropagation();
-  });
-  input.addEventListener('blur', () => finish(true));
-  input.addEventListener('click', ev => ev.stopPropagation());
+function afterStructure() {
+  rebuildFlat(); layoutList(); syncSel(); refreshChecks(); requestRender();
 }
 
-/* --- menu Rename / Delete --- */
-let menuFox = null;
-const menuEl = $('#beMenu'), pillRn = $('#pillRn'), pillDl = $('#pillDl');
-const lnA = $('.l1', menuEl), lnB = $('.l2', menuEl);
-function openMenu(f, dotsBtn) {
-  menuFox = f;
+function makeRow(n) {
+  const isG = n.type === 'group';
+  const row = document.createElement('div');
+  row.className = 'row' + (isG ? ' grp-row open' : '');
+  row.innerHTML = '<div class="pw"><div class="fox-btn ' + (isG ? 'grp' : 'fox') + '">' + (isG ? GROUP_SVG : CUBE_SVG) +
+    '<span class="name"></span>' + (isG ? CHEV_HTML : '') + TAIL_HTML + '</div></div>';
+  n.row = row;
+  n.btn = $('.fox-btn', row);
+  n.nameEl = $('.name', row);
+  n.chk = $('.chk', row);
+  n.dots = $('.dots', row);
+  n.chev = isG ? $('.chev', row) : null;
+  n.nameEl.textContent = n.name;
+  n.btn.addEventListener('click', () => {
+    if (state.selMode) toggleCheck(n); else select(n);
+  });
+  n.dots.addEventListener('click', e => { e.stopPropagation(); if (!state.selMode) openMenu(n, n.dots); });
+  if (n.chev) n.chev.addEventListener('click', e => { e.stopPropagation(); toggleOpen(n); });
+  beList.insertBefore(row, addRow);
+}
+function scrollListEnd() {
+  setTimeout(() => { try { beList.scrollTo({ top: beList.scrollHeight, behavior: 'smooth' }); } catch (_) {} }, 60);
+}
+
+function addFoxTop() {
+  const f = newFox();
+  items.push(f);
+  makeRow(f);
+  afterStructure();
+  select(f);
+  scrollListEnd();
+}
+function toggleOpen(g) {
+  g.open = !g.open;
+  layoutList();
+}
+function select(n) {
+  state.selected = n;
+  syncSel(); syncFields(); syncExpr(); updateMainUI(); requestRender();
+}
+
+/* --- pindah induk --- */
+function detach(f) {
+  if (f.group) { const a = f.group.children; a.splice(a.indexOf(f), 1); }
+  else { const i = items.indexOf(f); if (i >= 0) items.splice(i, 1); }
+}
+function reparent(f, g) {
+  detach(f);
+  f.group = g;
+  g.children.push(f);
+}
+function ungroup(f) {
+  const g = f.group;
+  if (!g) return;
+  detach(f);
+  f.group = null;
+  items.splice(items.indexOf(g) + 1, 0, f);
+  afterStructure();
+}
+
+/* --- duplicate --- */
+function duplicate(n) {
+  if (n.type === 'fox') {
+    const c = cloneFox(n);
+    c.group = n.group;
+    makeRow(c);
+    const arr = n.group ? n.group.children : items;
+    arr.splice(arr.indexOf(n) + 1, 0, c);
+    afterStructure();
+    select(c);
+  } else {
+    const g = newGroup();
+    g.pos = n.pos.slice(); g.rot = n.rot.slice(); g.open = n.open;
+    makeRow(g);
+    items.splice(items.indexOf(n) + 1, 0, g);
+    n.children.forEach(ch => { const c = cloneFox(ch); c.group = g; makeRow(c); g.children.push(c); });
+    afterStructure();
+    select(g);
+  }
+}
+
+/* --- delete (Group ikut menghapus isinya) --- */
+function deleteNode(n) {
+  const doomed = n.type === 'group' ? [n].concat(n.children) : [n];
+  const flat = flatNodes();
+  let next = state.selected;
+  if (doomed.indexOf(state.selected) >= 0) {
+    const idx = flat.indexOf(n);
+    next = flat[idx + doomed.length] || flat[idx - 1] || null;
+  }
+  detach(n);
+  doomed.forEach(d => d.row.classList.add('removing'));
+  rebuildFlat();
+  select(next);
+  requestRender();
+  setTimeout(() => { doomed.forEach(d => d.row.remove()); layoutList(); }, 230);
+}
+
+/* --- mode select (kotak centang) ---
+   'new' : dari menu Fox    -> tombol "+ Add Group" membuat Group baru berisi Fox yang dicentang
+   'add' : dari menu Group  -> tombol "+ Add Members" memasukkan Fox yang dicentang ke Group itu
+           (Group tersebut tidak punya kotak centang; anggotanya sendiri juga tidak bisa dicentang) */
+const checked = new Set();
+function isLocked(n) {                        // baris yang tidak boleh dicentang di mode 'add'
+  return state.selMode === 'add' && !!state.selTarget && (n === state.selTarget || n.group === state.selTarget);
+}
+function refreshChecks() {
+  flatNodes().forEach(n => {
+    let on, dis, hide = false;
+    if (n.type === 'group') {
+      on = n.children.length > 0 && n.children.every(c => checked.has(c));
+      dis = n.children.length === 0;
+      hide = state.selMode === 'add' && n === state.selTarget;
+    } else { on = checked.has(n); dis = isLocked(n); }
+    n.chk.classList.toggle('on', on);
+    n.chk.classList.toggle('dis', dis);
+    n.chk.classList.toggle('hide', hide);
+    n.btn.classList.toggle('target', state.selMode === 'add' && n === state.selTarget);
+  });
+}
+function toggleCheck(n) {
+  if (isLocked(n)) return;
+  if (n.type === 'group') {
+    if (!n.children.length) return;
+    const all = n.children.every(c => checked.has(c));
+    n.children.forEach(c => { if (all) checked.delete(c); else checked.add(c); });
+  } else if (checked.has(n)) checked.delete(n);
+  else checked.add(n);
+  refreshChecks();
+}
+function enterSelect(mode, n) {
+  closeMenu();
+  state.selMode = mode;
+  state.selTarget = mode === 'add' ? n : null;
+  if (mode === 'add') n.open = true;
+  checked.clear();
+  beList.classList.add('selmode');
+  beList.classList.toggle('selnew', mode === 'new');
+  beList.classList.toggle('seladd', mode === 'add');
+  refreshChecks();
+  layoutList();
+  if (mode === 'new') {
+    setTimeout(() => {                        // centang muncul setelah ":" berubah jadi kotak
+      if (state.selMode !== 'new') return;
+      checked.add(n);
+      refreshChecks();
+    }, 240);
+  }
+}
+function exitSelect() {
+  state.selMode = null;
+  state.selTarget = null;
+  checked.clear();
+  beList.classList.remove('selmode');
+  beList.classList.remove('selnew');
+  beList.classList.remove('seladd');
+  refreshChecks();
+  layoutList();
+}
+function makeGroupFromChecked() {
+  const picked = flatNodes().filter(n => n.type === 'fox' && checked.has(n));
+  const g = newGroup();
+  let at = items.length;
+  if (picked.length) at = items.indexOf(picked[0].group || picked[0]);
+  items.splice(at, 0, g);
+  makeRow(g);
+  picked.forEach(f => reparent(f, g));
+  exitSelect();
+  afterStructure();
+  select(g);
+  scrollListEnd();
+}
+function addMembersToTarget() {
+  const g = state.selTarget;
+  if (!g) { exitSelect(); return; }
+  const picked = flatNodes().filter(n => n.type === 'fox' && checked.has(n) && n.group !== g);
+  picked.forEach(f => reparent(f, g));
+  g.open = true;
+  exitSelect();
+  afterStructure();
+  select(g);
+}
+
+/* --- menu ":" (Duplicate / Select|UnGroup / Delete) --- */
+let menuNode = null;
+const menuEl = $('#beMenu'), pillDup = $('#pillDup'), pillSel = $('#pillSel'), pillDl = $('#pillDl');
+const lns = [$('.l1', menuEl), $('.l2', menuEl), $('.l3', menuEl)];
+function openMenu(n, dotsBtn) {
+  menuNode = n;
+  pillSel.textContent = (n.type === 'fox' && n.group) ? 'UnGroup' : 'Select';
   const em = parseFloat(getComputedStyle(guiBE).fontSize) || 14;
   const pr = guiBE.getBoundingClientRect(), br = dotsBtn.getBoundingClientRect();
-  menuEl.style.left = (br.left + br.width / 2 - pr.left) + 'px';
-  menuEl.style.top = (br.top + br.height / 2 - pr.top) + 'px';
+  const cx = br.left + br.width / 2 - pr.left, cy = br.top + br.height / 2 - pr.top;
+  const pw = guiBE.offsetWidth, ph = guiBE.offsetHeight;
+  menuEl.style.left = cx + 'px';
+  menuEl.style.top = cy + 'px';
   function put(pill, line, dx, dy) {
-    dx *= em; dy *= em;
+    const hw = pill.offsetWidth / 2 + 4, hh = pill.offsetHeight / 2 + 4;
+    dx = clamp(cx + dx * em, hw, pw - hw) - cx;     // tetap di dalam panel
+    dy = clamp(cy + dy * em, hh, ph - hh) - cy;
     pill.style.left = dx + 'px'; pill.style.top = dy + 'px';
     line.style.setProperty('--len', Math.hypot(dx, dy) + 'px');
     line.style.setProperty('--ang', Math.atan2(dy, dx) + 'rad');
   }
-  put(pillRn, lnA, -4.3, -3.6);
-  put(pillDl, lnB, -6.6, -0.1);
+  put(pillDup, lns[0], -4.5, -3.8);
+  put(pillSel, lns[1], -6.9, 0);
+  put(pillDl, lns[2], -4.5, 3.8);
   guiBE.classList.add('menu-open');
 }
 function closeMenu() { guiBE.classList.remove('menu-open'); }
 $('#beDim').addEventListener('click', closeMenu);
 $('#yb').addEventListener('click', closeMenu);
-pillRn.addEventListener('click', () => { const f = menuFox; closeMenu(); if (f) setTimeout(() => startRename(f), 120); });
-pillDl.addEventListener('click', () => { const f = menuFox; closeMenu(); if (f) setTimeout(() => deleteFox(f), 160); });
+pillDup.addEventListener('click', () => { const n = menuNode; closeMenu(); if (n) setTimeout(() => duplicate(n), 140); });
+pillSel.addEventListener('click', () => {
+  const n = menuNode; closeMenu();
+  if (!n) return;
+  if (n.type === 'fox' && n.group) setTimeout(() => ungroup(n), 140);
+  else enterSelect(n.type === 'group' ? 'add' : 'new', n);
+});
+pillDl.addEventListener('click', () => { const n = menuNode; closeMenu(); if (n) setTimeout(() => deleteNode(n), 160); });
 
 /* ================= GUI 2 : Main ================= */
 const fields = {};
 $$('[data-k]').forEach(i => { fields[i.dataset.k] = i; });
 const expEl = $('#exp');
+const exprTab = $('.tab[data-tab="expr"]');
+const scaleCol = $('#scaleCol');
 
 function syncFields() {
-  const f = state.selected;
+  const s = state.selected, isG = !!s && s.type === 'group';
   Object.keys(fields).forEach(k => {
     if (k === 'snap') return;
     const inp = fields[k];
+    inp.disabled = !s || (isG && (k === 'sxz' || k === 'sy'));
     if (document.activeElement === inp) return;
-    inp.value = f ? fmt(getVal(f, k)) : ((k === 'sxz' || k === 'sy') ? '1' : '0');
-    inp.disabled = !f;
+    inp.value = s ? fmt(toDisp(k, getVal(s, k))) : ((k === 'sxz' || k === 'sy') ? '1' : '0');
   });
 }
 function syncExpr() { expEl.textContent = exprFor(state.selected); }
+function activateTab(name) {
+  $$('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
+  $('#pane-prs').classList.toggle('active', name === 'prs');
+  $('#pane-expr').classList.toggle('active', name === 'expr');
+}
+function updateMainUI() {                     // Group: tanpa Stop Expression & skala terkunci
+  const isG = !!state.selected && state.selected.type === 'group';
+  exprTab.classList.toggle('gone', isG);
+  scaleCol.classList.toggle('locked', isG);
+  if (isG) {
+    if ($('#pane-expr').classList.contains('active')) activateTab('prs');
+    if (state.mode === 'scale') setMode('position');
+  }
+}
 const parseNum = s => parseFloat(String(s).replace(',', '.'));
 
 Object.keys(fields).forEach(k => {
@@ -1248,27 +1572,24 @@ Object.keys(fields).forEach(k => {
   } else {
     inp.addEventListener('input', () => {
       const f = state.selected; if (!f) return;
+      if (f.type === 'group' && (k === 'sxz' || k === 'sy')) return;
       const v = parseNum(inp.value);
       if (!Number.isFinite(v)) return;
-      setVal(f, k, v); syncExpr(); requestRender();
+      setVal(f, k, fromDisp(k, v)); syncExpr(); requestRender();
     });
-    inp.addEventListener('blur', () => { const f = state.selected; if (f) inp.value = fmt(getVal(f, k)); });
+    inp.addEventListener('blur', () => { const f = state.selected; if (f) inp.value = fmt(toDisp(k, getVal(f, k))); });
   }
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
 });
 
 function setMode(m) {
+  if (m === 'scale' && state.selected && state.selected.type === 'group') return;
   state.mode = m;
   $$('.col').forEach(c => c.classList.toggle('active', c.dataset.mode === m));
   requestRender();
 }
 $$('.col').forEach(c => $('.colhead', c).addEventListener('click', () => setMode(c.dataset.mode)));
-
-$$('.tab').forEach(t => t.addEventListener('click', () => {
-  $$('.tab').forEach(x => x.classList.toggle('active', x === t));
-  $('#pane-prs').classList.toggle('active', t.dataset.tab === 'prs');
-  $('#pane-expr').classList.toggle('active', t.dataset.tab === 'expr');
-}));
+$$('.tab').forEach(t => t.addEventListener('click', () => activateTab(t.dataset.tab)));
 
 const copyBtn = $('#copyBtn');
 let copyTimer = 0;
@@ -1304,7 +1625,7 @@ copyBtn.addEventListener('click', () => {
 
 /* ================= mulai ================= */
 try { updateUiScale(); } catch (e) { fail('ui', e); }
-select(createFox());                          // GUI hidup dulu, sebelum 3D
+addFoxTop();                                  // GUI hidup dulu, sebelum 3D
 try { initRenderer(); } catch (e) { fail('renderer', e); }
 try { resizeCanvas(); } catch (e) { fail('resize', e); }
 try { initialLayout(); } catch (e) { fail('layout', e); }
@@ -1332,8 +1653,15 @@ setTimeout(relayout, 1200);
   try { renderAll(); } catch (e) { fail('render', e); }
 })();
 
-window.__fmbe = { state: state, cam: cam, orbit: orbit, computeGizmo: computeGizmo, hitTest: hitTest, renderAll: renderAll, updateCam: updateCam,
-                  project: project, viewMat: viewMat, projMat: projMat, modelMat: modelMat, blockXform: blockXform, mul4: mul4, exprFor: exprFor };
+window.__fmbe = {
+  state: state, items: items, cam: cam, orbit: orbit, checked: checked,
+  computeGizmo: computeGizmo, hitTest: hitTest, renderAll: renderAll, updateCam: updateCam, project: project,
+  viewMat: viewMat, projMat: projMat, modelMat: modelMat, blockXform: blockXform, mul4: mul4, exprFor: exprFor,
+  eulerR: eulerR, gimbal: gimbal, toDisp: toDisp, flatNodes: flatNodes, renderFoxes: function () { return renderFoxes; },
+  api: { addFoxTop: addFoxTop, select: select, duplicate: duplicate, deleteNode: deleteNode, ungroup: ungroup, enterSelect: enterSelect,
+         exitSelect: exitSelect, toggleCheck: toggleCheck, makeGroupFromChecked: makeGroupFromChecked, toggleOpen: toggleOpen,
+         addMembersToTarget: addMembersToTarget, setMode: setMode, openMenu: openMenu, syncFields: syncFields, setVal: setVal }
+};
 })();
 </script>
 </body>
