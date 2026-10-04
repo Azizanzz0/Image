@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JSON to Stop Expression</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1b2230;
+    --panel: #242d3e;
+    --panel-2: #2c374b;
+    --line: #3a475e;
+    --text: #e8edf5;
+    --muted: #a0adc0;
+    --accent: #ff6b5e;
+    --lapis: #6f9bff;
+    --warn: #f2c46d;
+    --err: #ff8a80;
+    --sans: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; }
+  body {
+    margin: 0;
+    padding: clamp(16px, 3vw, 40px);
+    background: var(--bg);
+    color: var(--text);
+    font: 400 15px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header { max-width: 72ch; margin-bottom: 28px; }
+  h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    font-weight: 700;
+    max-width: 18ch;
+  }
+  header p { margin: 0; color: var(--muted); max-width: 68ch; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 24px;
+    align-items: start;
+  }
+  h2 { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.005em; }
+
+  /* ---------- input ---------- */
+  .input {
+    position: sticky;
+    top: 20px;
+    padding: 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .input h2 { margin-bottom: 10px; }
+  textarea#src {
+    display: block;
+    width: 100%;
+    min-height: 380px;
+    resize: vertical;
+    padding: 12px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: 400 12.5px/1.55 var(--mono);
+    tab-size: 2;
+  }
+  textarea#src::placeholder { color: #6f7d92; }
+  .input.dragover textarea#src {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255, 107, 94, 0.25);
+  }
+  :focus-visible { outline: 2px solid var(--lapis); outline-offset: 2px; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .btn {
+    font: 600 13px/1 var(--sans);
+    padding: 10px 14px;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: #36435a; border-color: #4b5a74; }
+  .btn.ghost { background: transparent; }
+  .btn.copy {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #2a0d0a;
+    min-width: 76px;
+  }
+  .btn.copy:hover { background: #ff8176; border-color: #ff8176; }
+  .btn.copy.done { background: #8fe0b0; border-color: #8fe0b0; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #status { min-height: 1.5em; margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+  #status.err { color: var(--err); }
+
+  details.support { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+  details.support summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  details.support table { width: 100%; margin-top: 10px; border-collapse: collapse; font-size: 12.5px; }
+  details.support th, details.support td {
+    text-align: left; vertical-align: top; padding: 6px 8px 6px 0;
+    border-bottom: 1px solid var(--line); font-weight: 400;
+  }
+  details.support th { font-weight: 600; white-space: nowrap; }
+  details.support td.bad { color: var(--err); }
+  details.support code { font: 400 12px var(--mono); color: #8fb4ff; }
+  details.support p { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  /* ---------- output ---------- */
+  .out-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  #count { font-size: 13px; color: var(--muted); }
+
+  .empty {
+    padding: 36px 24px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    color: var(--muted);
+  }
+  .empty strong { display: block; margin-bottom: 4px; color: var(--text); font-weight: 600; }
+
+  .anim {
+    margin-bottom: 18px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .anim-head {
+    display: flex; gap: 14px; align-items: flex-start; justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .anim-name { margin: 0; font: 600 14px/1.4 var(--mono); word-break: break-all; }
+  .anim-meta { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 4px; font-size: 13px; color: var(--muted); }
+  .anim-meta b { color: var(--text); font-weight: 600; }
+
+  /* timeline: the keyframes of every converted bone */
+  .tl { padding: 14px 16px 8px; }
+  .tl-row, .tl-axis { display: grid; grid-template-columns: 168px minmax(0, 1fr); gap: 12px; }
+  .tl-row { align-items: center; height: 26px; }
+  .tl-label { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tl-label span { margin-left: 6px; color: var(--muted); }
+  .tl-track { position: relative; height: 100%; }
+  .tl-track::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line);
+  }
+  .tl-inner { position: absolute; left: 7px; right: 7px; top: 0; bottom: 0; }
+  .tl-bar {
+    position: absolute; top: 50%; height: 4px; margin-top: -2px;
+    background: var(--lapis); opacity: 0.5; border-radius: 2px;
+  }
+  .kf {
+    position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px;
+    background: var(--accent); border-radius: 1px; transform: rotate(45deg);
+  }
+  .tl-axis { margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+  .tl-axis .ticks { display: flex; justify-content: space-between; }
+
+  .code {
+    max-height: 280px; overflow: auto;
+    margin: 12px 16px 16px; padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font: 400 12.5px/1.7 var(--mono);
+    white-space: pre-wrap; word-break: break-all;
+    user-select: all;
+  }
+  .tv { color: #8fb4ff; }
+  .tq { color: #ffb08a; }
+  .tf { color: #c3a8ff; }
+  .tn { color: #f2c46d; }
+  .none { margin: 14px 16px 16px; color: var(--muted); font-size: 13.5px; }
+
+  /* notes: yellow = converted with a change, red = skipped */
+  .notes { display: grid; gap: 6px; margin: 0 16px 16px; padding: 0; list-style: none; }
+  .notes li {
+    padding: 8px 10px 8px 12px;
+    font-size: 13px;
+    border-left: 3px solid var(--warn);
+    background: rgba(242, 196, 109, 0.09);
+    border-radius: 0 6px 6px 0;
+  }
+  .notes li.err {
+    border-left-color: var(--err);
+    background: rgba(255, 138, 128, 0.11);
+    color: #ffc2bc;
+  }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .input { position: static; }
+    textarea#src { min-height: 240px; }
+  }
+  @media (max-width: 520px) {
+    .tl-row, .tl-axis { grid-template-columns: 104px minmax(0, 1fr); gap: 8px; }
+    .anim-head { flex-direction: column; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Turn animation JSON into Stop Expressions</h1>
+    <p>Paste a Bedrock or Blockbench animation file (.json). Each animation inside it gets its own Stop Expression, ready to copy. Requires the PHAM (Player Hijack Animation Module) setup, and only the supported variables are converted.</p>
+  </header>
+
+  <main class="grid">
+    <section class="input" id="inputPanel" aria-labelledby="inH">
+      <h2 id="inH">Animation JSON</h2>
+      <textarea id="src" spellcheck="false" autocomplete="off" aria-label="Animation JSON"
+        placeholder="Paste JSON here, or drag a .json file onto this box."></textarea>
+      <div class="actions">
+        <button class="btn" type="button" id="pick">Choose .json file</button>
+        <button class="btn ghost" type="button" id="clear">Clear</button>
+        <input type="file" id="file" accept=".json,application/json,text/plain" hidden>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+
+      <details class="support">
+        <summary>Supported bones and variables</summary>
+        <table>
+          <tbody>
+            <tr><th>root</th><td>rotation x, z<br>position x, y, z <code>v.root</code></td></tr>
+            <tr><th>waist</th><td>rotation x, y, z<br>position x, y<br>scale <code>v.body</code> <code>v.body_head.xzscale</code> <code>yscale</code></td></tr>
+            <tr><th>head</th><td>rotation x, y, z<br>position x, y, z <code>v.head</code></td></tr>
+            <tr><th>rightArm<br>leftArm</th><td>rotation x, y, z<br>position y <code>v.rightarm</code> <code>v.leftarm</code></td></tr>
+            <tr><th>rightLeg<br>leftLeg</th><td>rotation x <code>v.rightleg</code> <code>v.leftleg</code></td></tr>
+            <tr><th>body</th><td class="bad">Can't be converted because v.body is only for waist.</td></tr>
+          </tbody>
+        </table>
+        <p>The duration of each movement is the time between the current keyframe and the next one. For example, 0.3 to 0.5 is 0.2 seconds. A keyframe with the same value as the one before it doesn't add a segment, whatever that value is (0 or any other number).</p>
+        <p>Molang values are copied as they are. <code>query.</code> becomes <code>q.</code>, <code>variable.</code> becomes <code>v.</code> and <code>temp.</code> becomes <code>t.</code>.</p>
+      </details>
+    </section>
+
+    <section class="output" aria-labelledby="outH">
+      <div class="out-head">
+        <h2 id="outH">Stop Expression</h2>
+        <span id="count"></span>
+      </div>
+      <div id="results"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   CORE: animation JSON  ->  Stop Expression
+   ===================================================================== */
+const R5  = v => Math.round(v * 1e5) / 1e5;
+const fmt = v => String(R5(v));
+const AXES = ['x', 'y', 'z'];
+const isObj = o => o !== null && typeof o === 'object' && !Array.isArray(o);
+
+// Variables available in the PHAM setup (same list as Player Animator).
+const BONES = {
+  root:     { v: 'v.root',     rot: ['x', 'z'],      pos: ['x', 'y', 'z'] },
+  waist:    { v: 'v.body',     rot: ['x', 'y', 'z'], pos: ['x', 'y'], scale: { x: 'xz', y: 'y' } },
+  head:     { v: 'v.head',     rot: ['x', 'y', 'z'], pos: ['x', 'y', 'z'] },
+  rightarm: { v: 'v.rightarm', rot: ['x', 'y', 'z'], pos: ['y'] },
+  leftarm:  { v: 'v.leftarm',  rot: ['x', 'y', 'z'], pos: ['y'] },
+  rightleg: { v: 'v.rightleg', rot: ['x'],           pos: [] },
+  leftleg:  { v: 'v.leftleg',  rot: ['x'],           pos: [] }
+};
+const PROPS = [
+  { key: 'rotation', def: 0 },
+  { key: 'position', def: 0 },
+  { key: 'scale',    def: 1 }
+];
+
+/* ---------- values: number, or Molang string ---------- */
+const NUM = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?$/i;
+
+// Remove whitespace the way a compact Stop Expression is written.
+// Single-quoted Molang strings are left untouched.
+function compactMolang(s) {
+  const isW = c => /[A-Za-z0-9_.]/.test(c || '');
+  let out = '', i = 0, inQ = false;
+  while (i < s.length) {
+    const c = s[i];
+    if (inQ) {
+      out += c;
+      if (c === '\\' && i + 1 < s.length) out += s[++i];
+      else if (c === "'") inQ = false;
+      i++; continue;
+    }
+    if (c === "'") { inQ = true; out += c; i++; continue; }
+    if (/\s/.test(c)) {
+      let j = i;
+      while (j < s.length && /\s/.test(s[j])) j++;
+      const prev = out[out.length - 1], next = s[j];
+      if ((isW(prev) && isW(next)) || (prev === next && (prev === '-' || prev === '+'))) out += ' ';
+      i = j; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+
+// query. -> q.   variable. -> v.   temp. -> t.   (outside of quoted strings)
+function normalizeMolang(raw) {
+  const parts = compactMolang(raw.trim()).split(/('(?:[^'\\]|\\.)*')/);
+  const swap = (p, long, short) =>
+    p.replace(new RegExp('(^|[^\\w.])' + long + '\\.', 'gi'), (m, pre) => pre + short + '.');
+  return parts.map((p, i) => i % 2 ? p
+    : swap(swap(swap(p, 'query', 'q'), 'variable', 'v'), 'temp', 't'))
+    .join('').replace(/;+$/, '');
+}
+
+// number | Molang string | NaN (not usable)
+function comp(v, def) {
+  if (v === undefined) return def;
+  if (typeof v === 'number') return isFinite(v) ? R5(v) : NaN;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (t === '') return def;
+    if (NUM.test(t)) return R5(Number(t));
+    return normalizeMolang(t);
+  }
+  return NaN;
+}
+function toVec(raw, def) {
+  if (Array.isArray(raw)) return [0, 1, 2].map(i => comp(raw[i], def));
+  const n = comp(raw, def);
+  return [n, n, n];
+}
+const hasMolang = pts => pts.some(pt => pt.pre.concat(pt.post).some(v => typeof v === 'string'));
+const moved = (v, def) => Number.isNaN(v) || v !== def;
+
+// As raw text (for a plain assignment) and as an operand (inside lerp / ternary).
+const raw  = v => typeof v === 'number' ? fmt(v) : v;
+const atom = v => typeof v === 'number' || /^-?[A-Za-z_][\w.]*$/.test(v) ? raw(v) : `(${v})`;
+
+/* ---------- JSON with comments / trailing commas (Minecraft files) ---------- */
+function stripJsonc(s) {
+  let out = '', i = 0, inStr = false;
+  const n = s.length;
+  while (i < n) {
+    const c = s[i], d = s[i + 1];
+    if (inStr) {
+      out += c;
+      if (c === '\\') { out += d === undefined ? '' : d; i += 2; continue; }
+      if (c === '"') inStr = false;
+      i++; continue;
+    }
+    if (c === '"') { inStr = true; out += c; i++; continue; }
+    if (c === '/' && d === '/') { while (i < n && s[i] !== '\n') { out += ' '; i++; } continue; }
+    if (c === '/' && d === '*') {
+      out += '  '; i += 2;
+      while (i < n && !(s[i] === '*' && s[i + 1] === '/')) { out += s[i] === '\n' ? '\n' : ' '; i++; }
+      if (i < n) { out += '  '; i += 2; }
+      continue;
+    }
+    out += c; i++;
+  }
+  let res = '', st = false;
+  for (let k = 0; k < out.length; k++) {
+    const c = out[k];
+    if (st) {
+      res += c;
+      if (c === '\\') { res += out[k + 1] === undefined ? '' : out[k + 1]; k++; }
+      else if (c === '"') st = false;
+      continue;
+    }
+    if (c === '"') { st = true; res += c; continue; }
+    if (c === ',') {
+      let j = k + 1;
+      while (j < out.length && /\s/.test(out[j])) j++;
+      if (out[j] === ']' || out[j] === '}') { res += ' '; continue; }
+    }
+    res += c;
+  }
+  return res;
+}
+
+/* ---------- keyframes ---------- */
+// One bone property (rotation / position / scale) -> sorted keyframes.
+// pre = value arriving at the keyframe, post = value leaving it.
+function readProp(rawProp, boneName, def, add) {
+  const pts = new Map();
+  let smooth = false, easing = null;
+  if (!isObj(rawProp)) {
+    const v = toVec(rawProp, def);
+    pts.set(0, { t: 0, pre: v, post: v });
+  } else {
+    for (const [k, fr] of Object.entries(rawProp)) {
+      const t = parseFloat(k);
+      if (!isFinite(t) || t < 0) { add('err', `${boneName}: keyframe time "${k}" is invalid, skipped.`); continue; }
+      let pre, post;
+      if (isObj(fr)) {
+        if (fr.lerp_mode && fr.lerp_mode !== 'linear') smooth = true;
+        if (fr.easing && fr.easing !== 'linear') easing = fr.easing;
+        const a = fr.pre !== undefined ? fr.pre : (fr.post !== undefined ? fr.post : fr.vector);
+        const b = fr.post !== undefined ? fr.post : a;
+        pre = toVec(a, def); post = toVec(b, def);
+      } else {
+        pre = post = toVec(fr, def);
+      }
+      pts.set(R5(t), { t: R5(t), pre, post });
+    }
+  }
+  return { pts: [...pts.values()].sort((a, b) => a.t - b.t), smooth, easing };
+}
+
+function chain(kept, idx) {
+  const s = kept[idx];
+  const timeExpr = s.start === 0 ? 'q.state_time' : `(q.state_time-${fmt(s.start)})`;
+  const thisExpr = s.hold
+    ? atom(s.from)
+    : `math.lerp(${atom(s.from)},${atom(s.to)},math.min(${timeExpr}/${fmt(s.dur)},1))`;
+  if (idx === 0) return thisExpr;
+  const rest = chain(kept, idx - 1);
+  return `q.state_time>=${fmt(s.start)}?${thisExpr}:${idx - 1 === 0 ? rest : `(${rest})`}`;
+}
+
+// One axis (for example rightArm rotation x) -> one Stop Expression statement.
+// force = write the axis even if it never leaves its default (used next to Molang).
+function compileChannel(pts, name, def, force) {
+  if (!force && pts.every(p => p.pre === def && p.post === def)) return null;
+  if (pts[0].t > 0) pts = [{ t: 0, pre: pts[0].post, post: pts[0].post }, ...pts];
+
+  const segs = [];
+  if (pts.length === 1) segs.push({ start: 0, dur: 0, from: pts[0].post, to: pts[0].post });
+  for (let i = 0; i < pts.length - 1; i++) {
+    segs.push({ start: pts[i].t, dur: R5(pts[i + 1].t - pts[i].t), from: pts[i].post, to: pts[i + 1].pre });
+  }
+
+  // A segment that goes from a value to the same value adds nothing: the previous
+  // segment already holds it (min(...,1)). Only a hold at the very start is kept
+  // when its value isn't the default, because an unset variable would read as 0.
+  // An unset scale is never safe, so scale holds at the start are always written.
+  const skipLeading = def === 0 && !force;
+  const kept = [];
+  for (const s of segs) {
+    const hold = s.from === s.to;
+    if (hold) {
+      if (!kept.length) { if (skipLeading && s.from === def) continue; }
+      else if (kept[kept.length - 1].to === s.from) continue;
+    }
+    kept.push({ ...s, hold });
+  }
+  if (!kept.length) return null;
+
+  const value = kept.length === 1 && kept[0].hold ? raw(kept[0].from) : chain(kept, kept.length - 1);
+  const body = `${name}=${value};`;
+  const first = kept[0].start;
+  return first === 0 ? body : `q.state_time>=${fmt(first)}?{${body}};`;
+}
+
+function varName(cfg, prop, axis) {
+  if (prop === 'rotation') return `${cfg.v}.${axis}`;
+  if (prop === 'position') return `${cfg.v}.${axis}pos`;
+  return `v.body_head.${cfg.scale[axis]}scale`;
+}
+
+function convertBone(name, data, add) {
+  const out = { statements: [], tracks: [] };
+  if (!isObj(data)) return out;
+  const cfg = BONES[name.toLowerCase()];
+
+  const props = {};
+  for (const p of PROPS) {
+    if (data[p.key] !== undefined) props[p.key] = readProp(data[p.key], name, p.def, add);
+  }
+
+  if (!cfg) {
+    const active = PROPS.some(p => props[p.key] &&
+      props[p.key].pts.some(pt => pt.pre.concat(pt.post).some(v => moved(v, p.def))));
+    if (active) {
+      add('err', name.toLowerCase() === 'body'
+        ? `Bone "${name}" can't be converted because v.body is only for waist.`
+        : `Bone "${name}" has no variable, skipped.`);
+    }
+    return out;
+  }
+
+  for (const p of PROPS) {
+    const info = props[p.key];
+    if (!info || !info.pts.length) continue;
+    const pts = info.pts;
+    const supported = p.key === 'rotation' ? cfg.rot : p.key === 'position' ? cfg.pos : (cfg.scale ? Object.keys(cfg.scale) : []);
+    const force = hasMolang(pts);
+    const produced = [];
+
+    for (const axis of supported) {
+      const a = AXES.indexOf(axis);
+      const ch = pts.map(pt => ({ t: pt.t, pre: pt.pre[a], post: pt.post[a] }));
+      if (ch.some(pt => Number.isNaN(pt.pre) || Number.isNaN(pt.post))) {
+        add('err', `${name} ${p.key} ${axis}: the value isn't a number or a Molang expression, skipped.`);
+        continue;
+      }
+      const stmt = compileChannel(ch, varName(cfg, p.key, axis), p.def, force);
+      if (stmt) { out.statements.push(stmt); produced.push(axis); }
+    }
+
+    // Axes that have no variable but are actually used.
+    const waistScale = p.key === 'scale' && cfg.scale;
+    const lost = AXES.filter(ax => !supported.includes(ax) && !(waistScale && ax === 'z'))
+      .filter(ax => { const a = AXES.indexOf(ax); return pts.some(pt => moved(pt.pre[a], p.def) || moved(pt.post[a], p.def)); });
+    if (lost.length) add('err', `${name} ${p.key} ${lost.join('/')} has no variable, skipped.`);
+
+    if (waistScale && pts.some(pt => pt.pre[2] !== pt.pre[0] || pt.post[2] !== pt.post[0])) {
+      add('warn', `${name} scale z differs from x. Scale x (xzscale) is used.`);
+    }
+
+    if (produced.length) {
+      if (info.smooth) add('warn', `Stop Expression doesn't support smooth keyframes; used lerp instead.`);
+      if (info.easing) add('warn', `Easing "${info.easing}" doesn't apply to Stop Expression, so it was replaced with lerp (linear).`);
+      out.tracks.push({ bone: name, prop: p.key, axes: produced, times: pts.map(pt => pt.t) });
+    }
+  }
+  return out;
+}
+
+function convertAnimation(name, anim) {
+  const notes = [];
+  const add = (type, text) => { if (!notes.some(n => n.text === text)) notes.push({ type, text }); };
+  const statements = [], tracks = [];
+
+  const bones = isObj(anim.bones) ? anim.bones : {};
+  for (const [bn, bd] of Object.entries(bones)) {
+    const r = convertBone(bn, bd, add);
+    statements.push(...r.statements);
+    tracks.push(...r.tracks);
+  }
+  if (anim.loop === true) add('warn', 'This animation loops, but a Stop Expression only plays once.');
+
+  const length = typeof anim.animation_length === 'number' ? anim.animation_length : null;
+  const maxT = Math.max(0, ...tracks.flatMap(t => t.times));
+  return {
+    name, length, notes, tracks,
+    expression: statements.join(''),
+    count: statements.length,
+    span: Math.max(length || 0, maxT) || 1
+  };
+}
+
+function convertJson(text) {
+  const clean = stripJsonc(text.replace(/^\uFEFF/, ''));
+  let json;
+  try { json = JSON.parse(clean); }
+  catch (e) {
+    const m = /position (\d+)/.exec(e.message);
+    if (m) {
+      const pos = Number(m[1]);
+      const before = clean.slice(0, pos);
+      throw new Error(`The JSON isn't valid yet. Check line ${before.split('\n').length}, column ${pos - before.lastIndexOf('\n')}.`);
+    }
+    throw new Error(`The JSON isn't valid yet. ${e.message}`);
+  }
+  let anims;
+  if (isObj(json) && isObj(json.animations)) anims = json.animations;
+  else if (isObj(json) && isObj(json.bones)) anims = { animation: json };
+  else throw new Error('No "animations" object was found in this JSON.');
+
+  const list = Object.entries(anims).filter(([, a]) => isObj(a)).map(([n, a]) => convertAnimation(n, a));
+  if (!list.length) throw new Error('No animations could be read.');
+  return list;
+}
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const src = $('#src'), statusEl = $('#status'), results = $('#results'), countEl = $('#count');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+let current = [];
+
+// Colour the expression. Tokens are matched on the raw text and escaped one by one.
+const TOKEN = /(math\.[A-Za-z_]+)|(q\.state_time)|(\b[vqtc]\.[A-Za-z_][\w.]*)|([A-Za-z_][\w.]*)|(\d+(?:\.\d+)?)/g;
+function highlight(s) {
+  let out = '', last = 0, m;
+  TOKEN.lastIndex = 0;
+  while ((m = TOKEN.exec(s))) {
+    out += esc(s.slice(last, m.index));
+    const cls = m[1] ? 'tf' : m[2] ? 'tq' : m[3] ? 'tv' : m[5] ? 'tn' : '';
+    out += cls ? `<span class="${cls}">${esc(m[0])}</span>` : esc(m[0]);
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
+
+function trackRow(t, span) {
+  const pct = x => R5(x / span * 100);
+  const lo = Math.min(...t.times), hi = Math.max(...t.times);
+  const label = `${t.prop} ${t.axes.join(', ')}`;
+  return `<div class="tl-row">
+    <div class="tl-label" title="${esc(t.bone)} ${esc(label)}">${esc(t.bone)}<span>${esc(label)}</span></div>
+    <div class="tl-track"><div class="tl-inner">
+      ${hi > lo ? `<i class="tl-bar" style="left:${pct(lo)}%;width:${pct(hi - lo)}%"></i>` : ''}
+      ${t.times.map(x => `<i class="kf" style="left:${pct(x)}%"></i>`).join('')}
+    </div></div>
+  </div>`;
+}
+
+function renderAnim(a, i) {
+  const meta = [
+    a.length !== null ? `<span>Length <b>${fmt(a.length)} s</b></span>` : '',
+    `<span>Variables <b>${a.count}</b></span>`
+  ].join('');
+  const timeline = a.tracks.length ? `<div class="tl">
+      ${a.tracks.map(t => trackRow(t, a.span)).join('')}
+      <div class="tl-axis"><span></span><div class="ticks"><span>0</span><span>${fmt(a.span)} s</span></div></div>
+    </div>` : '';
+  const body = a.count
+    ? `<div class="code">${highlight(a.expression)}</div>`
+    : `<p class="none">None of the bones in this animation can be converted.</p>`;
+  const notes = a.notes.length
+    ? `<ul class="notes">${a.notes.map(n => `<li class="${n.type}">${esc(n.text)}</li>`).join('')}</ul>` : '';
+  return `<article class="anim">
+    <div class="anim-head">
+      <div><h3 class="anim-name">${esc(a.name)}</h3><div class="anim-meta">${meta}</div></div>
+      <button class="btn copy" type="button" data-copy="${i}" ${a.count ? '' : 'disabled'}>Copy</button>
+    </div>
+    ${timeline}${body}${notes}
+  </article>`;
+}
+
+function setStatus(text, isErr) {
+  statusEl.textContent = text;
+  statusEl.className = isErr ? 'err' : '';
+}
+
+function run() {
+  const text = src.value.trim();
+  if (!text) {
+    current = [];
+    countEl.textContent = '';
+    setStatus('', false);
+    results.innerHTML = `<div class="empty"><strong>No results yet.</strong>Paste animation JSON in the box on the side. Each animation becomes one Stop Expression.</div>`;
+    return;
+  }
+  try {
+    current = convertJson(text);
+    countEl.textContent = plural(current.length, 'animation');
+    setStatus(`Found ${plural(current.length, 'animation')}.`, false);
+    results.innerHTML = current.map(renderAnim).join('');
+  } catch (e) {
+    current = [];
+    countEl.textContent = '';
+    setStatus(e.message, true);
+    results.innerHTML = `<div class="empty"><strong>Can't read this JSON yet.</strong>Fix the problem shown under the input box. The result appears automatically.</div>`;
+  }
+}
+
+function legacyCopy(text) {
+  const t = document.createElement('textarea');
+  t.value = text; t.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(t); t.select();
+  try { document.execCommand('copy'); } catch (_) {}
+  t.remove();
+}
+
+results.addEventListener('click', async e => {
+  const btn = e.target.closest('[data-copy]');
+  if (!btn) return;
+  const text = current[Number(btn.dataset.copy)].expression;
+  try { await navigator.clipboard.writeText(text); } catch (_) { legacyCopy(text); }
+  btn.textContent = 'Copied';
+  btn.classList.add('done');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+});
+
+let timer;
+src.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 180); });
+
+$('#clear').addEventListener('click', () => { src.value = ''; run(); src.focus(); });
+$('#pick').addEventListener('click', () => $('#file').click());
+
+async function loadFile(file) {
+  if (!file) return;
+  src.value = await file.text();
+  run();
+}
+$('#file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+
+const panel = $('#inputPanel');
+['dragenter', 'dragover'].forEach(ev => panel.addEventListener(ev, e => { e.preventDefault(); panel.classList.add('dragover'); }));
+['dragleave', 'drop'].forEach(ev => panel.addEventListener(ev, e => { e.preventDefault(); panel.classList.remove('dragover'); }));
+panel.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+
+run();
+})();
+</script>
+</body>
+</html>
