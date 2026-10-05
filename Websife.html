@@ -1,1552 +1,2085 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Animator V1.3</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js">
-    </script>
-    <style>
-        :root {
-            --bg: #1e1e2e;
-            --surface: #313244;
-            --surface2: #45475a;
-            --text: #cdd6f4;
-            --primary: #89b4fa;
-            --danger: #f38ba8;
-            --border: #585b70;
-            --success: #a6e3a1;
-            --panel: #11111b;
-            --warn: #f9e2af;
-        }
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            gap: 20px;
-            height: 100vh;
-            overflow: hidden;
-        }
-        h1,
-        h2,
-        h3 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-        .left-panel {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 15px;
-            height: calc(100vh - 40px);
-            pointer-events: auto;
-        }
-        .right-panel {
-            width: 440px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            height: calc(100vh - 40px);
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        .card {
-            background: var(--surface);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-        .bone-card {
-            border-left: 5px solid var(--primary);
-        }
-        .segment {
-            background: var(--surface2);
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: flex-end;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 80px;
-        }
-        .form-group.start-group {
-            position: relative;
-        }
-        .form-group label {
-            font-size: 11px;
-            margin-bottom: 4px;
-            color: #bac2de;
-        }
-        input,
-        select {
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 6px;
-            border-radius: 4px;
-            outline: none;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        input:focus,
-        select:focus {
-            border-color: var(--primary);
-        }
-        button {
-            background: var(--primary);
-            color: #11111b;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: opacity 0.2s;
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        button:hover {
-            opacity: 0.8;
-        }
-        button.danger {
-            background: var(--danger);
-            padding: 6px 10px;
-        }
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .error-msg {
-            color: var(--danger);
-            font-size: 10px;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            white-space: nowrap;
-            margin-top: 3px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            font-weight: bold;
-        }
-        .error-msg.show {
-            opacity: 1;
-        }
-        textarea {
-            width: 100%;
-            height: 130px;
-            background: var(--panel);
-            color: var(--success);
-            font-family: monospace;
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 6px;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 13px;
-        }
-        #canvas-container {
-            width: 100%;
-            height: 340px;
-            background: var(--panel);
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            position: relative;
-        }
-        #fileUpload {
-            display: none;
-        }
-        .view-tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--bg);
-            padding: 3px;
-            border-radius: 7px;
-        }
-        .view-tab {
-            background: transparent;
-            color: var(--text);
-            padding: 6px 10px;
-            font-size: 12px;
-            opacity: 0.65;
-            border-radius: 5px;
-        }
-        .view-tab.active {
-            background: var(--primary);
-            color: #11111b;
-            opacity: 1;
-        }
-        .view-tab:hover {
-            opacity: 1;
-        }
-        .mode-toggle {
-            display: flex;
-            gap: 6px;
-        }
-        .mode-btn {
-            background: var(--surface2);
-            color: var(--text);
-            padding: 7px 10px;
-            font-size: 12px;
-            opacity: 0.7;
-        }
-        .mode-btn.active {
-            background: var(--primary);
-            color: #11111b;
-            opacity: 1;
-        }
-        .mode-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        .hint {
-            font-size: 11px;
-            color: #bac2de;
-            margin: 8px 0 0 0;
-            line-height: 1.4;
-        }
-        .axis-readout {
-            background: var(--surface2);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .readout-title {
-            font-weight: bold;
-            font-size: 13px;
-            color: var(--primary);
-            margin-bottom: 8px;
-        }
-        .readout-group {
-            margin-bottom: 8px;
-        }
-        .readout-group:last-child {
-            margin-bottom: 0;
-        }
-        .group-label {
-            font-size: 11px;
-            color: #bac2de;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .readout-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .readout-row .form-group {
-            min-width: 70px;
-        }
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .toggle-label input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-        .toggle-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .modal-box {
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 20px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        .modal-box textarea {
-            width: 100%;
-            height: 160px;
-        }
-        .modal-box label {
-            font-size: 12px;
-            color: #bac2de;
-            display: block;
-            margin-bottom: 6px;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .btn-cancel {
-            background: var(--panel);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        .import-error {
-            color: var(--danger);
-            font-size: 12px;
-            margin-top: 8px;
-            display: none;
-        }
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-                padding: 10px;
-                height: auto;
-                overflow-y: auto;
-                gap: 15px;
-            }
-            .left-panel {
-                width: 100%;
-                height: auto;
-                max-height: 60vh;
-                padding-right: 5px;
-                overflow-y: auto;
-            }
-            .right-panel {
-                width: 100%;
-                height: auto;
-                max-height: none;
-                overflow-y: visible;
-            }
-            #canvas-container {
-                height: 280px;
-            }
-            .card {
-                margin-bottom: 10px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#353a55">
+<title>Player Animator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+<style>
+:root{
+  --ink:#12111a; --lane:#181722; --label:#292839; --label-2:#30304a;
+  --title-a:#454a66; --title-b:#353a55; --pill-a:#6a759f; --pill-b:#4f5981;
+  --text:#f3f4fc; --muted:#a0a5c6; --edge:#4a4f78;
+  --cyan:#6fdcff; --red:#ff5d62; --yellow:#ffd34d; --orange:#ff9a3d;
+  --ax-x:#ff5c5c; --ax-y:#5ce670; --ax-z:#6a86ff; --ax-xz:#c58bff;
+  --font:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  --label-w:146px; --ruler-h:46px; --pad:20px;
+  --ease-out:cubic-bezier(.2,.9,.25,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--ink);color:var(--text);
+  font-family:var(--font);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;cursor:pointer}
+input,textarea{font:inherit;-webkit-user-select:text;user-select:text}
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+
+/* ---------- 3D stage ---------- */
+#stage{position:relative;flex:1 1 0;min-height:110px;overflow:hidden;
+  background:radial-gradient(120% 95% at 50% 40%,#3a3f66 0%,#222540 52%,#13131f 100%)}
+#stage canvas{position:absolute;inset:0;display:block}
+.chip{position:absolute;left:12px;top:12px;max-width:calc(100% - 24px);padding:7px 14px;border-radius:999px;
+  background:rgba(24,24,38,.66);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.09);font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.chip b{color:#fff;font-weight:600}
+.chip i{font-style:normal;color:var(--cyan);font-weight:600}
+#toast{position:absolute;left:50%;bottom:16px;transform:translate(-50%,12px);opacity:0;pointer-events:none;
+  padding:9px 16px;border-radius:14px;background:rgba(14,14,24,.9);border:1px solid rgba(255,255,255,.1);
+  font-size:13px;max-width:calc(100% - 32px);text-align:center;transition:opacity .2s,transform .25s var(--ease-out);z-index:5}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- Timeline panel ---------- */
+#tl{position:relative;flex:none;display:flex;flex-direction:column;background:var(--label);
+  border-radius:22px 22px 0 0;box-shadow:0 -14px 38px rgba(0,0,0,.55);overflow:hidden;
+  padding-bottom:env(safe-area-inset-bottom)}
+#grip{position:absolute;left:0;right:0;top:0;height:20px;z-index:45;cursor:ns-resize;touch-action:none;display:flex;justify-content:center;padding-top:6px}
+#grip::before{content:"";width:38px;height:4px;border-radius:4px;background:rgba(255,255,255,.28)}
+#titlebar{flex:none;position:relative;z-index:40;height:72px;padding:16px 10px 0;display:flex;align-items:center;gap:6px;
+  background:linear-gradient(180deg,var(--title-a),var(--title-b));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 16px -8px rgba(0,0,0,.65)}
+.tb-l{flex:none;display:flex;align-items:center;gap:4px}
+.tb-r{flex:none;min-width:0;display:flex;align-items:center;gap:6px}
+.ib{width:42px;height:42px;padding:0;border:0;border-radius:13px;background:transparent;display:grid;place-items:center;
+  transition:background .15s,transform .12s}
+.ib svg{width:30px;height:30px;overflow:visible}
+.ib:hover{background:rgba(255,255,255,.07)}
+.ib:active{transform:scale(.9);background:rgba(255,255,255,.14)}
+.play{margin:0 auto;width:54px;height:46px;padding:0;border:0;background:transparent;display:grid;place-items:center;transition:transform .12s}
+.play svg{width:40px;height:40px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+.play:active{transform:scale(.9)}
+.play .i-pause{display:none}
+.play.on .i-play{display:none}
+.play.on .i-pause{display:block}
+.pill{height:42px;min-width:48px;padding:0 15px;border:0;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-size:17px;font-weight:500;line-height:1;white-space:nowrap;
+  background:linear-gradient(180deg,var(--pill-a),var(--pill-b));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -2px 0 rgba(0,0,0,.14),0 3px 8px rgba(0,0,0,.35);
+  transition:transform .12s,filter .15s}
+.pill:active{transform:scale(.95)}
+.pill[aria-expanded="true"]{filter:brightness(1.15)}
+#btnEase .nm{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+#btnEase .gl{display:inline-flex;width:20px;height:20px}
+#btnEase .gl svg{width:20px;height:20px}
+#btnEase .car{width:15px;height:11px}
+
+/* ---------- Timeline scroller ---------- */
+#scroller{position:relative;flex:1 1 0;min-height:0;overflow:auto;background:var(--lane);overscroll-behavior:contain;
+  touch-action:pan-x pan-y;scrollbar-width:thin;scrollbar-color:#454a75 transparent}
+#content{position:relative;min-width:100%;width:calc(var(--label-w) + var(--lane-w,800px))}
+#rulerRow{position:sticky;top:0;z-index:20;display:flex;height:var(--ruler-h)}
+#corner{position:sticky;left:0;z-index:30;flex:none;width:var(--label-w);height:var(--ruler-h);background:var(--label);
+  display:flex;align-items:baseline;gap:6px;padding:12px 0 0 14px;box-shadow:8px 0 14px -8px rgba(0,0,0,.7)}
+#timeNow{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+#corner small{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#ruler{position:relative;flex:none;width:var(--lane-w,800px);height:var(--ruler-h);cursor:ew-resize;touch-action:none;
+  background:linear-gradient(180deg,#1f1e2e,#171622);box-shadow:0 6px 12px -6px rgba(0,0,0,.7)}
+#rulerSvg{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#rulerSvg text{font:500 12px var(--font);fill:#d2d5f0}
+#phHead{position:absolute;left:0;top:0;width:30px;height:34px;margin-left:-15px;pointer-events:none;z-index:3;
+  filter:drop-shadow(0 0 7px rgba(111,220,255,.7));will-change:transform}
+#phLine{position:absolute;left:0;top:var(--ruler-h);bottom:0;width:3px;margin-left:-1.5px;border-radius:2px;z-index:6;
+  background:linear-gradient(180deg,var(--cyan),#53c4ee);box-shadow:0 0 12px rgba(111,220,255,.55);pointer-events:none;will-change:transform}
+
+/* ---------- Rows ---------- */
+.row{display:flex;height:48px}
+.row.bone{height:56px}
+.lbl{position:sticky;left:0;z-index:10;flex:none;width:var(--label-w);display:flex;align-items:center;gap:6px;
+  padding:0 8px;background:var(--label);font-size:15.5px;font-weight:500;cursor:pointer;
+  box-shadow:8px 0 14px -8px rgba(0,0,0,.7)}
+.row.bone .lbl{padding:0 6px 0 4px;gap:2px;font-size:15px}
+.pillbg{display:flex;align-items:center;gap:6px;min-width:0;padding:4px 6px;border-radius:14px;transition:background .15s}
+.row.bone.sel .pillbg{background:rgba(255,255,255,.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.folder{width:26px;height:24px;flex:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tw{position:relative;margin-left:auto;flex:none;width:20px;height:28px;padding:0;border:0;background:none;
+  display:grid;place-items:center;font-size:19px;font-weight:500;line-height:1;color:#c9cdee;transition:color .15s,transform .12s}
+.tw::after{content:"";position:absolute;inset:-8px -6px}
+.tw:active{transform:scale(.8);color:#fff}
+.row.ch .lbl{padding-left:16px}
+.row.ch .txt{padding:5px 13px;border-radius:12px;transition:background .15s;font-size:15px}
+.row.ch.sel .txt{background:rgba(255,255,255,.17);box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+.lane{position:relative;flex:none;width:var(--lane-w,800px);background:var(--lane)}
+.row.ch .lane::before{content:"";position:absolute;left:0;right:0;top:6px;bottom:6px;
+  background:linear-gradient(180deg,#524d66,#454158);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),inset 0 -2px 6px rgba(0,0,0,.22)}
+.row.ch.sel .lane::before{background:linear-gradient(180deg,#59628a,#4a5378)}
+.row .lane::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.055) 0 1px,transparent 1px calc(var(--pps,200) * .25px));background-position-x:var(--pad)}
+
+/* collapsible group */
+.chs{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--ease-out)}
+.grp.open .chs{grid-template-rows:1fr}
+.chs-in{min-height:0;overflow:clip}
+@supports not (overflow:clip){.chs{display:none;transition:none}.grp.open .chs{display:block}}
+
+/* axis row */
+.row.axis{height:0;opacity:0;overflow:clip;transition:height .28s var(--ease-out),opacity .2s}
+.row.axis.open{height:44px;opacity:1}
+.row.axis .lbl{cursor:default;align-items:center}
+.axbtns{display:flex;gap:6px;padding-left:10px}
+.axbtn{width:36px;height:30px;padding:0;border-radius:10px;border:1.5px solid transparent;font-size:14px;font-weight:600;
+  background:#0d0c14;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.4);
+  transform:translateY(-22px);opacity:0;transition:transform .32s var(--ease-out),opacity .2s,border-color .15s,background .15s}
+.row.axis.open .axbtn{transform:none;opacity:1}
+.row.axis.open .axbtn:nth-child(2){transition-delay:.05s}
+.row.axis.open .axbtn:nth-child(3){transition-delay:.1s}
+.axbtn[data-a="x"]{color:var(--ax-x)} .axbtn[data-a="y"]{color:var(--ax-y)} .axbtn[data-a="z"]{color:var(--ax-z)} .axbtn[data-a="xz"]{color:var(--ax-xz)}
+.axbtn.on{border-color:currentColor;background:#1a1930;box-shadow:0 0 12px -2px currentColor,inset 0 1px 0 rgba(255,255,255,.1)}
+
+/* ---------- Keyframes ---------- */
+.kf{position:absolute;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;padding:0;border:0;background:none;
+  display:grid;place-items:center;color:#fff;touch-action:none;cursor:grab;z-index:2}
+.kf .g{width:24px;height:24px;overflow:visible;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55));transition:transform .14s var(--ease-out),filter .14s}
+.kf.st-red{color:var(--red)} .kf.st-yellow{color:var(--yellow)} .kf.st-orange{color:var(--orange)}
+.kf.sel{color:var(--cyan);z-index:3}
+.kf.sel .g{transform:scale(1.14);filter:drop-shadow(0 0 7px rgba(111,220,255,.85))}
+.kf.dragging{cursor:grabbing;z-index:4}
+.kf.dragging .g{transform:scale(1.28)}
+.kf.mini{width:20px;height:20px;margin:-10px 0 0 -10px;pointer-events:none;opacity:.8}
+.kf.mini .g{width:12px;height:12px;filter:none}
+.g .full{fill:currentColor;stroke:currentColor;stroke-width:1.4;stroke-linejoin:round}
+.g .ol{fill:currentColor;fill-opacity:.14;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+.g .half{fill:currentColor;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round}
+
+/* ---------- Popovers ---------- */
+.pop{position:fixed;z-index:80;display:none;background:linear-gradient(180deg,#3c4060,#30334e);border-radius:18px;padding:12px;
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 44px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.1)}
+.pop.show{display:block;animation:popIn .18s var(--ease-out)}
+@keyframes popIn{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+.pop h3{margin:2px 4px 8px;font-size:13px;font-weight:600;color:var(--muted)}
+.pop h3 b{color:#fff;font-weight:600}
+
+#easePop{width:min(372px,calc(100vw - 16px));overflow:auto;overscroll-behavior:contain}
+.ease-head{display:grid;grid-template-columns:72px 1fr 1fr 1fr;gap:6px;padding:0 2px 4px;font-size:11.5px;color:var(--muted);text-align:center}
+.ease-row{display:grid;grid-template-columns:72px 1fr 1fr 1fr;gap:6px;margin-bottom:6px;align-items:stretch}
+.ease-fam{display:flex;align-items:center;font-size:12.5px;font-weight:500;padding-left:4px}
+.ec{height:42px;padding:0 6px;border:1.5px solid transparent;border-radius:11px;background:#262840;display:flex;align-items:center;justify-content:center;gap:6px;
+  color:#fff;transition:background .12s,border-color .12s,transform .1s}
+.ec:active{transform:scale(.94)}
+.ec .gl{width:17px;height:17px;display:inline-flex;color:#cfd3f5}
+.ec .gl svg{width:17px;height:17px}
+.ec .cv{width:36px;height:22px}
+.ec .cv path{fill:none;stroke:#9fa6d6;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ec.on{border-color:var(--cyan);background:#2c3b57}
+.ec.on .gl{color:var(--cyan)} .ec.on .cv path{stroke:var(--cyan)}
+.ec.wide{grid-column:2 / span 3}
+
+#snapPop{width:min(300px,calc(100vw - 16px))}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip-btn{height:34px;min-width:44px;padding:0 12px;border:0;border-radius:999px;background:#262840;font-size:14px;font-weight:500;transition:background .12s}
+.chip-btn.on{background:var(--cyan);color:#10202a;font-weight:600}
+.stepper{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.stepper button{width:40px;height:40px;border:0;border-radius:12px;background:#262840;font-size:20px;line-height:1}
+.stepper input{flex:1;min-width:0;height:40px;border-radius:12px;border:1.5px solid transparent;background:#12111c;color:#fff;text-align:center;font-size:17px;font-weight:600}
+.stepper input:focus{border-color:var(--cyan)}
+.hint{margin:0 4px 12px;font-size:12px;color:var(--muted);line-height:1.5}
+.zoom{display:flex;align-items:center;gap:10px;padding:0 4px}
+.zoom span{font-size:12px;color:var(--muted);width:40px}
+.zoom input{flex:1;accent-color:var(--cyan)}
+
+#keyPop{width:min(250px,calc(100vw - 16px))}
+.kp-fields{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.kp-f{display:flex;align-items:center;gap:10px}
+.kp-f label{width:34px;height:34px;border-radius:10px;background:#0d0c14;display:grid;place-items:center;font-weight:600;font-size:14px}
+.kp-f[data-a="x"] label{color:var(--ax-x)} .kp-f[data-a="y"] label{color:var(--ax-y)} .kp-f[data-a="z"] label{color:var(--ax-z)} .kp-f[data-a="xz"] label{color:var(--ax-xz)}
+.kp-f input{flex:1;min-width:0;height:36px;border-radius:11px;border:1.5px solid transparent;background:#12111c;color:#fff;padding:0 12px;font-size:15px;font-weight:500;font-variant-numeric:tabular-nums}
+.kp-f input:focus{border-color:var(--cyan)}
+.kp-f em{font-style:normal;width:16px;font-size:12px;color:var(--muted)}
+.btn-del{width:100%;height:40px;border:0;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(255,93,98,.16);color:#ff8a8e;font-weight:600;font-size:14px;transition:background .12s,transform .1s}
+.btn-del:active{transform:scale(.97);background:rgba(255,93,98,.3)}
+
+/* ---------- Sheets ---------- */
+.overlay{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:rgba(9,9,16,.58);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.overlay.show{display:flex}
+.sheet{width:min(580px,100%);max-height:90dvh;overflow:auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+  border-radius:24px 24px 0 0;background:linear-gradient(180deg,#383b58,#2a2c44);box-shadow:0 -20px 54px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12);
+  animation:sheetIn .3s var(--ease-out)}
+@keyframes sheetIn{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (min-width:700px){.overlay{align-items:center}.sheet{border-radius:24px}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sheet h2{margin:0;font-size:19px;font-weight:600}
+.sheet p{margin:0 0 14px;font-size:13.5px;color:var(--muted);line-height:1.55}
+.x{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.1);font-size:20px;line-height:1;display:grid;place-items:center}
+.opts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.sw{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;border-radius:999px;background:#23243a;font-size:13.5px;cursor:pointer}
+.sw input{position:absolute;opacity:0;pointer-events:none}
+.sw .tr{width:34px;height:20px;border-radius:20px;background:#4a4f78;position:relative;transition:background .18s;flex:none}
+.sw .tr::after{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s var(--ease-out)}
+.sw input:checked + .tr{background:var(--cyan)}
+.sw input:checked + .tr::after{transform:translateX(14px);background:#10202a}
+.sw input:focus-visible + .tr{outline:2px solid #fff;outline-offset:2px}
+textarea.code{width:100%;height:170px;resize:vertical;padding:12px 14px;border-radius:14px;border:1.5px solid transparent;
+  background:#12111c;color:#9ff0b0;font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-all}
+textarea.code:focus{border-color:var(--cyan)}
+.meta{margin:8px 2px 14px;font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:10px;justify-content:flex-end}
+.btn{height:44px;padding:0 22px;border:0;border-radius:14px;font-size:15px;font-weight:600;transition:transform .1s,filter .15s}
+.btn:active{transform:scale(.96)}
+.btn.primary{background:linear-gradient(180deg,#7ee3ff,#4fc3ee);color:#0d2230;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 12px rgba(79,195,238,.3)}
+.btn.ghost{background:rgba(255,255,255,.1)}
+.btn.danger{background:linear-gradient(180deg,#ff7b80,#ee4a50);color:#fff}
+.err{display:none;margin:8px 2px 0;font-size:12.5px;color:#ff8a8e}
+.skin-row{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+#skinThumb{width:72px;height:72px;border-radius:16px;image-rendering:pixelated;background:#12111c;border:2px solid rgba(255,255,255,.12);flex:none}
+.skin-btns{display:flex;flex-direction:column;gap:8px;flex:1}
+.skin-btns .btn{height:40px;font-size:14px}
+
+@media (max-width:420px){
+  :root{--label-w:140px}
+  #titlebar{padding:16px 6px 0;gap:2px}
+  .ib{width:38px}
+  .pill{padding:0 12px;font-size:15.5px}
+  #btnEase .gl{display:none}
+  #btnEase .nm{max-width:112px}
+  .row.bone .lbl{font-size:14.5px}
+}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+
+</style>
 </head>
 <body>
-    <div class="left-panel">
-        <h1>Player Animator V1.3</h1>
-        <div class="card">
-            <div class="toggle-group">
-                <label class="toggle-label">
-                    <input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms
-                </label>
-                <label class="toggle-label">
-                    <input type="checkbox" id="playerRiding" onchange="onRidingToggle()"> Player Riding
-                </label>
-                <label class="toggle-label">
-                    <input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs
-                </label>
-            </div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="kcL"><rect x="0" y="0" width="10" height="20"/></clipPath>
+    <clipPath id="kcR"><rect x="10" y="0" width="10" height="20"/></clipPath>
+  </defs>
+</svg>
+
+<div id="app">
+  <main id="stage">
+    <div class="chip" id="chip"></div>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <section id="tl" aria-label="Animation timeline">
+    <div id="grip" title="Drag to resize"></div>
+
+    <header id="titlebar">
+      <div class="tb-l">
+        <button class="ib" id="btnAdd" aria-label="Add keyframe at playhead" title="Add keyframe at playhead">
+          <svg viewBox="0 0 32 32"><path d="M13 3h6a2 2 0 0 1 2 2v6h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6v6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-6H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h6V5a2 2 0 0 1 2-2z" fill="#fff" stroke="#8d96c8" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="ib" id="btnExpr" aria-label="Stop expression" title="Stop expression">
+          <svg viewBox="0 0 32 32"><rect x="3.5" y="4.5" width="25" height="23" rx="2" fill="#2b3048" stroke="#fff" stroke-width="2"/><path d="M3.5 10.5h25" stroke="#fff" stroke-width="2"/><circle cx="7" cy="7.5" r="1" fill="#fff"/><circle cx="10.2" cy="7.5" r="1" fill="#fff"/><circle cx="13.4" cy="7.5" r="1" fill="#fff"/><path d="M8 15l6 4.2L8 23.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 24h8" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="ib" id="btnSkin" aria-label="Change skin" title="Change skin">
+          <svg viewBox="0 0 32 32"><path d="M11.5 4.5L3.5 9l2.6 6 3.4-1.3V27.5h13V13.7l3.4 1.3 2.6-6-8-4.5c-.6 2-2.4 3.3-4.5 3.3s-3.9-1.3-4.5-3.3z" fill="#fff" stroke="#8d96c8" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <button class="play" id="btnPlay" aria-label="Play" title="Play / pause (Space)">
+        <svg class="i-play" viewBox="0 0 40 40"><path d="M10 5.5v29a1.6 1.6 0 0 0 2.4 1.4l24-14.5a1.6 1.6 0 0 0 0-2.8l-24-14.5A1.6 1.6 0 0 0 10 5.5z" fill="#fff" stroke="#8d96c8" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        <svg class="i-pause" viewBox="0 0 40 40"><rect x="8" y="6" width="9" height="28" rx="2.5" fill="#fff" stroke="#8d96c8" stroke-width="1.6"/><rect x="23" y="6" width="9" height="28" rx="2.5" fill="#fff" stroke="#8d96c8" stroke-width="1.6"/></svg>
+      </button>
+
+      <div class="tb-r">
+        <button class="pill" id="btnEase" aria-haspopup="true" aria-expanded="false" title="Easing of the selected keyframe">
+          <span class="gl" id="easeGlyph"></span><span class="nm" id="easeName">Lerp</span>
+          <svg class="car" viewBox="0 0 16 12"><path d="M1.5 1.5h13L8 11z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="pill" id="btnSnap" aria-haspopup="true" aria-expanded="false" title="Snapping (steps per second)">24</button>
+      </div>
+    </header>
+
+    <div id="scroller">
+      <div id="content">
+        <div id="rulerRow">
+          <div id="corner"><span id="timeNow">0.00</span><small id="frameNow">s</small></div>
+          <div id="ruler">
+            <svg id="rulerSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg id="phHead" viewBox="0 0 30 34"><path d="M3 3h24L16.6 28.5a1.8 1.8 0 0 1-3.2 0z" fill="#6fdcff" stroke="#9be9ff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
         </div>
-        <div id="bonesContainer"></div>
-        <button onclick="addBone()" style="margin-bottom:30px;width:100%;">+ Add New Bone</button>
+        <div id="rows"></div>
+        <div id="phLine"></div>
+      </div>
     </div>
-    <div class="right-panel">
-        <div class="card" style="margin-bottom:0;">
-            <div class="flex-between">
-                <h2 id="viewportTitle">3D Live Preview</h2>
-                <div class="view-tabs">
-                    <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
-                    <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
-                </div>
-            </div>
-            <div id="canvas-container"></div>
-            <div id="previewControls" class="flex-between" style="margin-top:8px;">
-                <button onclick="togglePlay()">Pause / Play</button>
-                <p class="hint" style="margin:0;">Left click + drag: Rotate camera | Scroll: Zoom</p>
-            </div>
-            <div id="axisControls" style="display:none;margin-top:8px;">
-                <div class="flex-between" style="gap:8px;flex-wrap:wrap;">
-                    <select id="boneSelect" onchange="selectBone(this.value)" style="flex:1;min-width:130px;">
-                        <option value="root">Root</option>
-                        <option value="waist">Body / Waist</option>
-                        <option value="head">Head</option>
-                        <option value="rightArm">Right Arm</option>
-                        <option value="leftArm">Left Arm</option>
-                        <option value="rightLeg">Right Leg</option>
-                        <option value="leftLeg">Left Leg</option>
-                    </select>
-                    <div class="mode-toggle">
-                        <button class="mode-btn active" id="modeRotateBtn" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
-                        <button class="mode-btn" id="modeTranslateBtn" onclick="setGizmoMode('translate')">✥ Move</button>
-                        <button class="mode-btn" id="modeScaleBtn" onclick="setGizmoMode('scale')" disabled>⤢ Scale</button>
-                    </div>
-                </div>
-                <div id="axisReadout" class="axis-readout"></div>
-                <div class="flex-between" style="gap:8px;margin-top:8px;">
-                    <button class="danger" style="flex:1;" onclick="resetBonePose()">Reset This Part</button>
-                    <button style="flex:1;" onclick="resetAllPose()">Reset All Pose</button>
-                </div>
-                <p class="hint">Tap a body part (or use the dropdown) to select it, then drag the gizmo to pose it — only the axes that part actually has will show. Values are recorded live below. Drag empty space to orbit the camera.</p>
-            </div>
-        </div>
-        <div class="card" style="margin-bottom:0;">
-            <h2>Custom Skin</h2>
-            <div style="margin-top:10px;display:flex;gap:10px;">
-                <button onclick="document.getElementById('fileUpload').click()">Upload Image</button>
-                <button onclick="resetSkin()">Reset Default</button>
-                <input type="file" id="fileUpload" accept="image/*" onchange="uploadSkin(event)">
-            </div>
-        </div>
-        <div class="card" style="flex:1;display:flex;flex-direction:column;margin-bottom:0;">
-            <div class="flex-between" style="margin-bottom:10px;">
-                <h2>Stop_Expression (playanimation)</h2>
-                <div style="display:flex;gap:8px;">
-                    <button onclick="copyCode()">Copy</button>
-                    <button onclick="openImportModal()">Import</button>
-                </div>
-            </div>
-            <textarea id="output" readonly style="flex:1;"></textarea>
-        </div>
+  </section>
+</div>
+
+<!-- Popovers -->
+<div class="pop" id="easePop" role="dialog" aria-label="Easing"></div>
+<div class="pop" id="snapPop" role="dialog" aria-label="Snapping and zoom"></div>
+<div class="pop" id="keyPop" role="dialog" aria-label="Keyframe values"></div>
+
+<!-- Stop expression -->
+<div class="overlay" id="exprOverlay">
+  <div class="sheet" role="dialog" aria-label="Stop expression">
+    <div id="exprMain">
+      <div class="sheet-head"><h2>Stop Expression</h2><button class="x" data-close aria-label="Close">&times;</button></div>
+      <div class="opts">
+        <label class="sw"><input type="checkbox" id="optArms"><span class="tr"></span>Mirror arms</label>
+        <label class="sw"><input type="checkbox" id="optLegs"><span class="tr"></span>Mirror legs</label>
+      </div>
+      <textarea class="code" id="exprOut" readonly spellcheck="false" placeholder="No animated values yet. Select a bone, add a keyframe, then move the gizmo."></textarea>
+      <div class="meta" id="exprMeta"></div>
+      <div class="actions">
+        <button class="btn ghost" id="btnImport">Import</button>
+        <button class="btn primary" id="btnCopy">Copy</button>
+      </div>
     </div>
-
-    <div id="importOverlay" class="modal-overlay">
-        <div class="modal-box">
-            <div id="importPhaseInput">
-                <h2>Import Stop_Expression</h2>
-                <p class="hint" style="margin-top:0;">Paste a Stop_Expression code below, then tap Import.</p>
-                <label for="importInput">Stop_Expression code</label>
-                <textarea id="importInput" placeholder="Paste your Stop_Expression here..."></textarea>
-                <div id="importError" class="import-error"></div>
-                <div class="modal-actions">
-                    <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
-                    <button onclick="attemptImport()">Import</button>
-                </div>
-            </div>
-            <div id="importPhaseConfirm" style="display:none;">
-                <h2>Replace all keyframes?</h2>
-                <p class="hint" style="margin-top:0;">Do you want to import this? If you continue, all of your current keyframe progress will be lost and replaced with the imported data.</p>
-                <div class="modal-actions">
-                    <button class="btn-cancel" onclick="cancelImportConfirm()">Cancel</button>
-                    <button class="danger" onclick="confirmReplaceImport()">Replace</button>
-                </div>
-            </div>
-        </div>
+    <div id="exprImport" hidden>
+      <div class="sheet-head"><h2>Import Stop Expression</h2><button class="x" data-close aria-label="Close">&times;</button></div>
+      <p>Paste a Stop Expression below. Your current keyframes will be replaced.</p>
+      <textarea class="code" id="importIn" spellcheck="false" placeholder="Paste your Stop Expression here..."></textarea>
+      <div class="err" id="importErr"></div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn ghost" id="btnImportBack">Back</button>
+        <button class="btn primary" id="btnImportGo">Import</button>
+      </div>
     </div>
-
-    <script>
-        const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png";
-        const boneVariables = [
-            "v.root.x", "v.root.z",
-            "v.root.xpos", "v.root.ypos", "v.root.zpos",
-            "v.body.x", "v.body.y", "v.body.z",
-            "v.body.xpos", "v.body.ypos",
-            "v.body_head.xzscale", "v.body_head.yscale",
-            "v.head.x", "v.head.y", "v.head.z",
-            "v.head.xpos", "v.head.ypos", "v.head.zpos",
-            "v.rightleg.x", "v.leftleg.x",
-            "v.rightarm.x", "v.rightarm.y", "v.rightarm.z", "v.rightarm.ypos",
-            "v.leftarm.x", "v.leftarm.y", "v.leftarm.z", "v.leftarm.ypos"
-        ];
-        const easeList = [
-            "lerp", "ease_in_sine", "ease_out_sine", "ease_in_out_sine",
-            "ease_in_quad", "ease_out_quad", "ease_in_out_quad",
-            "ease_in_cubic", "ease_out_cubic", "ease_in_out_cubic",
-            "ease_in_quart", "ease_out_quart", "ease_in_out_quart",
-            "ease_in_quint", "ease_out_quint", "ease_in_out_quint",
-            "ease_in_expo", "ease_out_expo", "ease_in_out_expo",
-            "ease_in_circ", "ease_out_circ", "ease_in_out_circ",
-            "ease_in_back", "ease_out_back", "ease_in_out_back",
-            "ease_in_elastic", "ease_out_elastic", "ease_in_out_elastic",
-            "ease_in_bounce", "ease_out_bounce", "ease_in_out_bounce"
-        ];
-        let data = [
-            { bone: 'v.rightarm.x', segments: [
-                { start: 0, dur: 0.5, val1: 0, val2: -90, ease: 'ease_out_back' },
-                { start: 0.5, dur: 0.5, val1: 0, val2: 0, ease: 'ease_in_out_sine' }
-            ] }
-        ];
-
-        const trashIcon =
-            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#11111b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-        const keyframeIcon =
-            `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>`;
-
-        function renderBones() {
-            const container = document.getElementById('bonesContainer');
-            container.innerHTML = '';
-            data.forEach((bData, bIndex) => {
-                let boneOptions = boneVariables.map(v =>
-                    `<option value="${v}" ${bData.bone === v ? 'selected' : ''}>${v}</option>`).join('');
-                let html =
-                    `<div class="card bone-card"><div class="flex-between"><div class="form-group"><select onchange="updateBone(${bIndex}, this.value)" style="font-weight:bold;font-size:14px;">${boneOptions}</select></div><button class="danger" onclick="removeBone(${bIndex})" title="Remove Bone">${trashIcon}</button></div><div id="segments-${bIndex}">`;
-                bData.segments.forEach((seg, sIndex) => {
-                    let easeOptions = easeList.map(e => {
-                        let label = e === 'lerp' ? 'lerp (linear)' : e.replace(/_/g, ' ');
-                        return `<option value="${e}" ${seg.ease === e ? 'selected' : ''}>${label}</option>`;
-                    }).join('');
-                    html +=
-                        `<div class="segment"><div class="form-group" style="width:20px;"><label>#${sIndex + 1}</label></div><div class="form-group start-group" style="width:55px;"><label>Start</label><input type="number" step="0.1" id="start-${bIndex}-${sIndex}" value="${seg.start}" onchange="validateStart(${bIndex}, ${sIndex}, this.value)"><span id="err-${bIndex}-${sIndex}" class="error-msg"></span></div><div class="form-group" style="width:55px;"><label>Dur</label><input type="number" step="0.1" value="${seg.dur}" oninput="updateSeg(${bIndex}, ${sIndex}, 'dur', this.value)"></div>${sIndex === 0 ? `<div class="form-group" style="width:60px;"><label>From</label><input type="number" value="${seg.val1}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val1', this.value)"></div>` : ''}<div class="form-group" style="width:60px;"><label>To</label><input type="number" value="${seg.val2}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val2', this.value)"></div><div class="form-group"><label>Ease</label><select onchange="updateSeg(${bIndex}, ${sIndex}, 'ease', this.value)">${easeOptions}</select></div><div class="form-group"><button class="danger" style="margin-top:15px;" onclick="removeSeg(${bIndex}, ${sIndex})" title="Remove Keyframe">${trashIcon}</button></div></div>`;
-                });
-                html += `</div><br><button onclick="addSeg(${bIndex})">${keyframeIcon} Add Keyframe</button></div>`;
-                container.innerHTML += html;
-            });
-            generate();
-        }
-
-        function addBone() { data.push({ bone: boneVariables[0], segments: [{ start: 0, dur: 0.5, val1: 0,
-                val2: 45, ease: 'lerp' }] }); renderBones(); }
-
-        function removeBone(i) { data.splice(i, 1); renderBones(); }
-
-        function addSeg(bIndex) {
-            let segs = data[bIndex].segments;
-            let start = segs.length > 0 ? parseFloat(segs[segs.length - 1].start) + parseFloat(segs[segs
-                .length - 1].dur) : 0;
-            segs.push({ start: Number(start.toFixed(2)), dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' });
-            renderBones();
-        }
-
-        function removeSeg(bIndex, sIndex) { data[bIndex].segments.splice(sIndex, 1); renderBones(); }
-
-        function updateBone(bIndex, val) { data[bIndex].bone = val; generate(); }
-
-        function updateSeg(bIndex, sIndex, key, val) { data[bIndex].segments[sIndex][key] = key === 'ease' ?
-                val : parseFloat(val) || 0; generate(); }
-
-        function validateStart(bIndex, sIndex, val) {
-            let numVal = parseFloat(val) || 0;
-            if (sIndex > 0) {
-                let prevSeg = data[bIndex].segments[sIndex - 1];
-                let minStart = Number((prevSeg.start + prevSeg.dur).toFixed(2));
-                if (numVal < minStart) {
-                    let inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
-                    let errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
-                    inputEl.style.color = "var(--danger)";
-                    inputEl.style.borderColor = "var(--danger)";
-                    errEl.innerText = `Cannot be below ${minStart}`;
-                    errEl.classList.add('show');
-                    data[bIndex].segments[sIndex].start = minStart;
-                    generate();
-                    setTimeout(() => {
-                        if (inputEl && errEl) {
-                            inputEl.style.color = "";
-                            inputEl.style.borderColor = "";
-                            errEl.classList.remove('show');
-                            inputEl.value = minStart;
-                        }
-                    }, 2000);
-                    return;
-                }
-            }
-            updateSeg(bIndex, sIndex, 'start', numVal);
-        }
-
-        function buildDescendingTernary(segments, idx) {
-            // Walks from the LAST segment back to the FIRST. Each segment is gated on its
-            // OWN start time (">="), exactly like the original per-segment blocks — so
-            // editing any segment's start (including the first one) can never desync the
-            // logic the way a "next segment's start" cutoff could. Segment 0 is the final,
-            // unconditional fallback (its own gating is handled by the outer wrapper in
-            // buildBoneStatement). Nested ternaries are always wrapped in parentheses:
-            // Molang's docs note that unparenthesized nested ternaries were mis-parsed
-            // before a past versioned fix, so parentheses keep this safe on any version.
-            const seg = segments[idx];
-            const timeExpr = seg.start === 0 ? `q.state_time` : `(q.state_time-${seg.start})`;
-            const easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease;
-            // Every segment interpolates between two literal numbers we already know at
-            // generation time: its own val1 (segment 0) or the PREVIOUS segment's val2
-            // (any later segment). Using the bone variable itself as the "from" value here
-            // would re-lerp toward the target on every single game tick, which makes the
-            // value race to the target almost immediately instead of moving at a constant,
-            // duration-matched rate — that's what made later keyframes look sped up even
-            // though their duration matched the first one.
-            const fromVal = idx === 0 ? seg.val1 : segments[idx - 1].val2;
-            const thisExpr =
-                `math.${easeFunc}(${fromVal},${seg.val2},math.min(${timeExpr}/${seg.dur},1))`;
-            if (idx === 0) return thisExpr;
-            const rest = buildDescendingTernary(segments, idx - 1);
-            const wrappedRest = (idx - 1 === 0) ? rest : `(${rest})`;
-            return `q.state_time>=${seg.start}?${thisExpr}:${wrappedRest}`;
-        }
-
-        function buildBoneStatement(segments, boneVarName) {
-            const lastIdx = segments.length - 1;
-            const valueExpr = buildDescendingTernary(segments, lastIdx);
-            const firstStart = segments[0].start;
-            if (firstStart === 0) return `${boneVarName}=${valueExpr};`;
-            // First keyframe doesn't start at 0: gate the whole assignment in a block so
-            // nothing is written to the variable before its start time is reached, just
-            // like the original format did for every segment.
-            return `q.state_time>=${firstStart}?{${boneVarName}=${valueExpr};};`;
-        }
-
-        function generate() {
-            let mirrorArms = document.getElementById('mirrorArms').checked;
-            let mirrorLegs = document.getElementById('mirrorLegs').checked;
-            let outStr = "";
-            let used = new Set();
-            data.forEach(bData => {
-                used.add(bData.bone);
-                if (!bData.segments || bData.segments.length === 0) return;
-                outStr += buildBoneStatement(bData.segments, bData.bone);
-            });
-            if (mirrorArms) {
-                if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr +=
-                    `v.leftarm.x=v.rightarm.x;`;
-                else if (used.has("v.leftarm.x") && !used.has("v.rightarm.x")) outStr +=
-                    `v.rightarm.x=v.leftarm.x;`;
-                if (used.has("v.rightarm.y") && !used.has("v.leftarm.y")) outStr +=
-                    `v.leftarm.y=-v.rightarm.y;`;
-                else if (used.has("v.leftarm.y") && !used.has("v.rightarm.y")) outStr +=
-                    `v.rightarm.y=-v.leftarm.y;`;
-                if (used.has("v.rightarm.z") && !used.has("v.leftarm.z")) outStr +=
-                    `v.leftarm.z=-v.rightarm.z;`;
-                else if (used.has("v.leftarm.z") && !used.has("v.rightarm.z")) outStr +=
-                    `v.rightarm.z=-v.leftarm.z;`;
-                if (used.has("v.rightarm.ypos") && !used.has("v.leftarm.ypos")) outStr +=
-                    `v.leftarm.ypos=v.rightarm.ypos;`;
-                else if (used.has("v.leftarm.ypos") && !used.has("v.rightarm.ypos")) outStr +=
-                    `v.rightarm.ypos=v.leftarm.ypos;`;
-            }
-            if (mirrorLegs) {
-                if (used.has("v.rightleg.x") && !used.has("v.leftleg.x")) outStr +=
-                    `v.leftleg.x=v.rightleg.x;`;
-                else if (used.has("v.leftleg.x") && !used.has("v.rightleg.x")) outStr +=
-                    `v.rightleg.x=v.leftleg.x;`;
-            }
-            document.getElementById('output').value = outStr;
-        }
-
-        function onRidingToggle() {
-            // 3D view updates automatically via animation loop.
-            // Riding pose does NOT affect variables or Stop_Expression output.
-            // No generate() call here per user requirement.
-        }
-
-        function copyCode() {
-            let outputBox = document.getElementById('output');
-            outputBox.select();
-            document.execCommand('copy');
-        }
-
-        /* =====================================================================
-           IMPORT FEATURE — parse a pasted Stop_Expression back into keyframe data
-           ===================================================================== */
-        let pendingImportResult = null;
-
-        function splitTopLevelCommas(str) {
-            let depth = 0;
-            let parts = [];
-            let last = 0;
-            for (let i = 0; i < str.length; i++) {
-                const c = str[i];
-                if (c === '(') depth++;
-                else if (c === ')') depth--;
-                else if (c === ',' && depth === 0) {
-                    parts.push(str.slice(last, i));
-                    last = i + 1;
-                }
-            }
-            parts.push(str.slice(last));
-            return parts;
-        }
-
-        function splitTopLevelTernary(str) {
-            let depth = 0;
-            let qIndex = -1,
-                colonIndex = -1;
-            for (let i = 0; i < str.length; i++) {
-                const c = str[i];
-                if (c === '(') depth++;
-                else if (c === ')') depth--;
-                else if (c === '?' && depth === 0 && qIndex === -1) qIndex = i;
-                else if (c === ':' && depth === 0 && qIndex !== -1 && colonIndex === -1) colonIndex =
-                    i;
-            }
-            if (qIndex === -1 || colonIndex === -1) return null;
-            return {
-                truePart: str.slice(qIndex + 1, colonIndex).trim(),
-                falsePart: str.slice(colonIndex + 1).trim()
-            };
-        }
-
-        function stripOuterParens(str) {
-            str = str.trim();
-            while (str[0] === '(' && str[str.length - 1] === ')') {
-                let depth = 0,
-                    fullyWraps = true;
-                for (let i = 0; i < str.length; i++) {
-                    if (str[i] === '(') depth++;
-                    else if (str[i] === ')') {
-                        depth--;
-                        if (depth === 0 && i !== str.length - 1) { fullyWraps = false; break; }
-                    }
-                }
-                if (!fullyWraps) break;
-                str = str.slice(1, -1).trim();
-            }
-            return str;
-        }
-
-        function parseMathCall(str) {
-            str = stripOuterParens(str.trim());
-            const m = str.match(/^math\.([a-zA-Z_]+)\((.*)\)$/s);
-            if (!m) return null;
-            const easeRaw = m[1];
-            const args = splitTopLevelCommas(m[2]);
-            if (args.length < 3) return null;
-            const val1Expr = args[0].trim();
-            const val2Expr = args[1].trim();
-            const minExpr = stripOuterParens(args.slice(2).join(',').trim());
-            const minMatch = minExpr.match(/^math\.min\((.+)\/([\d.]+)\s*,\s*1\)$/s);
-            if (!minMatch) return null;
-            let timeExpr = minMatch[1].trim();
-            const dur = parseFloat(minMatch[2]);
-            let start = 0;
-            let sub = timeExpr.match(/^\(?\s*q\.state_time\s*-\s*([\d.]+)\s*\)?$/);
-            if (sub) start = parseFloat(sub[1]);
-            return { val1Expr, val2Expr, ease: easeRaw, dur, start };
-        }
-
-        function parseBoneChain(str) {
-            str = stripOuterParens(str.trim());
-            const split = splitTopLevelTernary(str);
-            if (!split) {
-                const call = parseMathCall(str);
-                return call ? [call] : null;
-            }
-            const trueCall = parseMathCall(split.truePart);
-            if (!trueCall) return null;
-            const restChain = parseBoneChain(split.falsePart);
-            if (!restChain) return null;
-            return [trueCall, ...restChain];
-        }
-
-        function splitTopLevelStatements(text) {
-            // Splits on ';' but only where it sits outside both ( ) and { } nesting, so a
-            // gate block like "q.state_time>=1?{bone=expr;};" is kept as ONE statement
-            // instead of being cut at the semicolon that lives inside its braces.
-            let depth = 0;
-            let parts = [];
-            let last = 0;
-            for (let i = 0; i < text.length; i++) {
-                const c = text[i];
-                if (c === '(' || c === '{') depth++;
-                else if (c === ')' || c === '}') depth--;
-                else if (c === ';' && depth === 0) {
-                    parts.push(text.slice(last, i));
-                    last = i + 1;
-                }
-            }
-            const tail = text.slice(last);
-            parts.push(tail);
-            return parts.map(s => s.trim()).filter(s => s.length > 0);
-        }
-
-        function unwrapGateBlock(statement) {
-            // Recognizes "q.state_time>=NUM?{ ... }" and returns just the interior.
-            // Plain (ungated) statements are returned unchanged.
-            const m = statement.match(/^q\.state_time\s*>=\s*[\d.]+\s*\?\s*\{(.+)\}$/s);
-            if (!m) return statement;
-            let inner = m[1].trim();
-            if (inner.endsWith(';')) inner = inner.slice(0, -1).trim();
-            return inner;
-        }
-
-        function parseStopExpression(text) {
-            const statements = splitTopLevelStatements(text);
-            const boneMap = {};
-            const order = [];
-            let mirrorArms = false;
-            let mirrorLegs = false;
-            const mirrorArmVars = new Set([
-                'v.leftarm.x', 'v.rightarm.x', 'v.leftarm.y', 'v.rightarm.y',
-                'v.leftarm.z', 'v.rightarm.z', 'v.leftarm.ypos', 'v.rightarm.ypos'
-            ]);
-            statements.forEach(rawSt => {
-                const st = unwrapGateBlock(rawSt);
-                const m = st.match(/^(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\s*=\s*(.+)$/s);
-                if (!m) return;
-                const boneName = m[1];
-                const rhs = m[2].trim();
-                const mirrorMatch = rhs.match(/^-?\s*(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)$/);
-                if (mirrorMatch) {
-                    const refBone = mirrorMatch[1];
-                    if (mirrorArmVars.has(boneName) && refBone.includes('arm')) mirrorArms = true;
-                    if (boneName.includes('leg') && refBone.includes('leg')) mirrorLegs = true;
-                    return;
-                }
-                const chain = parseBoneChain(rhs);
-                if (!chain) return;
-                // Appended (not overwritten) so bones exported as several separate gated
-                // statements (the older format) are merged back into one full chain.
-                if (!boneMap[boneName]) { boneMap[boneName] = []; order.push(boneName); }
-                boneMap[boneName].push(...chain);
-            });
-            const parsedData = order.map(boneName => {
-                // A chain can come out in descending start order (current format) or
-                // already-ascending order (older/legacy format) depending on how it was
-                // written — sorting here makes reconstruction correct either way.
-                const sortedChain = boneMap[boneName].slice().sort((a, b) => a.start - b.start);
-                const segments = sortedChain.map((call, idx) => {
-                    let val1 = 0;
-                    if (idx === 0) {
-                        const n = parseFloat(call.val1Expr);
-                        val1 = isNaN(n) ? 0 : n;
-                    }
-                    const n2 = parseFloat(call.val2Expr);
-                    const val2 = isNaN(n2) ? 0 : n2;
-                    const ease = easeList.includes(call.ease) ? call.ease : 'lerp';
-                    return { start: call.start, dur: call.dur, val1, val2, ease };
-                });
-                return { bone: boneName, segments };
-            });
-            return { data: parsedData, mirrorArms, mirrorLegs };
-        }
-
-        function openImportModal() {
-            document.getElementById('importInput').value = '';
-            document.getElementById('importError').style.display = 'none';
-            document.getElementById('importPhaseInput').style.display = 'block';
-            document.getElementById('importPhaseConfirm').style.display = 'none';
-            document.getElementById('importOverlay').style.display = 'flex';
-        }
-
-        function closeImportModal() {
-            document.getElementById('importOverlay').style.display = 'none';
-            pendingImportResult = null;
-        }
-
-        function attemptImport() {
-            const text = document.getElementById('importInput').value.trim();
-            const errEl = document.getElementById('importError');
-            if (!text) {
-                errEl.textContent = 'Please paste a Stop_Expression first.';
-                errEl.style.display = 'block';
-                return;
-            }
-            const parsed = parseStopExpression(text);
-            if (!parsed.data.length) {
-                errEl.textContent =
-                    "This doesn't look like a valid Stop_Expression. Please check the code and try again.";
-                errEl.style.display = 'block';
-                return;
-            }
-            errEl.style.display = 'none';
-            pendingImportResult = parsed;
-            document.getElementById('importPhaseInput').style.display = 'none';
-            document.getElementById('importPhaseConfirm').style.display = 'block';
-        }
-
-        function cancelImportConfirm() {
-            document.getElementById('importPhaseInput').style.display = 'block';
-            document.getElementById('importPhaseConfirm').style.display = 'none';
-        }
-
-        function confirmReplaceImport() {
-            if (!pendingImportResult) return;
-            data = pendingImportResult.data;
-            document.getElementById('mirrorArms').checked = pendingImportResult.mirrorArms;
-            document.getElementById('mirrorLegs').checked = pendingImportResult.mirrorLegs;
-            pendingImportResult = null;
-            closeImportModal();
-            renderBones();
-        }
-
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1,
-        1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(30, 24, 60);
-        controls.target.set(0, 15, 0);
-        controls.update();
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        dirLight.position.set(10, 20, 10);
-        scene.add(dirLight);
-
-        function createMinecraftBoxGeometry(size, uvOffset, inflate = 0, mirror = false) {
-            const [w, h, d] = size;
-            const geom = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2);
-            const [u, v] = uvOffset;
-            const tw = 64,
-                th = 64;
-            let faces;
-            if (!mirror) {
-                faces = [
-                    [u + d + w, v + d, d, h],
-                    [u, v + d, d, h],
-                    [u + d, v, w, d],
-                    [u + d + w, v, w, d],
-                    [u + d, v + d, w, h],
-                    [u + d + w + d, v + d, w, h]
-                ];
-            } else {
-                faces = [
-                    [u, v + d, d, h],
-                    [u + d + w, v + d, d, h],
-                    [u + d + w, v, -w, d],
-                    [u + d + w + w, v, -w, d],
-                    [u + d + w, v + d, -w, h],
-                    [u + d + w + d + w, v + d, -w, h]
-                ];
-            }
-            const uvAttr = geom.attributes.uv;
-            let pos = 0;
-            faces.forEach(([x, y, fw, fh]) => {
-                const u0 = x / tw,
-                    v0 = 1 - (y + fh) / th;
-                const u1 = (x + fw) / tw,
-                    v1 = 1 - y / th;
-                uvAttr.setXY(pos++, u0, v1);
-                uvAttr.setXY(pos++, u1, v1);
-                uvAttr.setXY(pos++, u0, v0);
-                uvAttr.setXY(pos++, u1, v0);
-            });
-            uvAttr.needsUpdate = true;
-            return geom;
-        }
-
-        const textureLoader = new THREE.TextureLoader();
-        let skinTexture = null;
-        const baseMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 });
-        const outerMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true,
-            alphaTest: 0.5, side: THREE.DoubleSide });
-
-        const modelBones = [
-            { name: "root", pivot: [0, 0, 0] },
-            { name: "waist", parent: "root", pivot: [0, 12, 0] },
-            { name: "body", parent: "waist", pivot: [0, 24, 0], cubes: [
-                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16], outer: false },
-                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 32], outer: true, inflate: 0.25 }
-            ] },
-            { name: "head", parent: "body", pivot: [0, 24, 0], cubes: [
-                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0], outer: false },
-                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [32, 0], outer: true, inflate: 0.5 }
-            ] },
-            { name: "leftArm", parent: "body", pivot: [5, 22, 0], cubes: [
-                { origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48], outer: false },
-                { origin: [4, 12, -2], size: [4, 12, 4], uv: [48, 48], outer: true, inflate: 0.25 }
-            ] },
-            { name: "rightArm", parent: "body", pivot: [-5, 22, 0], cubes: [
-                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16], outer: false },
-                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 32], outer: true, inflate: 0.25 }
-            ] },
-            { name: "leftLeg", parent: "root", pivot: [1.9, 12, 0], cubes: [
-                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [16, 48], outer: false },
-                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [0, 48], outer: true, inflate: 0.25 }
-            ] },
-            { name: "rightLeg", parent: "root", pivot: [-1.9, 12, 0], cubes: [
-                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 16], outer: false },
-                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 32], outer: true, inflate: 0.25 }
-            ] }
-        ];
-
-        const selectableMeshes = [];
-        const boneObjects = {};
-        modelBones.forEach(b => {
-            const group = new THREE.Group();
-            // Minecraft Bedrock composes bone rotation in Z, then Y, then X order (ZYX),
-            // not three.js's default XYZ. With only one axis active this makes no visible
-            // difference, but combining two or three axes at once produced a preview that
-            // no longer matched in-game behavior. Matching the order here keeps the Axis
-            // Editor / Live Preview an exact match for what Minecraft actually renders.
-            group.rotation.order = 'ZYX';
-            if (b.cubes) {
-                b.cubes.forEach(c => {
-                    const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c
-                        .mirror || false);
-                    const mat = c.outer ? outerMaterial : baseMaterial;
-                    const mesh = new THREE.Mesh(geom, mat);
-                    mesh.position.set(
-                        c.origin[0] + c.size[0] / 2 - b.pivot[0],
-                        c.origin[1] + c.size[1] / 2 - b.pivot[1],
-                        c.origin[2] + c.size[2] / 2 - b.pivot[2]
-                    );
-                    mesh.userData.boneName = b.name;
-                    selectableMeshes.push(mesh);
-                    group.add(mesh);
-                });
-            }
-            boneObjects[b.name] = group;
-        });
-
-        modelBones.forEach(b => {
-            const group = boneObjects[b.name];
-            const parentPivot = b.parent ? (modelBones.find(x => x.name === b.parent).pivot || [0, 0,
-                0]) : [0, 0, 0];
-            const initX = b.pivot[0] - parentPivot[0];
-            const initY = b.pivot[1] - parentPivot[1];
-            const initZ = b.pivot[2] - parentPivot[2];
-            group.userData.initialPos = { x: initX, y: initY, z: initZ };
-            group.position.set(initX, initY, initZ);
-            if (b.parent) boneObjects[b.parent].add(group);
-            else scene.add(group);
-        });
-
-        function applyTexture(texture) {
-            texture.magFilter = THREE.NearestFilter;
-            texture.minFilter = THREE.NearestFilter;
-            baseMaterial.map = texture;
-            baseMaterial.color.setHex(0xffffff);
-            baseMaterial.needsUpdate = true;
-            outerMaterial.map = texture;
-            outerMaterial.color.setHex(0xffffff);
-            outerMaterial.needsUpdate = true;
-        }
-
-        function loadTextureFromUrl(url) {
-            textureLoader.load(url, (tex) => { skinTexture = tex;
-                applyTexture(skinTexture); });
-        }
-
-        function resetSkin() { loadTextureFromUrl(DEFAULT_TEXTURE_URL); }
-
-        function uploadSkin(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => { const texture = new THREE.Texture(img);
-                    texture.needsUpdate = true;
-                    applyTexture(texture); };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
-        }
-        loadTextureFromUrl(DEFAULT_TEXTURE_URL);
-
-        /* =====================================================================
-           AXIS EDITOR (posing gizmo) — extended with scale + riding support
-           ===================================================================== */
-        let viewMode = 'preview';
-        let manualPose = {};
-        let selectedBone = null;
-        let gizmoMode = 'rotate';
-
-        const boneVarPrefix = {
-            root: 'v.root',
-            waist: 'v.body',
-            head: 'v.head',
-            rightArm: 'v.rightarm',
-            leftArm: 'v.leftarm',
-            rightLeg: 'v.rightleg',
-            leftLeg: 'v.leftleg'
-        };
-        const boneAxisConfig = {
-            root: { rotate: ['x', 'z'], translate: ['x', 'y', 'z'], scale: [] },
-            waist: { rotate: ['x', 'y', 'z'], translate: ['x', 'y'], scale: ['xz', 'y'] },
-            head: { rotate: ['x', 'y', 'z'], translate: ['x', 'y', 'z'], scale: [] },
-            rightArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
-            leftArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
-            rightLeg: { rotate: ['x'], translate: [], scale: [] },
-            leftLeg: { rotate: ['x'], translate: [], scale: [] }
-        };
-        const scaleVarMap = {
-            waist: { xz: 'v.body_head.xzscale', y: 'v.body_head.yscale' }
-        };
-        const boneDisplayName = {
-            root: 'Root',
-            waist: 'Body / Waist',
-            head: 'Head',
-            rightArm: 'Right Arm',
-            leftArm: 'Left Arm',
-            rightLeg: 'Right Leg',
-            leftLeg: 'Left Leg'
-        };
-        const invertedBones = ["v.rightarm.y", "v.leftarm.y", "v.rightarm.z", "v.leftarm.z", "v.head.y",
-            "v.head.z", "v.body.y", "v.body.z"
-        ];
-
-        function mapName(str) {
-            if (str.includes("rightarm")) return "rightArm";
-            if (str.includes("leftarm")) return "leftArm";
-            if (str.includes("rightleg")) return "rightLeg";
-            if (str.includes("leftleg")) return "leftLeg";
-            if (str.includes("body")) return "waist";
-            if (str.includes("head")) return "head";
-            return "root";
-        }
-
-        function isRidingEnabled() {
-            const el = document.getElementById('playerRiding');
-            return el ? el.checked : false;
-        }
-
-        function getRidingOffsetDeg(boneName, axis) {
-            if (!isRidingEnabled()) return 0;
-            if (boneName === 'rightLeg' && axis === 'x') return -81;
-            if (boneName === 'rightLeg' && axis === 'z') return -18;
-            if (boneName === 'leftLeg' && axis === 'x') return -81;
-            if (boneName === 'leftLeg' && axis === 'z') return 18;
-            return 0;
-        }
-
-        function resetBonesToBindPose() {
-            Object.values(boneObjects).forEach(b => {
-                b.rotation.set(0, 0, 0);
-                b.scale.set(1, 1, 1);
-                if (b.userData.initialPos) {
-                    b.position.set(b.userData.initialPos.x, b.userData.initialPos.y, b.userData
-                        .initialPos.z);
-                }
-            });
-            if (isRidingEnabled()) {
-                const rightLeg = boneObjects['rightLeg'];
-                const leftLeg = boneObjects['leftLeg'];
-                if (rightLeg) {
-                    rightLeg.rotation.x = -81 * (Math.PI / 180);
-                    rightLeg.rotation.z = -18 * (Math.PI / 180);
-                }
-                if (leftLeg) {
-                    leftLeg.rotation.x = -81 * (Math.PI / 180);
-                    leftLeg.rotation.z = 18 * (Math.PI / 180);
-                }
-            }
-        }
-
-        function applyValuesToBones(values) {
-            for (const [key, val] of Object.entries(values)) {
-                const targetBone = boneObjects[mapName(key)];
-                if (!targetBone) continue;
-                if (key.endsWith(".ypos")) {
-                    targetBone.position.y = targetBone.userData.initialPos.y + val;
-                    continue;
-                }
-                if (key.endsWith(".xpos")) {
-                    targetBone.position.x = targetBone.userData.initialPos.x + val;
-                    continue;
-                }
-                if (key.endsWith(".zpos")) {
-                    targetBone.position.z = targetBone.userData.initialPos.z + val;
-                    continue;
-                }
-                if (key === 'v.body_head.xzscale') {
-                    targetBone.scale.x = val;
-                    targetBone.scale.z = val;
-                    continue;
-                }
-                if (key === 'v.body_head.yscale') {
-                    targetBone.scale.y = val;
-                    continue;
-                }
-                let rad = val * (Math.PI / 180);
-                if (invertedBones.includes(key)) rad = -rad;
-                if (key.endsWith(".x")) targetBone.rotation.x += rad;
-                if (key.endsWith(".y")) targetBone.rotation.y += rad;
-                if (key.endsWith(".z")) targetBone.rotation.z += rad;
-            }
-        }
-
-        const transformControls = new THREE.TransformControls(camera, renderer.domElement);
-        if (typeof transformControls.setSpace === 'function') transformControls.setSpace('local');
-        else transformControls.space = 'local';
-        if (typeof transformControls.setSize === 'function') transformControls.setSize(1.5);
-        else transformControls.size = 1.5;
-        transformControls.addEventListener('dragging-changed', (event) => {
-            controls.enabled = !event.value;
-        });
-        transformControls.addEventListener('objectChange', onGizmoChange);
-        scene.add(transformControls);
-
-        const raycaster = new THREE.Raycaster();
-        const pointerNDC = new THREE.Vector2();
-        let pointerDownPos = null;
-
-        renderer.domElement.addEventListener('pointerdown', (e) => {
-            pointerDownPos = { x: e.clientX, y: e.clientY };
-        });
-
-        renderer.domElement.addEventListener('pointerup', (e) => {
-            if (viewMode !== 'axis') return;
-            if (!pointerDownPos) return;
-            const wasGizmoInteraction = transformControls.dragging || transformControls.axis;
-            const dx = e.clientX - pointerDownPos.x;
-            const dy = e.clientY - pointerDownPos.y;
-            pointerDownPos = null;
-            if (wasGizmoInteraction) return;
-            if (Math.sqrt(dx * dx + dy * dy) > 4) return;
-            const rect = renderer.domElement.getBoundingClientRect();
-            pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointerNDC, camera);
-            const intersects = raycaster.intersectObjects(selectableMeshes, false);
-            if (intersects.length > 0) {
-                let hitName = intersects[0].object.userData.boneName;
-                if (hitName === 'body') hitName = 'waist';
-                selectBone(hitName);
-            }
-        });
-
-        function setViewMode(mode) {
-            viewMode = mode;
-            document.getElementById('tabPreview').classList.toggle('active', mode === 'preview');
-            document.getElementById('tabAxis').classList.toggle('active', mode === 'axis');
-            document.getElementById('previewControls').style.display = mode === 'preview' ? 'flex' :
-                'none';
-            document.getElementById('axisControls').style.display = mode === 'axis' ? 'block' : 'none';
-            document.getElementById('viewportTitle').textContent = mode === 'preview' ? '3D Live Preview' :
-                'Axis Editor';
-            if (mode === 'axis') {
-                if (!selectedBone) selectedBone = 'rightArm';
-                selectBone(selectedBone);
-            } else {
-                transformControls.detach();
-            }
-        }
-
-        function selectBone(name) {
-            selectedBone = name;
-            const sel = document.getElementById('boneSelect');
-            if (sel) sel.value = name;
-            const cfg = boneAxisConfig[name];
-            if (gizmoMode === 'translate' && cfg.translate.length === 0) {
-                gizmoMode = 'rotate';
-            }
-            if (gizmoMode === 'scale' && cfg.scale.length === 0) {
-                gizmoMode = 'rotate';
-            }
-            updateModeButtons();
-            attachGizmo();
-            renderAxisReadout();
-        }
-
-        function setGizmoMode(mode) {
-            gizmoMode = mode;
-            updateModeButtons();
-            attachGizmo();
-            renderAxisReadout();
-        }
-
-        function updateModeButtons() {
-            const rotateBtn = document.getElementById('modeRotateBtn');
-            const translateBtn = document.getElementById('modeTranslateBtn');
-            const scaleBtn = document.getElementById('modeScaleBtn');
-            if (!rotateBtn || !translateBtn || !scaleBtn) return;
-            rotateBtn.classList.toggle('active', gizmoMode === 'rotate');
-            translateBtn.classList.toggle('active', gizmoMode === 'translate');
-            scaleBtn.classList.toggle('active', gizmoMode === 'scale');
-            const cfg = selectedBone ? boneAxisConfig[selectedBone] : null;
-            translateBtn.disabled = !cfg || cfg.translate.length === 0;
-            scaleBtn.disabled = !cfg || cfg.scale.length === 0;
-        }
-
-        function attachGizmo() {
-            if (!selectedBone) { transformControls.detach(); return; }
-            const cfg = boneAxisConfig[selectedBone];
-            let axesForMode;
-            if (gizmoMode === 'rotate') axesForMode = cfg.rotate;
-            else if (gizmoMode === 'translate') axesForMode = cfg.translate;
-            else axesForMode = cfg.scale;
-            if (!axesForMode || axesForMode.length === 0) { transformControls.detach(); return; }
-            if (typeof transformControls.setMode === 'function') transformControls.setMode(gizmoMode);
-            else transformControls.mode = gizmoMode;
-            if (gizmoMode === 'scale') {
-                transformControls.showX = axesForMode.includes('xz') || axesForMode.includes('x');
-                transformControls.showY = axesForMode.includes('y');
-                transformControls.showZ = false;
-            } else {
-                transformControls.showX = axesForMode.includes('x');
-                transformControls.showY = axesForMode.includes('y');
-                transformControls.showZ = axesForMode.includes('z');
-            }
-            transformControls.attach(boneObjects[selectedBone]);
-        }
-
-        function onGizmoChange() {
-            if (!selectedBone) return;
-            const bone = boneObjects[selectedBone];
-            const prefix = boneVarPrefix[selectedBone];
-            const cfg = boneAxisConfig[selectedBone];
-
-            if (gizmoMode === 'rotate') {
-                cfg.rotate.forEach(axis => {
-                    const key = `${prefix}.${axis}`;
-                    const offset = getRidingOffsetDeg(selectedBone, axis);
-                    let deg = bone.rotation[axis] * (180 / Math.PI);
-                    deg = deg - offset;
-                    if (invertedBones.includes(key)) deg = -deg;
-                    manualPose[key] = Math.round(deg * 100) / 100;
-                });
-            } else if (gizmoMode === 'translate') {
-                cfg.translate.forEach(axis => {
-                    const key = `${prefix}.${axis}pos`;
-                    const delta = bone.position[axis] - bone.userData.initialPos[axis];
-                    manualPose[key] = Math.round(delta * 100) / 100;
-                });
-            } else if (gizmoMode === 'scale') {
-                const varMap = scaleVarMap[selectedBone];
-                if (varMap) {
-                    cfg.scale.forEach(axis => {
-                        if (axis === 'xz') {
-                            bone.scale.z = bone.scale.x;
-                            manualPose[varMap.xz] = Math.round(bone.scale.x * 100) / 100;
-                        } else if (axis === 'y') {
-                            manualPose[varMap.y] = Math.round(bone.scale.y * 100) / 100;
-                        }
-                    });
-                }
-            }
-            renderAxisReadout();
-        }
-
-        function renderAxisReadout() {
-            const cont = document.getElementById('axisReadout');
-            if (!cont) return;
-            if (!selectedBone) {
-                cont.innerHTML = '<p class="hint" style="margin:0;">Select a body part to edit.</p>';
-                return;
-            }
-            const prefix = boneVarPrefix[selectedBone];
-            const cfg = boneAxisConfig[selectedBone];
-            let html = `<div class="readout-title">${boneDisplayName[selectedBone]}</div>`;
-            if (cfg.rotate.length > 0) {
-                html +=
-                    `<div class="readout-group"><label class="group-label">Rotation (degrees)</label><div class="readout-row">`;
-                cfg.rotate.forEach(axis => {
-                    const key = `${prefix}.${axis}`;
-                    const val = manualPose[key] !== undefined ? manualPose[key] : 0;
-                    html +=
-                        `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-                });
-                html += `</div></div>`;
-            }
-            if (cfg.translate.length > 0) {
-                html +=
-                    `<div class="readout-group"><label class="group-label">Position</label><div class="readout-row">`;
-                cfg.translate.forEach(axis => {
-                    const key = `${prefix}.${axis}pos`;
-                    const val = manualPose[key] !== undefined ? manualPose[key] : 0;
-                    html +=
-                        `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" step="0.1" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-                });
-                html += `</div></div>`;
-            }
-            if (cfg.scale.length > 0) {
-                const varMap = scaleVarMap[selectedBone];
-                html +=
-                    `<div class="readout-group"><label class="group-label">Scale</label><div class="readout-row">`;
-                cfg.scale.forEach(axis => {
-                    const key = varMap[axis];
-                    const val = manualPose[key] !== undefined ? manualPose[key] : 1;
-                    const label = axis === 'xz' ? 'XZ' : axis.toUpperCase();
-                    html +=
-                        `<div class="form-group"><label>${label}</label><input type="number" step="0.01" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-                });
-                html += `</div></div>`;
-            }
-            cont.innerHTML = html;
-        }
-
-        function setPoseValue(key, valStr) {
-            manualPose[key] = parseFloat(valStr) || 0;
-            renderAxisReadout();
-        }
-
-        function resetBonePose() {
-            if (!selectedBone) return;
-            const prefix = boneVarPrefix[selectedBone];
-            const cfg = boneAxisConfig[selectedBone];
-            cfg.rotate.forEach(axis => delete manualPose[`${prefix}.${axis}`]);
-            cfg.translate.forEach(axis => delete manualPose[`${prefix}.${axis}pos`]);
-            cfg.scale.forEach(axis => {
-                const varMap = scaleVarMap[selectedBone];
-                if (varMap && varMap[axis]) delete manualPose[varMap[axis]];
-            });
-            renderAxisReadout();
-        }
-
-        function resetAllPose() {
-            manualPose = {};
-            renderAxisReadout();
-        }
-
-        /* ===================================================================== */
-        let isPlaying = true;
-        let animTime = 0;
-        const clock = new THREE.Clock();
-
-        function togglePlay() { isPlaying = !isPlaying; }
-
-        function bounceOut(t) {
-            const n1 = 7.5625,
-                d1 = 2.75;
-            if (t < 1 / d1) return n1 * t * t;
-            else if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
-            else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
-            else return n1 * (t -= 2.625 / d1) * t + 0.984375;
-        }
-
-        function getEase(name, t) {
-            t = Math.max(0, Math.min(1, t));
-            if (name === 'lerp') return t;
-            if (name === 'ease_in_sine') return 1 - Math.cos((t * Math.PI) / 2);
-            if (name === 'ease_out_sine') return Math.sin((t * Math.PI) / 2);
-            if (name === 'ease_in_out_sine') return -(Math.cos(Math.PI * t) - 1) / 2;
-            if (name === 'ease_in_quad') return t * t;
-            if (name === 'ease_out_quad') return 1 - (1 - t) * (1 - t);
-            if (name === 'ease_in_out_quad') return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) /
-                2;
-            if (name === 'ease_in_cubic') return t * t * t;
-            if (name === 'ease_out_cubic') return 1 - Math.pow(1 - t, 3);
-            if (name === 'ease_in_out_cubic') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2,
-                3) / 2;
-            if (name === 'ease_in_quart') return t * t * t * t;
-            if (name === 'ease_out_quart') return 1 - Math.pow(1 - t, 4);
-            if (name === 'ease_in_out_quart') return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t +
-                2, 4) / 2;
-            if (name === 'ease_in_quint') return t * t * t * t * t;
-            if (name === 'ease_out_quint') return 1 - Math.pow(1 - t, 5);
-            if (name === 'ease_in_out_quint') return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 *
-                t + 2, 5) / 2;
-            if (name === 'ease_in_expo') return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
-            if (name === 'ease_out_expo') return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-            if (name === 'ease_in_out_expo') { if (t === 0) return 0; if (t === 1) return 1; return t <
-                    0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2; }
-            if (name === 'ease_in_circ') return 1 - Math.sqrt(1 - Math.pow(t, 2));
-            if (name === 'ease_out_circ') return Math.sqrt(1 - Math.pow(t - 1, 2));
-            if (name === 'ease_in_out_circ') return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) /
-                2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
-            if (name === 'ease_in_back') { const c1 = 1.70158,
-                    c3 = c1 + 1; return c3 * t * t * t - c1 * t * t; }
-            if (name === 'ease_out_back') { const c1 = 1.70158,
-                    c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-            if (name === 'ease_in_out_back') { const c1 = 1.70158,
-                    c2 = c1 * 1.525; return t < 0.5 ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) /
-                    2 : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2; }
-            if (name === 'ease_in_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
-                    1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4); }
-            if (name === 'ease_out_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
-                    1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1; }
-            if (name === 'ease_in_out_elastic') { const c5 = (2 * Math.PI) / 4.5; return t === 0 ? 0 : t ===
-                    1 ? 1 : t < 0.5 ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) /
-                    2 : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1; }
-            if (name === 'ease_in_bounce') return 1 - bounceOut(1 - t);
-            if (name === 'ease_out_bounce') return bounceOut(t);
-            if (name === 'ease_in_out_bounce') return t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 +
-                bounceOut(2 * t - 1)) / 2;
-            return t;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            let dt = clock.getDelta();
-            resetBonesToBindPose();
-            if (viewMode === 'preview') {
-                if (isPlaying) animTime += dt;
-                let maxDur = 0;
-                data.forEach(bData => {
-                    bData.segments.forEach(seg => { let end = seg.start + seg.dur; if (end >
-                            maxDur) maxDur = end; });
-                });
-                let totalAnimDuration = Math.max(maxDur, 0.1);
-                let t = animTime % totalAnimDuration;
-                let currentValues = {};
-                data.forEach(bData => {
-                    let val = 0;
-                    bData.segments.forEach((seg, idx) => {
-                        if (idx === 0) val = seg.val1;
-                        if (t >= seg.start) {
-                            let progress = Math.min((t - seg.start) / seg.dur, 1);
-                            val = val + (seg.val2 - val) * getEase(seg.ease, progress);
-                        }
-                    });
-                    currentValues[bData.bone] = val;
-                });
-                if (document.getElementById('mirrorArms').checked) {
-                    if (currentValues["v.rightarm.x"] !== undefined && currentValues["v.leftarm.x"] ===
-                        undefined) currentValues["v.leftarm.x"] = currentValues["v.rightarm.x"];
-                    else if (currentValues["v.leftarm.x"] !== undefined && currentValues["v.rightarm.x"] ===
-                        undefined) currentValues["v.rightarm.x"] = currentValues["v.leftarm.x"];
-                    if (currentValues["v.rightarm.y"] !== undefined && currentValues["v.leftarm.y"] ===
-                        undefined) currentValues["v.leftarm.y"] = -currentValues["v.rightarm.y"];
-                    else if (currentValues["v.leftarm.y"] !== undefined && currentValues["v.rightarm.y"] ===
-                        undefined) currentValues["v.rightarm.y"] = -currentValues["v.leftarm.y"];
-                    if (currentValues["v.rightarm.z"] !== undefined && currentValues["v.leftarm.z"] ===
-                        undefined) currentValues["v.leftarm.z"] = -currentValues["v.rightarm.z"];
-                    else if (currentValues["v.leftarm.z"] !== undefined && currentValues["v.rightarm.z"] ===
-                        undefined) currentValues["v.rightarm.z"] = -currentValues["v.leftarm.z"];
-                    if (currentValues["v.rightarm.ypos"] !== undefined && currentValues["v.leftarm.ypos"] ===
-                        undefined) currentValues["v.leftarm.ypos"] = currentValues["v.rightarm.ypos"];
-                    else if (currentValues["v.leftarm.ypos"] !== undefined && currentValues[
-                        "v.rightarm.ypos"] === undefined) currentValues["v.rightarm.ypos"] = currentValues[
-                        "v.leftarm.ypos"];
-                }
-                if (document.getElementById('mirrorLegs').checked) {
-                    if (currentValues["v.rightleg.x"] !== undefined && currentValues["v.leftleg.x"] ===
-                        undefined) currentValues["v.leftleg.x"] = currentValues["v.rightleg.x"];
-                    else if (currentValues["v.leftleg.x"] !== undefined && currentValues["v.rightleg.x"] ===
-                        undefined) currentValues["v.rightleg.x"] = currentValues["v.leftleg.x"];
-                }
-                applyValuesToBones(currentValues);
-            } else {
-                applyValuesToBones(manualPose);
-            }
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        renderBones();
-        animate();
-        window.addEventListener('resize', () => { const w = container.clientWidth; const h = container
-                .clientHeight;
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h); });
-        window.togglePlay = togglePlay;
-        window.copyCode = copyCode;
-        window.addBone = addBone;
-        window.removeBone = removeBone;
-        window.addSeg = addSeg;
-        window.removeSeg = removeSeg;
-        window.updateBone = updateBone;
-        window.updateSeg = updateSeg;
-        window.generate = generate;
-        window.resetSkin = resetSkin;
-        window.uploadSkin = uploadSkin;
-        window.validateStart = validateStart;
-        window.setViewMode = setViewMode;
-        window.selectBone = selectBone;
-        window.setGizmoMode = setGizmoMode;
-        window.setPoseValue = setPoseValue;
-        window.resetBonePose = resetBonePose;
-        window.resetAllPose = resetAllPose;
-        window.onRidingToggle = onRidingToggle;
-        window.openImportModal = openImportModal;
-        window.closeImportModal = closeImportModal;
-        window.attemptImport = attemptImport;
-        window.cancelImportConfirm = cancelImportConfirm;
-        window.confirmReplaceImport = confirmReplaceImport;
-    </script>
+    <div id="exprConfirm" hidden>
+      <div class="sheet-head"><h2>Replace all keyframes?</h2><button class="x" data-close aria-label="Close">&times;</button></div>
+      <p>All keyframes you have made so far will be lost and replaced with the imported animation.</p>
+      <div class="actions">
+        <button class="btn ghost" id="btnConfirmBack">Cancel</button>
+        <button class="btn danger" id="btnConfirmGo">Replace</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Skin -->
+<div class="overlay" id="skinOverlay">
+  <div class="sheet" role="dialog" aria-label="Model skin">
+    <div class="sheet-head"><h2>Model skin</h2><button class="x" data-close aria-label="Close">&times;</button></div>
+    <div class="skin-row">
+      <canvas id="skinThumb" width="72" height="72"></canvas>
+      <div class="skin-btns">
+        <button class="btn primary" id="btnUpload">Upload skin image</button>
+        <button class="btn ghost" id="btnResetSkin">Use default skin</button>
+      </div>
+      <input type="file" id="skinFile" accept="image/*" hidden>
+    </div>
+    <div class="opts" style="margin-bottom:0">
+      <label class="sw"><input type="checkbox" id="optRiding"><span class="tr"></span>Riding pose (preview only)</label>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   CORE — easing, bone/channel definitions, keyframe data model,
+   pose evaluation, Stop_Expression export + import.
+   (No DOM / THREE access in this section.)
+   ===================================================================== */
+
+/* ---------- Easing ---------- */
+const EASES = [
+  'lerp',
+  'ease_in_sine','ease_out_sine','ease_in_out_sine',
+  'ease_in_quad','ease_out_quad','ease_in_out_quad',
+  'ease_in_cubic','ease_out_cubic','ease_in_out_cubic',
+  'ease_in_quart','ease_out_quart','ease_in_out_quart',
+  'ease_in_quint','ease_out_quint','ease_in_out_quint',
+  'ease_in_expo','ease_out_expo','ease_in_out_expo',
+  'ease_in_circ','ease_out_circ','ease_in_out_circ',
+  'ease_in_back','ease_out_back','ease_in_out_back',
+  'ease_in_elastic','ease_out_elastic','ease_in_out_elastic',
+  'ease_in_bounce','ease_out_bounce','ease_in_out_bounce'
+];
+const EASE_FAMILIES = ['sine','quad','cubic','quart','quint','expo','circ','back','elastic','bounce'];
+
+function bounceOut(t) {
+  const n1 = 7.5625, d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+  if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+  return n1 * (t -= 2.625 / d1) * t + 0.984375;
+}
+const C1 = 1.70158, C2 = C1 * 1.525, C3 = C1 + 1, C4 = (2 * Math.PI) / 3, C5 = (2 * Math.PI) / 4.5;
+const EASE_FN = {
+  lerp: t => t,
+  ease_in_sine: t => 1 - Math.cos((t * Math.PI) / 2),
+  ease_out_sine: t => Math.sin((t * Math.PI) / 2),
+  ease_in_out_sine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+  ease_in_quad: t => t * t,
+  ease_out_quad: t => 1 - (1 - t) * (1 - t),
+  ease_in_out_quad: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+  ease_in_cubic: t => t * t * t,
+  ease_out_cubic: t => 1 - Math.pow(1 - t, 3),
+  ease_in_out_cubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  ease_in_quart: t => t * t * t * t,
+  ease_out_quart: t => 1 - Math.pow(1 - t, 4),
+  ease_in_out_quart: t => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2,
+  ease_in_quint: t => t * t * t * t * t,
+  ease_out_quint: t => 1 - Math.pow(1 - t, 5),
+  ease_in_out_quint: t => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2,
+  ease_in_expo: t => t === 0 ? 0 : Math.pow(2, 10 * t - 10),
+  ease_out_expo: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+  ease_in_out_expo: t => t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2,
+  ease_in_circ: t => 1 - Math.sqrt(1 - Math.pow(t, 2)),
+  ease_out_circ: t => Math.sqrt(1 - Math.pow(t - 1, 2)),
+  ease_in_out_circ: t => t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2,
+  ease_in_back: t => C3 * t * t * t - C1 * t * t,
+  ease_out_back: t => 1 + C3 * Math.pow(t - 1, 3) + C1 * Math.pow(t - 1, 2),
+  ease_in_out_back: t => t < 0.5
+    ? (Math.pow(2 * t, 2) * ((C2 + 1) * 2 * t - C2)) / 2
+    : (Math.pow(2 * t - 2, 2) * ((C2 + 1) * (t * 2 - 2) + C2) + 2) / 2,
+  ease_in_elastic: t => t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * C4),
+  ease_out_elastic: t => t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * C4) + 1,
+  ease_in_out_elastic: t => t === 0 ? 0 : t === 1 ? 1 : t < 0.5
+    ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * C5)) / 2
+    : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * C5)) / 2 + 1,
+  ease_in_bounce: t => 1 - bounceOut(1 - t),
+  ease_out_bounce: t => bounceOut(t),
+  ease_in_out_bounce: t => t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 + bounceOut(2 * t - 1)) / 2
+};
+function getEase(name, t) {
+  t = t < 0 ? 0 : t > 1 ? 1 : t;
+  const fn = EASE_FN[name];
+  return fn ? fn(t) : t;
+}
+function easeKind(e) {
+  if (e === 'lerp') return 'lerp';
+  if (e.startsWith('ease_in_out_')) return 'inout';
+  if (e.startsWith('ease_in_')) return 'in';
+  return 'out';
+}
+function easeName(e) {
+  if (e === 'lerp') return 'Lerp';
+  const m = e.match(/^ease_(in_out|in|out)_(.+)$/);
+  if (!m) return e;
+  const dir = { in: 'In', out: 'Out', in_out: 'In-Out' }[m[1]];
+  return dir + ' ' + m[2][0].toUpperCase() + m[2].slice(1);
+}
+
+/* ---------- Bones & channels ---------- */
+const CH_ORDER = ['rotate', 'translate', 'scale'];
+const CH_LABEL = { rotate: 'Rotation', translate: 'Position', scale: 'Scale' };
+const AXIS_LABEL = { x: 'X', y: 'Y', z: 'Z', xz: 'XZ' };
+
+// Display order follows the reference UI: Head, Body, RightArm, LeftArm, legs, Root.
+const BONES = [
+  { id: 'head', name: 'Head', color: '#ee9a8c', tone: '#d4786a',
+    rotate: { axes: ['x','y','z'], vars: { x: 'v.head.x', y: 'v.head.y', z: 'v.head.z' } },
+    translate: { axes: ['x','y','z'], vars: { x: 'v.head.xpos', y: 'v.head.ypos', z: 'v.head.zpos' } } },
+  { id: 'waist', name: 'Body', color: '#fbe88a', tone: '#e6cc5c',
+    rotate: { axes: ['x','y','z'], vars: { x: 'v.body.x', y: 'v.body.y', z: 'v.body.z' } },
+    translate: { axes: ['x','y'], vars: { x: 'v.body.xpos', y: 'v.body.ypos' } },
+    scale: { axes: ['xz','y'], vars: { xz: 'v.body_head.xzscale', y: 'v.body_head.yscale' } } },
+  { id: 'rightArm', name: 'RightArm', color: '#82c3da', tone: '#5fa5be',
+    rotate: { axes: ['x','y','z'], vars: { x: 'v.rightarm.x', y: 'v.rightarm.y', z: 'v.rightarm.z' } },
+    translate: { axes: ['y'], vars: { y: 'v.rightarm.ypos' } } },
+  { id: 'leftArm', name: 'LeftArm', color: '#b4f2ae', tone: '#8fd98a',
+    rotate: { axes: ['x','y','z'], vars: { x: 'v.leftarm.x', y: 'v.leftarm.y', z: 'v.leftarm.z' } },
+    translate: { axes: ['y'], vars: { y: 'v.leftarm.ypos' } } },
+  { id: 'rightLeg', name: 'RightLeg', color: '#f6b97a', tone: '#de9650',
+    rotate: { axes: ['x'], vars: { x: 'v.rightleg.x' } } },
+  { id: 'leftLeg', name: 'LeftLeg', color: '#c9a8f0', tone: '#a98bd8',
+    rotate: { axes: ['x'], vars: { x: 'v.leftleg.x' } } },
+  { id: 'root', name: 'Root', color: '#9db1ff', tone: '#7b90e6',
+    rotate: { axes: ['x','z'], vars: { x: 'v.root.x', z: 'v.root.z' } },
+    translate: { axes: ['x','y','z'], vars: { x: 'v.root.xpos', y: 'v.root.ypos', z: 'v.root.zpos' } } }
+];
+const BONE_BY_ID = {};
+const VAR_META = {};
+BONES.forEach(b => {
+  BONE_BY_ID[b.id] = b;
+  CH_ORDER.forEach(c => {
+    if (!b[c]) return;
+    b[c].axes.forEach(a => { VAR_META[b[c].vars[a]] = { bone: b.id, ch: c, axis: a }; });
+  });
+});
+// Same variable order the previous tool exported in.
+const EXPORT_ORDER = [
+  'v.root.x','v.root.z','v.root.xpos','v.root.ypos','v.root.zpos',
+  'v.body.x','v.body.y','v.body.z','v.body.xpos','v.body.ypos',
+  'v.body_head.xzscale','v.body_head.yscale',
+  'v.head.x','v.head.y','v.head.z','v.head.xpos','v.head.ypos','v.head.zpos',
+  'v.rightleg.x','v.leftleg.x',
+  'v.rightarm.x','v.rightarm.y','v.rightarm.z','v.rightarm.ypos',
+  'v.leftarm.x','v.leftarm.y','v.leftarm.z','v.leftarm.ypos'
+];
+const ALL_VARS = EXPORT_ORDER.slice();
+const SCALE_VARS = new Set(['v.body_head.xzscale', 'v.body_head.yscale']);
+// Molang rotation vars whose sign is flipped relative to three.js rotation.
+const INVERTED = new Set(['v.rightarm.y','v.leftarm.y','v.rightarm.z','v.leftarm.z','v.head.y','v.head.z','v.body.y','v.body.z']);
+const varDefault = v => SCALE_VARS.has(v) ? 1 : 0;
+
+/* ---------- Keyframe data model ----------
+   One sorted track per Molang variable (= one axis of one channel).
+   kf = { id, t, v, ease, g, split }
+     ease  : easing of the motion ARRIVING at this keyframe
+     g     : group id — keyframes created together share one (see groupAxes)
+     split : true when this keyframe was pulled away from its group in axis mode
+*/
+const EPS = 5e-5;
+const round4 = x => Math.round(x * 10000) / 10000;
+const round2 = x => Math.round(x * 100) / 100;
+
+const tracks = {};
+ALL_VARS.forEach(v => { tracks[v] = []; });
+const groupAxes = new Map();
+let _uid = 1, _gid = 1;
+const uid = () => _uid++;
+function newGroup(axes) { const g = _gid++; groupAxes.set(g, axes.slice()); return g; }
+
+function sortTrack(v) { tracks[v].sort((a, b) => a.t - b.t); }
+function getKey(v, id) { return tracks[v].find(k => k.id === id) || null; }
+function findKeyAt(v, t) { return tracks[v].find(k => Math.abs(k.t - t) < EPS) || null; }
+function insertKey(v, t, val, ease, g, split) {
+  const kf = { id: uid(), t: round4(t), v: val, ease: ease || 'lerp', g: g || 0, split: !!split };
+  tracks[v].push(kf);
+  sortTrack(v);
+  return kf;
+}
+function deleteItems(items) {
+  items.forEach(it => {
+    const arr = tracks[it.v];
+    const i = arr.findIndex(k => k.id === it.id);
+    if (i >= 0) arr.splice(i, 1);
+  });
+}
+function clearAllTracks() {
+  ALL_VARS.forEach(v => { tracks[v].length = 0; });
+  groupAxes.clear();
+}
+
+function evalKeys(keys, t, def) {
+  const n = keys.length;
+  if (!n) return def;
+  if (t < keys[0].t - 1e-9) return def;           // before the first keyframe nothing is written
+  let i = n - 1;
+  while (i > 0 && keys[i].t > t + 1e-9) i--;
+  if (i === n - 1) return keys[i].v;
+  const a = keys[i], b = keys[i + 1];
+  const p = (t - a.t) / (b.t - a.t);
+  return a.v + (b.v - a.v) * getEase(b.ease, p);
+}
+const evalVar = (v, t) => evalKeys(tracks[v], t, varDefault(v));
+
+function maxKeyTime() {
+  let m = 0;
+  ALL_VARS.forEach(v => { const k = tracks[v]; if (k.length && k[k.length - 1].t > m) m = k[k.length - 1].t; });
+  return m;
+}
+
+/* ---------- Channel groups (combined view) ---------- */
+function channelGroups(boneId, chId) {
+  const ch = BONE_BY_ID[boneId][chId];
+  const buckets = [];
+  ch.axes.forEach(axis => {
+    const v = ch.vars[axis];
+    tracks[v].forEach(kf => {
+      let b = buckets.find(x => Math.abs(x.t - kf.t) < EPS);
+      if (!b) { b = { t: kf.t, items: [] }; buckets.push(b); }
+      b.items.push({ v, axis, id: kf.id, kf });
+    });
+  });
+  buckets.sort((a, b) => a.t - b.t);
+  buckets.forEach(b => {
+    b.status = groupStatus(b.items, ch.axes.length);
+    b.ease = b.items[0].kf.ease;
+    b.mixed = b.items.some(i => i.kf.ease !== b.ease);
+  });
+  return buckets;
+}
+function countByGroup(items) {
+  const cnt = new Map();
+  items.forEach(i => cnt.set(i.kf.g, (cnt.get(i.kf.g) || 0) + 1));
+  return cnt;
+}
+// 'full' | 'ok'  -> normal   |  'red' -> pulled-away keyframe
+// 'yellow' -> lost 1 axis    |  'orange' -> lost 2 axes
+function groupStatus(items, n) {
+  if (items.length >= n) return 'full';
+  if (items.some(i => i.kf.split)) return 'red';
+  let lost = 0;
+  countByGroup(items).forEach((c, g) => {
+    const a0 = groupAxes.get(g);
+    if (a0) lost += Math.max(0, a0.length - c);
+  });
+  return lost === 0 ? 'ok' : lost === 1 ? 'yellow' : 'orange';
+}
+// A bucket that has every axis again becomes one clean group (no colour). Partial buckets
+// keep their flags: red = pulled away, yellow/orange = lost axes (see groupStatus).
+function normalizeChannel(boneId, chId) {
+  const ch = BONE_BY_ID[boneId][chId];
+  if (!ch) return;
+  channelGroups(boneId, chId).forEach(b => {
+    if (b.items.length < ch.axes.length) return;
+    const gs = new Set(b.items.map(i => i.kf.g));
+    const a0 = gs.size === 1 ? groupAxes.get([...gs][0]) : null;
+    const clean = a0 && a0.length === ch.axes.length && !b.items.some(i => i.kf.split);
+    if (!clean) {
+      const g = newGroup(ch.axes.slice());
+      b.items.forEach(i => { i.kf.g = g; i.kf.split = false; });
+    }
+  });
+}
+function normalizeAll() {
+  BONES.forEach(b => CH_ORDER.forEach(c => { if (b[c]) normalizeChannel(b.id, c); }));
+}
+// After import / reset: one group per (channel, time) holding exactly the axes present.
+function rebuildGroups() {
+  groupAxes.clear();
+  BONES.forEach(b => CH_ORDER.forEach(c => {
+    if (!b[c]) return;
+    channelGroups(b.id, c).forEach(bk => {
+      const g = newGroup(bk.items.map(i => i.axis));
+      bk.items.forEach(i => { i.kf.g = g; i.kf.split = false; });
+    });
+  }));
+}
+
+/* ---------- Editing operations ---------- */
+// Create keyframes for every listed axis that has none at time t.
+// opts.vals  : { var: value } used as the starting value (defaults to the evaluated value)
+// opts.ease  : easing for the new keys
+// opts.split : true when the new keys cover fewer axes than the channel (axis mode)
+function ensureKeys(boneId, chId, axes, t, opts) {
+  opts = opts || {};
+  const ch = BONE_BY_ID[boneId][chId];
+  t = round4(t);
+  const need = axes.filter(a => !findKeyAt(ch.vars[a], t));
+  if (!need.length) return [];
+  const g = newGroup(need);
+  const split = !!opts.split && need.length < ch.axes.length;
+  return need.map(a => {
+    const v = ch.vars[a];
+    const val = opts.vals && opts.vals[v] !== undefined ? opts.vals[v] : round2(evalVar(v, t));
+    return insertKey(v, t, val, opts.ease || 'lerp', g, split);
+  });
+}
+function canMoveItems(items, newT) {
+  const ids = new Set(items.map(i => i.id));
+  return items.every(it => !tracks[it.v].some(k => !ids.has(k.id) && Math.abs(k.t - newT) < EPS));
+}
+function moveItems(items, newT) {
+  items.forEach(it => { const k = getKey(it.v, it.id); if (k) { k.t = round4(newT); sortTrack(it.v); } });
+}
+
+/* ---------- Pose evaluation (+ arm/leg mirroring) ---------- */
+const ARM_MIRROR = [
+  ['v.rightarm.x', 'v.leftarm.x', 1], ['v.rightarm.y', 'v.leftarm.y', -1],
+  ['v.rightarm.z', 'v.leftarm.z', -1], ['v.rightarm.ypos', 'v.leftarm.ypos', 1]
+];
+const LEG_MIRROR = [['v.rightleg.x', 'v.leftleg.x', 1]];
+const options = { mirrorArms: true, mirrorLegs: false, riding: false };
+
+let _activeCache = null, _dataVersion = 0;
+function invalidate() { _dataVersion++; _activeCache = null; }
+// A variable is "active" when it actually produces output (not just default-valued keyframes).
+function activeVars() {
+  if (_activeCache && _activeCache.ver === _dataVersion) return _activeCache.set;
+  const set = new Set();
+  ALL_VARS.forEach(v => { if (statementForVar(v)) set.add(v); });
+  _activeCache = { ver: _dataVersion, set };
+  return set;
+}
+function applyMirrorValues(vals, used) {
+  const pairs = [];
+  if (options.mirrorArms) pairs.push(...ARM_MIRROR);
+  if (options.mirrorLegs) pairs.push(...LEG_MIRROR);
+  const out = [];
+  pairs.forEach(([r, l, sign]) => {
+    if (used.has(r) && !used.has(l)) out.push([l, r, sign]);        // left follows right
+    else if (used.has(l) && !used.has(r)) out.push([r, l, sign]);   // right follows left
+  });
+  return out;
+}
+function evaluatePose(t) {
+  const vals = {};
+  const used = activeVars();
+  ALL_VARS.forEach(v => { if (used.has(v)) vals[v] = evalKeys(tracks[v], t, varDefault(v)); });
+  applyMirrorValues(vals, used).forEach(([dst, src, sign]) => { vals[dst] = sign * vals[src]; });
+  return vals;
+}
+
+/* ---------- Stop_Expression: export ---------- */
+function fmt(n) {
+  n = Math.round(n * 10000) / 10000;
+  return String(n === 0 ? 0 : n);
+}
+// Equal consecutive values never create a segment — that keeps the expression short.
+function segmentsOf(keys) {
+  const segs = [];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (Math.abs(a.v - b.v) < 1e-6) continue;
+    const dur = b.t - a.t;
+    if (dur < 1e-4) continue;
+    segs.push({ start: a.t, dur, from: a.v, to: b.v, ease: b.ease });
+  }
+  return segs;
+}
+function chainExpr(segs, idx) {
+  const s = segs[idx];
+  const timeExpr = s.start <= EPS ? 'q.state_time' : `(q.state_time-${fmt(s.start)})`;
+  const call = `math.${s.ease}(${fmt(s.from)},${fmt(s.to)},math.min(${timeExpr}/${fmt(s.dur)},1))`;
+  if (idx === 0) return call;
+  const rest = chainExpr(segs, idx - 1);
+  const wrapped = idx - 1 === 0 ? rest : `(${rest})`;   // nested ternaries are always parenthesised
+  return `q.state_time>=${fmt(s.start)}?${call}:${wrapped}`;
+}
+function gateStmt(t, body) { return t <= EPS ? body : `q.state_time>=${fmt(t)}?{${body}};`; }
+function statementForVar(v) {
+  const keys = tracks[v];
+  if (!keys || !keys.length) return '';
+  const def = varDefault(v);
+  const B = keys[0].v, T0 = keys[0].t;
+  const segs = segmentsOf(keys);
+  if (!segs.length) {
+    if (Math.abs(B - def) < 1e-6) return '';
+    return gateStmt(T0, `${v}=${fmt(B)};`);
+  }
+  let out = '';
+  // The value is held (not default) before the first real segment starts.
+  if (segs[0].start > T0 + EPS && Math.abs(B - def) > 1e-6) out += gateStmt(T0, `${v}=${fmt(B)};`);
+  out += gateStmt(segs[0].start, `${v}=${chainExpr(segs, segs.length - 1)};`);
+  return out;
+}
+function buildExpression() {
+  let out = '';
+  const used = new Set();
+  EXPORT_ORDER.forEach(v => {
+    const s = statementForVar(v);
+    if (s) { out += s; used.add(v); }
+  });
+  applyMirrorValues({}, used).forEach(([dst, src, sign]) => {
+    out += `${dst}=${sign < 0 ? '-' : ''}${src};`;
+  });
+  return out;
+}
+
+/* ---------- Stop_Expression: import ---------- */
+function splitTopLevelCommas(str) {
+  let depth = 0; const parts = []; let last = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (c === ',' && depth === 0) { parts.push(str.slice(last, i)); last = i + 1; }
+  }
+  parts.push(str.slice(last));
+  return parts;
+}
+function splitTopLevelTernary(str) {
+  let depth = 0, q = -1, colon = -1;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (c === '?' && depth === 0 && q === -1) q = i;
+    else if (c === ':' && depth === 0 && q !== -1 && colon === -1) colon = i;
+  }
+  if (q === -1 || colon === -1) return null;
+  return { truePart: str.slice(q + 1, colon).trim(), falsePart: str.slice(colon + 1).trim() };
+}
+function stripOuterParens(str) {
+  str = str.trim();
+  while (str[0] === '(' && str[str.length - 1] === ')') {
+    let depth = 0, wraps = true;
+    for (let i = 0; i < str.length; i++) {
+      if (str[i] === '(') depth++;
+      else if (str[i] === ')') { depth--; if (depth === 0 && i !== str.length - 1) { wraps = false; break; } }
+    }
+    if (!wraps) break;
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+}
+function parseMathCall(str) {
+  str = stripOuterParens(str.trim());
+  const m = str.match(/^math\.([a-zA-Z_]+)\((.*)\)$/s);
+  if (!m) return null;
+  const args = splitTopLevelCommas(m[2]);
+  if (args.length < 3) return null;
+  const minExpr = stripOuterParens(args.slice(2).join(',').trim());
+  const mm = minExpr.match(/^math\.min\((.+)\/([\d.]+)\s*,\s*1\)$/s);
+  if (!mm) return null;
+  const dur = parseFloat(mm[2]);
+  let start = 0;
+  const sub = mm[1].trim().match(/^\(?\s*q\.state_time\s*-\s*([\d.]+)\s*\)?$/);
+  if (sub) start = parseFloat(sub[1]);
+  return { from: parseFloat(args[0].trim()), to: parseFloat(args[1].trim()), ease: m[1], dur, start };
+}
+function parseBoneChain(str) {
+  str = stripOuterParens(str.trim());
+  const split = splitTopLevelTernary(str);
+  if (!split) { const c = parseMathCall(str); return c ? [c] : null; }
+  const head = parseMathCall(split.truePart);
+  if (!head) return null;
+  const rest = parseBoneChain(split.falsePart);
+  return rest ? [head, ...rest] : null;
+}
+function splitTopLevelStatements(text) {
+  let depth = 0; const parts = []; let last = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '(' || c === '{') depth++;
+    else if (c === ')' || c === '}') depth--;
+    else if (c === ';' && depth === 0) { parts.push(text.slice(last, i)); last = i + 1; }
+  }
+  parts.push(text.slice(last));
+  return parts.map(s => s.trim()).filter(Boolean);
+}
+// "q.state_time>=NUM?{ ... }" -> { gate: NUM, inner }
+function unwrapGate(statement) {
+  const m = statement.match(/^q\.state_time\s*>=\s*([\d.]+)\s*\?\s*\{(.+)\}$/s);
+  if (!m) return { gate: 0, inner: statement };
+  let inner = m[2].trim();
+  if (inner.endsWith(';')) inner = inner.slice(0, -1).trim();
+  return { gate: parseFloat(m[1]), inner };
+}
+function parseStopExpression(text) {
+  const chains = {}, consts = {};
+  let mirrorArms = false, mirrorLegs = false;
+  const armVars = new Set(ARM_MIRROR.flatMap(p => [p[0], p[1]]));
+  splitTopLevelStatements(text).forEach(raw => {
+    const { gate, inner } = unwrapGate(raw);
+    const m = inner.match(/^(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\s*=\s*(.+)$/s);
+    if (!m) return;
+    const v = m[1], rhs = m[2].trim();
+    const mm = rhs.match(/^-?\s*(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)$/);
+    if (mm) {
+      if (armVars.has(v) && mm[1].includes('arm')) mirrorArms = true;
+      if (v.includes('leg') && mm[1].includes('leg')) mirrorLegs = true;
+      return;
+    }
+    if (!(v in tracks)) return;
+    if (/^-?(\d+\.?\d*|\.\d+)$/.test(rhs)) {
+      (consts[v] = consts[v] || []).push({ t: gate, v: parseFloat(rhs) });
+      return;
+    }
+    const chain = parseBoneChain(rhs);
+    if (!chain) return;
+    (chains[v] = chains[v] || []).push(...chain);
+  });
+  const result = {};
+  const vars = new Set([...Object.keys(chains), ...Object.keys(consts)]);
+  vars.forEach(v => {
+    const keys = [];
+    const add = (t, val, ease) => {
+      t = round4(t);
+      const ex = keys.find(k => Math.abs(k.t - t) < EPS);
+      if (ex) return ex;
+      const k = { id: 0, t, v: val, ease: ease || 'lerp', g: 0, split: false };
+      keys.push(k);
+      return k;
+    };
+    (consts[v] || []).forEach(c => add(c.t, c.v, 'lerp'));
+    const segs = (chains[v] || []).slice().sort((a, b) => a.start - b.start);
+    let prevTo = 0;
+    segs.forEach(s => {
+      const from = isNaN(s.from) ? prevTo : s.from;
+      const to = isNaN(s.to) ? 0 : s.to;
+      const ease = EASES.includes(s.ease) ? s.ease : 'lerp';
+      add(s.start, from, 'lerp');
+      add(s.start + s.dur, to, ease);
+      prevTo = to;
+    });
+    keys.sort((a, b) => a.t - b.t);
+    if (keys.length) result[v] = keys;
+  });
+  return { tracks: result, mirrorArms, mirrorLegs };
+}
+function applyImported(parsed) {
+  clearAllTracks();
+  Object.keys(parsed.tracks).forEach(v => {
+    parsed.tracks[v].forEach(k => { k.id = uid(); tracks[v].push(k); });
+  });
+  rebuildGroups();
+  options.mirrorArms = parsed.mirrorArms;
+  options.mirrorLegs = parsed.mirrorLegs;
+  invalidate();
+}
+function loadDefaultData() {
+  clearAllTracks();
+  const v = 'v.rightarm.x';
+  tracks[v].push({ id: uid(), t: 0, v: 0, ease: 'lerp', g: 0, split: false });
+  tracks[v].push({ id: uid(), t: 0.5, v: -90, ease: 'ease_out_back', g: 0, split: false });
+  tracks[v].push({ id: uid(), t: 1, v: 0, ease: 'ease_in_out_sine', g: 0, split: false });
+  rebuildGroups();
+  invalidate();
+}
+
+/* =====================================================================
+   SCENE — three.js model, skin, camera, gizmo.
+   Model / pose maths are carried over from the previous tool unchanged
+   (ZYX rotation order, inverted axes, riding offsets, bone pivots).
+   ===================================================================== */
+const stageEl = document.getElementById('stage');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+stageEl.insertBefore(renderer.domElement, stageEl.firstChild);
+renderer.domElement.style.touchAction = 'none';
+
+const orbit = new THREE.OrbitControls(camera, renderer.domElement);
+camera.position.set(30, 24, 60);
+orbit.target.set(0, 15, 0);
+orbit.update();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dirLight.position.set(10, 20, 10);
+scene.add(dirLight);
+
+// Soft floor grid gives the figure something to stand on.
+const grid = new THREE.GridHelper(96, 24, 0x6670a8, 0x3a3f66);
+grid.material.transparent = true;
+grid.material.opacity = 0.5;
+scene.add(grid);
+
+function resizeStage() {
+  const w = Math.max(1, stageEl.clientWidth), h = Math.max(1, stageEl.clientHeight);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  renderer.domElement.style.width = '100%';
+  renderer.domElement.style.height = '100%';
+}
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resizeStage).observe(stageEl);
+window.addEventListener('resize', resizeStage);
+resizeStage();
+
+/* ---------- Minecraft box UVs ---------- */
+function createMinecraftBoxGeometry(size, uvOffset, inflate = 0, mirror = false) {
+  const [w, h, d] = size;
+  const geom = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2);
+  const [u, v] = uvOffset;
+  const tw = 64, th = 64;
+  let faces;
+  if (!mirror) {
+    faces = [
+      [u + d + w, v + d, d, h], [u, v + d, d, h],
+      [u + d, v, w, d], [u + d + w, v, w, d],
+      [u + d, v + d, w, h], [u + d + w + d, v + d, w, h]
+    ];
+  } else {
+    faces = [
+      [u, v + d, d, h], [u + d + w, v + d, d, h],
+      [u + d + w, v, -w, d], [u + d + w + w, v, -w, d],
+      [u + d + w, v + d, -w, h], [u + d + w + d + w, v + d, -w, h]
+    ];
+  }
+  const uvAttr = geom.attributes.uv;
+  let pos = 0;
+  faces.forEach(([x, y, fw, fh]) => {
+    const u0 = x / tw, v0 = 1 - (y + fh) / th, u1 = (x + fw) / tw, v1 = 1 - y / th;
+    uvAttr.setXY(pos++, u0, v1); uvAttr.setXY(pos++, u1, v1);
+    uvAttr.setXY(pos++, u0, v0); uvAttr.setXY(pos++, u1, v0);
+  });
+  uvAttr.needsUpdate = true;
+  return geom;
+}
+
+const baseMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 });
+const outerMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+
+const modelBones = [
+  { name: 'root', pivot: [0, 0, 0] },
+  { name: 'waist', parent: 'root', pivot: [0, 12, 0] },
+  { name: 'body', parent: 'waist', pivot: [0, 24, 0], cubes: [
+    { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16], outer: false },
+    { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 32], outer: true, inflate: 0.25 } ] },
+  { name: 'head', parent: 'body', pivot: [0, 24, 0], cubes: [
+    { origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0], outer: false },
+    { origin: [-4, 24, -4], size: [8, 8, 8], uv: [32, 0], outer: true, inflate: 0.5 } ] },
+  { name: 'leftArm', parent: 'body', pivot: [5, 22, 0], cubes: [
+    { origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48], outer: false },
+    { origin: [4, 12, -2], size: [4, 12, 4], uv: [48, 48], outer: true, inflate: 0.25 } ] },
+  { name: 'rightArm', parent: 'body', pivot: [-5, 22, 0], cubes: [
+    { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16], outer: false },
+    { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 32], outer: true, inflate: 0.25 } ] },
+  { name: 'leftLeg', parent: 'root', pivot: [1.9, 12, 0], cubes: [
+    { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [16, 48], outer: false },
+    { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [0, 48], outer: true, inflate: 0.25 } ] },
+  { name: 'rightLeg', parent: 'root', pivot: [-1.9, 12, 0], cubes: [
+    { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 16], outer: false },
+    { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 32], outer: true, inflate: 0.25 } ] }
+];
+
+const selectableMeshes = [];
+const boneObjects = {};
+const boneOutlines = {};
+const outlineMat = new THREE.LineBasicMaterial({ color: 0x6fdcff, transparent: true, opacity: 0.95, depthTest: false });
+
+modelBones.forEach(b => {
+  const group = new THREE.Group();
+  // Bedrock composes bone rotation in Z, then Y, then X order (ZYX).
+  group.rotation.order = 'ZYX';
+  if (b.cubes) {
+    b.cubes.forEach((c, ci) => {
+      const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c.mirror || false);
+      const mesh = new THREE.Mesh(geom, c.outer ? outerMaterial : baseMaterial);
+      mesh.position.set(
+        c.origin[0] + c.size[0] / 2 - b.pivot[0],
+        c.origin[1] + c.size[1] / 2 - b.pivot[1],
+        c.origin[2] + c.size[2] / 2 - b.pivot[2]);
+      mesh.userData.boneName = b.name;
+      selectableMeshes.push(mesh);
+      group.add(mesh);
+      if (ci === 0) {
+        const e = new THREE.LineSegments(
+          new THREE.EdgesGeometry(new THREE.BoxGeometry(c.size[0] + 1.6, c.size[1] + 1.6, c.size[2] + 1.6)), outlineMat);
+        e.position.copy(mesh.position);
+        e.visible = false;
+        e.renderOrder = 999;
+        group.add(e);
+        boneOutlines[b.name] = e;
+      }
+    });
+  }
+  boneObjects[b.name] = group;
+});
+modelBones.forEach(b => {
+  const group = boneObjects[b.name];
+  const pp = b.parent ? modelBones.find(x => x.name === b.parent).pivot : [0, 0, 0];
+  const init = { x: b.pivot[0] - pp[0], y: b.pivot[1] - pp[1], z: b.pivot[2] - pp[2] };
+  group.userData.initialPos = init;
+  group.position.set(init.x, init.y, init.z);
+  if (b.parent) boneObjects[b.parent].add(group); else scene.add(group);
+});
+
+function setOutline(boneId) {
+  Object.keys(boneOutlines).forEach(k => {
+    const id = k === 'body' ? 'waist' : k;
+    boneOutlines[k].visible = id === boneId;
+  });
+}
+
+/* ---------- Skin ---------- */
+const DEFAULT_SKIN_URL = 'https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png';
+let skinSource = null;
+
+function applyTexture(texture) {
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  baseMaterial.map = texture; baseMaterial.color.setHex(0xffffff); baseMaterial.needsUpdate = true;
+  outerMaterial.map = texture; outerMaterial.color.setHex(0xffffff); outerMaterial.needsUpdate = true;
+}
+function setSkinSource(src) {
+  const tex = new THREE.Texture(src);
+  tex.needsUpdate = true;
+  applyTexture(tex);
+  skinSource = src;
+  drawSkinThumb();
+}
+// Used until the default skin downloads, or if it can't be reached (offline).
+function makeFallbackSkin() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  const skin = '#c68e6b', hair = '#3a2a20', shirt = '#2fa4b3', pants = '#3b4a9c', shoe = '#3d3d4a';
+  R(0, 0, 32, 16, skin); R(8, 0, 8, 8, hair); R(0, 8, 32, 3, hair); R(8, 8, 8, 2, hair);
+  R(9, 12, 2, 1, '#ffffff'); R(13, 12, 2, 1, '#ffffff'); R(10, 12, 1, 1, '#3a2bb0'); R(13, 12, 1, 1, '#3a2bb0'); R(11, 14, 2, 1, '#8a4b3a');
+  R(16, 16, 24, 16, shirt);
+  R(40, 16, 16, 16, skin); R(40, 16, 16, 8, shirt);
+  R(0, 16, 16, 16, pants); R(0, 29, 16, 3, shoe);
+  R(16, 48, 16, 16, pants); R(16, 61, 16, 3, shoe);
+  R(32, 48, 16, 16, skin); R(32, 48, 16, 8, shirt);
+  return c;
+}
+function loadDefaultSkin() {
+  setSkinSource(makeFallbackSkin());
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => setSkinSource(img);
+  img.src = DEFAULT_SKIN_URL;
+}
+function loadSkinFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => setSkinSource(img);
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function drawSkinThumb() {
+  const cv = document.getElementById('skinThumb');
+  if (!cv || !skinSource) return;
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, cv.width, cv.height);
+  const k = skinSource.width / 64;           // supports 128px skins etc.
+  try {
+    g.drawImage(skinSource, 8 * k, 8 * k, 8 * k, 8 * k, 0, 0, cv.width, cv.height);
+    g.drawImage(skinSource, 40 * k, 8 * k, 8 * k, 8 * k, 0, 0, cv.width, cv.height);
+  } catch (e) { /* tainted or not ready — thumbnail is cosmetic */ }
+}
+
+/* ---------- Pose application ---------- */
+function mapName(str) {
+  if (str.includes('rightarm')) return 'rightArm';
+  if (str.includes('leftarm')) return 'leftArm';
+  if (str.includes('rightleg')) return 'rightLeg';
+  if (str.includes('leftleg')) return 'leftLeg';
+  if (str.includes('body')) return 'waist';
+  if (str.includes('head')) return 'head';
+  return 'root';
+}
+function ridingOffsetDeg(boneName, axis) {
+  if (!options.riding) return 0;
+  if (boneName === 'rightLeg' && axis === 'x') return -81;
+  if (boneName === 'rightLeg' && axis === 'z') return -18;
+  if (boneName === 'leftLeg' && axis === 'x') return -81;
+  if (boneName === 'leftLeg' && axis === 'z') return 18;
+  return 0;
+}
+function resetBonesToBindPose() {
+  Object.values(boneObjects).forEach(b => {
+    b.rotation.set(0, 0, 0);
+    b.scale.set(1, 1, 1);
+    const p = b.userData.initialPos;
+    if (p) b.position.set(p.x, p.y, p.z);
+  });
+  if (options.riding) {
+    const r = boneObjects.rightLeg, l = boneObjects.leftLeg, D = Math.PI / 180;
+    if (r) { r.rotation.x = -81 * D; r.rotation.z = -18 * D; }
+    if (l) { l.rotation.x = -81 * D; l.rotation.z = 18 * D; }
+  }
+}
+function applyValuesToBones(values) {
+  for (const [key, val] of Object.entries(values)) {
+    const bone = boneObjects[mapName(key)];
+    if (!bone) continue;
+    if (key.endsWith('.ypos')) { bone.position.y = bone.userData.initialPos.y + val; continue; }
+    if (key.endsWith('.xpos')) { bone.position.x = bone.userData.initialPos.x + val; continue; }
+    if (key.endsWith('.zpos')) { bone.position.z = bone.userData.initialPos.z + val; continue; }
+    if (key === 'v.body_head.xzscale') { bone.scale.x = val; bone.scale.z = val; continue; }
+    if (key === 'v.body_head.yscale') { bone.scale.y = val; continue; }
+    let rad = val * (Math.PI / 180);
+    if (INVERTED.has(key)) rad = -rad;
+    if (key.endsWith('.x')) bone.rotation.x += rad;
+    if (key.endsWith('.y')) bone.rotation.y += rad;
+    if (key.endsWith('.z')) bone.rotation.z += rad;
+  }
+}
+function poseModel(vals) {
+  resetBonesToBindPose();
+  applyValuesToBones(vals);
+}
+
+/* ---------- Gizmo ---------- */
+const tc = new THREE.TransformControls(camera, renderer.domElement);
+if (typeof tc.setSpace === 'function') tc.setSpace('local'); else tc.space = 'local';
+if (typeof tc.setSize === 'function') tc.setSize(1.5); else tc.size = 1.5;
+let gizmoDragging = false;
+tc.addEventListener('dragging-changed', e => { gizmoDragging = !!e.value; orbit.enabled = !e.value; });
+scene.add(tc);
+
+// bone: bone id | null,  chId: 'rotate'|'translate'|'scale',  axes: axis ids to show
+function gizmoApply(bone, chId, axes) {
+  if (!bone || !chId || !axes || !axes.length) { tc.detach(); return; }
+  if (typeof tc.setMode === 'function') tc.setMode(chId); else tc.mode = chId;
+  if (chId === 'scale') {
+    tc.showX = axes.includes('xz') || axes.includes('x');
+    tc.showY = axes.includes('y');
+    tc.showZ = false;
+  } else {
+    tc.showX = axes.includes('x'); tc.showY = axes.includes('y'); tc.showZ = axes.includes('z');
+  }
+  tc.attach(boneObjects[bone]);
+}
+// Reads the bone's current transform back into Molang variable values.
+function readBoneChannel(boneId, chId) {
+  const ch = BONE_BY_ID[boneId][chId];
+  const obj = boneObjects[boneId];
+  const out = {};
+  ch.axes.forEach(a => {
+    const v = ch.vars[a];
+    let val;
+    if (chId === 'rotate') {
+      let deg = obj.rotation[a] * (180 / Math.PI) - ridingOffsetDeg(boneId, a);
+      if (INVERTED.has(v)) deg = -deg;
+      val = deg;
+    } else if (chId === 'translate') {
+      val = obj.position[a] - obj.userData.initialPos[a];
+    } else if (a === 'xz') {
+      obj.scale.z = obj.scale.x;
+      val = obj.scale.x;
+    } else {
+      val = obj.scale[a];
+    }
+    out[v] = round2(val);
+  });
+  return out;
+}
+
+/* ---------- Tap a body part to select it ---------- */
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+let tapStart = null;
+renderer.domElement.addEventListener('pointerdown', e => { tapStart = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!tapStart) return;
+  const dx = e.clientX - tapStart.x, dy = e.clientY - tapStart.y;
+  tapStart = null;
+  if (gizmoDragging || tc.axis) return;
+  if (Math.hypot(dx, dy) > 5) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+  const hits = raycaster.intersectObjects(selectableMeshes, false);
+  if (hits.length) {
+    let id = hits[0].object.userData.boneName;
+    if (id === 'body') id = 'waist';
+    if (typeof onModelPick === 'function') onModelPick(id);
+  }
+});
+
+/* =====================================================================
+   UI — timeline: glyphs, ruler, rows, markers, selection
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const LABEL_W_DEFAULT = 132;
+const labelW = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--label-w')) || LABEL_W_DEFAULT;
+const RULER_H = 46;
+const PAD = 20;                 // empty space before t = 0 so a keyframe at 0 isn't hidden under the labels
+const xOf = t => PAD + t * pps;
+
+const scroller = $('#scroller'), content = $('#content'), rowsEl = $('#rows'), rulerEl = $('#ruler'), rulerSvg = $('#rulerSvg');
+const phHead = $('#phHead'), phLine = $('#phLine');
+
+/* ---------- UI state ---------- */
+let selBone = 'rightArm';      // bone shown in the gizmo
+let selChannel = null;         // 'rotate' | 'translate' | 'scale' | null (null = bone folder selected)
+let selAxis = null;            // axis isolation mode: 'x' | 'y' | 'z' | 'xz' | null
+let gizmoCh = 'rotate';        // channel the gizmo edits while no channel row is selected
+let selItems = [];             // selected keyframe(s): [{ v, id }]  (combined key = up to 3, axis key = 1)
+let selCtx = null;             // { bone, ch } lane the selected keyframe lives in
+const expanded = new Set(['rightArm']);
+
+let ph = 0;                    // playhead (seconds) while paused
+let snap = 24;                 // steps per second
+let pps = 220;                 // pixels per second (zoom)
+let defaultEase = 'lerp';      // easing given to newly created keyframes
+let playing = false, playT = 0, playOrigin = 0;
+let viewEnd = 2;
+
+const snapT = t => round4(Math.round(t * snap) / snap);
+const curT = () => (playing ? playT : ph);
+const fmtT = t => String(round4(t));
+
+/* ---------- Keyframe glyphs: each easing gets its own shape ---------- */
+// Family decides the outline, direction decides the fill:
+//   In = left half solid · Out = right half solid · In-Out (and Lerp) = fully solid.
+function polyPath(n, r, rotDeg, cx = 10, cy = 10) {
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = (rotDeg + (360 / n) * i) * Math.PI / 180;
+    d += (i ? 'L' : 'M') + (cx + r * Math.cos(a)).toFixed(2) + ' ' + (cy + r * Math.sin(a)).toFixed(2);
+  }
+  return d + 'Z';
+}
+function starPath(n, ro, ri, rotDeg, cx = 10, cy = 10.6) {
+  let d = '';
+  for (let i = 0; i < n * 2; i++) {
+    const r = i % 2 ? ri : ro;
+    const a = (rotDeg + (180 / n) * i) * Math.PI / 180;
+    d += (i ? 'L' : 'M') + (cx + r * Math.cos(a)).toFixed(2) + ' ' + (cy + r * Math.sin(a)).toFixed(2);
+  }
+  return d + 'Z';
+}
+const FAM_SHAPES = {
+  lerp: 'M10 1.6L18.4 10L10 18.4L1.6 10Z',
+  sine: 'M2.4 10A7.6 7.6 0 1 0 17.6 10A7.6 7.6 0 1 0 2.4 10Z',
+  quad: 'M5.6 2.8H14.4Q17.2 2.8 17.2 5.6V14.4Q17.2 17.2 14.4 17.2H5.6Q2.8 17.2 2.8 14.4V5.6Q2.8 2.8 5.6 2.8Z',
+  cubic: polyPath(6, 8.6, -90),
+  quart: 'M10 2L18.2 16.4H1.8Z',
+  quint: polyPath(8, 8.7, -67.5),
+  expo: 'M10 1.2Q11.2 8.8 18.8 10Q11.2 11.2 10 18.8Q8.8 11.2 1.2 10Q8.8 8.8 10 1.2Z',
+  circ: 'M3 3H9A7 7 0 0 1 9 17H3Z',
+  back: 'M2 4.2H11.6L18.2 10L11.6 15.8H2Z',
+  elastic: starPath(5, 9.2, 4.3, -90),
+  bounce: 'M5.2 3.4H14.8L18.4 16.6H1.6Z'
+};
+const famOf = e => (e === 'lerp' ? 'lerp' : e.replace(/^ease_(in_out|in|out)_/, ''));
+function glyph(ease) {
+  const d = FAM_SHAPES[famOf(ease)] || FAM_SHAPES.lerp;
+  const kind = easeKind(ease);
+  if (kind === 'lerp' || kind === 'inout') return `<svg class="g" viewBox="0 0 20 20" aria-hidden="true"><path class="full" d="${d}"/></svg>`;
+  const clip = kind === 'in' ? 'kcL' : 'kcR';
+  return `<svg class="g" viewBox="0 0 20 20" aria-hidden="true"><path class="ol" d="${d}"/><path class="half" d="${d}" clip-path="url(#${clip})"/></svg>`;
+}
+function curveSvg(ease) {
+  let d = '';
+  const N = 28;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N, y = getEase(ease, t);
+    d += (i ? 'L' : 'M') + (2 + t * 32).toFixed(1) + ' ' + (20 - ((y + 0.35) / 1.7) * 18).toFixed(1);
+  }
+  return `<svg class="cv" viewBox="0 0 36 22" aria-hidden="true"><path d="${d}"/></svg>`;
+}
+const folderSvg = b => `<svg class="folder" viewBox="0 0 32 28" aria-hidden="true"><path d="M2 6.5A3 3 0 0 1 5 3.5h7l3 3h12a3 3 0 0 1 3 3V12H2z" fill="${b.tone}"/><rect x="2" y="9" width="28" height="17" rx="3" fill="${b.color}"/><rect x="2" y="9" width="28" height="6.5" rx="3" fill="#fff" opacity=".2"/></svg>`;
+
+/* ---------- Layout + ruler ---------- */
+function layout(force) {
+  const need = Math.max(2, Math.ceil(Math.max(maxKeyTime(), ph) + 1));
+  const w = scroller.clientWidth || 360;
+  const laneW = Math.max(need * pps + PAD, w - labelW());
+  viewEnd = need;
+  content.style.setProperty('--lane-w', laneW + 'px');
+  content.style.setProperty('--pps', pps);
+  content.style.setProperty('--pad', PAD + 'px');
+  const key = [need, pps, snap, Math.round(laneW)].join('|');
+  if (force || key !== layout._k) { layout._k = key; buildRuler(laneW); }
+}
+function buildRuler(laneW) {
+  const endT = (laneW - PAD) / pps, H = RULER_H;
+  let minorStep = 1 / snap;
+  while (minorStep * pps < 5) minorStep *= 2;
+  const labelStep = [0.25, 0.5, 1, 2, 5, 10, 30, 60].find(s => s * pps >= 50) || 60;
+  const majorStep = 0.25 * pps >= 12 ? 0.25 : labelStep;
+  const isMul = (t, s) => Math.abs(t / s - Math.round(t / s)) < 1e-6;
+  let minor = '', major = '', labels = '';
+  for (let k = 0; k * minorStep <= endT + 1e-9; k++) {
+    const t = k * minorStep;
+    if (isMul(t, majorStep)) continue;
+    minor += `M${xOf(t).toFixed(1)} ${H}v-9`;
+  }
+  for (let k = 0; k * majorStep <= endT + 1e-9; k++) major += `M${xOf(k * majorStep).toFixed(1)} ${H}v-20`;
+  for (let k = 0; k * labelStep <= endT + 1e-9; k++) {
+    const t = k * labelStep;
+    labels += `<text x="${(xOf(t) + 5).toFixed(1)}" y="15">${fmtT(t)}</text>`;
+  }
+  rulerSvg.innerHTML =
+    `<rect x="0" y="${H - 4}" width="100%" height="4" fill="#2a2d4d"/>` +
+    `<path d="${minor}" stroke="#3d4270" stroke-width="2" shape-rendering="crispEdges"/>` +
+    `<path d="${major}" stroke="#6a72ac" stroke-width="3" shape-rendering="crispEdges"/>` + labels;
+}
+function setPlayheadUI(t) {
+  const x = xOf(t);
+  phHead.style.transform = `translateX(${x}px)`;
+  phLine.style.transform = `translateX(${labelW() + x}px)`;
+  $('#timeNow').textContent = t.toFixed(2);
+  $('#frameNow').textContent = 's  f' + Math.round(t * snap);
+}
+
+/* ---------- Rows ---------- */
+const chRows = {}; // `${bone}|${ch}` -> row element
+function buildRows() {
+  let html = '';
+  BONES.forEach(b => {
+    const chs = CH_ORDER.filter(c => b[c]);
+    html += `<section class="grp" data-bone="${b.id}">
+      <div class="row bone" data-bone="${b.id}">
+        <div class="lbl" data-act="bone"><span class="pillbg">${folderSvg(b)}<span class="nm">${b.name}</span></span>
+          <button class="tw" data-act="toggle" aria-label="Expand or collapse ${b.name}"></button></div>
+        <div class="lane"></div></div>
+      <div class="chs"><div class="chs-in">`;
+    chs.forEach(c => {
+      html += `<div class="row ch" data-bone="${b.id}" data-ch="${c}">
+        <div class="lbl" data-act="ch"><span class="txt">${CH_LABEL[c]}</span></div><div class="lane"></div></div>`;
+      if (b[c].axes.length > 1) {
+        html += `<div class="row axis" data-bone="${b.id}" data-ch="${c}"><div class="lbl"><div class="axbtns">` +
+          b[c].axes.map(a => `<button class="axbtn" data-a="${a}" aria-label="Isolate ${AXIS_LABEL[a]} axis">${AXIS_LABEL[a]}</button>`).join('') +
+          `</div></div><div class="lane"></div></div>`;
+      }
+    });
+    html += `</div></div></section>`;
+  });
+  rowsEl.innerHTML = html;
+  $$('.row.ch', rowsEl).forEach(r => { chRows[r.dataset.bone + '|' + r.dataset.ch] = r; });
+}
+
+/* ---------- Markers ---------- */
+function laneMarkers(boneId, chId) {
+  const ch = BONE_BY_ID[boneId][chId];
+  if (selBone === boneId && selChannel === chId && selAxis && ch.axes.includes(selAxis)) {
+    const v = ch.vars[selAxis];
+    return tracks[v].map(kf => ({ t: kf.t, status: 'axis', ease: kf.ease, items: [{ v, id: kf.id }] }));
+  }
+  return channelGroups(boneId, chId).map(g => ({
+    t: g.t, status: g.status, ease: g.ease, items: g.items.map(i => ({ v: i.v, id: i.id }))
+  }));
+}
+const encItems = items => items.map(i => i.v + ':' + i.id).join(',');
+const decItems = s => (s ? s.split(',').map(p => { const k = p.lastIndexOf(':'); return { v: p.slice(0, k), id: +p.slice(k + 1) }; }) : []);
+
+function markerHTML(m, b, c) {
+  return `<button class="kf st-${m.status}" style="left:${xOf(m.t).toFixed(2)}px" data-b="${b}" data-c="${c}" data-t="${m.t}" data-k="${encItems(m.items)}" aria-label="Keyframe at ${fmtT(m.t)} seconds, ${easeName(m.ease)}">${glyph(m.ease)}</button>`;
+}
+function renderMarkers() {
+  $$('.row.ch', rowsEl).forEach(r => {
+    const b = r.dataset.bone, c = r.dataset.ch;
+    $('.lane', r).innerHTML = laneMarkers(b, c).map(m => markerHTML(m, b, c)).join('');
+  });
+  $$('.row.bone', rowsEl).forEach(r => {
+    const b = r.dataset.bone;
+    const lane = $('.lane', r);
+    if (expanded.has(b)) { lane.innerHTML = ''; return; }
+    const times = [];
+    CH_ORDER.forEach(c => { if (BONE_BY_ID[b][c]) channelGroups(b, c).forEach(g => { if (!times.some(t => Math.abs(t - g.t) < EPS)) times.push(g.t); }); });
+    lane.innerHTML = times.map(t => `<span class="kf mini" style="left:${xOf(t).toFixed(2)}px;color:${BONE_BY_ID[b].color}">${glyph('lerp')}</span>`).join('');
+  });
+  refreshSel();
+}
+function markerInfo(el) {
+  return { bone: el.dataset.b, ch: el.dataset.c, t: parseFloat(el.dataset.t), items: decItems(el.dataset.k) };
+}
+function refreshSel() {
+  const ids = new Set(selItems.map(i => i.id));
+  $$('.kf:not(.mini)', rowsEl).forEach(el => {
+    const items = decItems(el.dataset.k);
+    const on = selCtx && el.dataset.b === selCtx.bone && el.dataset.c === selCtx.ch && items.length && items.every(i => ids.has(i.id));
+    el.classList.toggle('sel', !!on);
+  });
+  refreshTitle();
+}
+function selectedEase() {
+  if (!selItems.length) return null;
+  const k = getKey(selItems[0].v, selItems[0].id);
+  return k ? k.ease : null;
+}
+function refreshTitle() {
+  const e = selectedEase() || defaultEase;
+  $('#easeGlyph').innerHTML = glyph(e);
+  $('#easeName').textContent = easeName(e);
+  $('#btnSnap').textContent = snap;
+}
+
+/* ---------- Selection ---------- */
+function firstChannelOf(bone) { return CH_ORDER.find(c => BONE_BY_ID[bone][c]); }
+function gizmoChannel() {
+  const b = BONE_BY_ID[selBone];
+  if (selChannel && b[selChannel]) return selChannel;
+  if (b[gizmoCh]) return gizmoCh;
+  return firstChannelOf(selBone);
+}
+function activeAxes() {
+  const chId = gizmoChannel();
+  if (!chId) return [];
+  const ch = BONE_BY_ID[selBone][chId];
+  return selChannel === chId && selAxis && ch.axes.includes(selAxis) ? [selAxis] : ch.axes.slice();
+}
+function selectItems(bone, ch, items) {
+  selCtx = { bone, ch };
+  selItems = items.map(i => ({ v: i.v, id: i.id }));
+  refreshSel();
+}
+function clearSel() {
+  if (!selItems.length && !selCtx) return;
+  selItems = []; selCtx = null;
+  closePops();
+  refreshSel();
+}
+function refreshRows() {
+  $$('.grp', rowsEl).forEach(g => g.classList.toggle('open', expanded.has(g.dataset.bone)));
+  $$('.row.bone', rowsEl).forEach(r => {
+    r.classList.toggle('sel', r.dataset.bone === selBone && !selChannel);
+    $('.tw', r).textContent = expanded.has(r.dataset.bone) ? '\u2013' : '+';
+  });
+  $$('.row.ch', rowsEl).forEach(r => r.classList.toggle('sel', r.dataset.bone === selBone && r.dataset.ch === selChannel));
+  $$('.row.axis', rowsEl).forEach(r => {
+    const on = r.dataset.bone === selBone && r.dataset.ch === selChannel;
+    r.classList.toggle('open', on);
+    $$('.axbtn', r).forEach(b => b.classList.toggle('on', on && selAxis === b.dataset.a));
+  });
+}
+function refreshChip() {
+  const b = BONE_BY_ID[selBone], chId = gizmoChannel();
+  let h = `<b>${b.name}</b>`;
+  if (chId) h += ` \u00b7 ${CH_LABEL[chId]}`;
+  if (selAxis && selChannel) h += ` \u00b7 <i>${AXIS_LABEL[selAxis]} only</i>`;
+  $('#chip').innerHTML = h;
+}
+function syncGizmo() {
+  const chId = gizmoChannel();
+  if (playing || !chId) { gizmoApply(null); return; }
+  gizmoApply(selBone, chId, activeAxes());
+}
+function afterSelection() {
+  refreshRows();
+  renderMarkers();
+  syncGizmo();
+  refreshChip();
+  setOutline(selBone);
+}
+function onBoneTap(b) {
+  selBone = b; selChannel = null; selAxis = null;
+  if (!BONE_BY_ID[b][gizmoCh]) gizmoCh = firstChannelOf(b);
+  selItems = []; selCtx = null; closePops();
+  afterSelection();
+}
+function onChannelTap(b, c) {
+  if (selBone === b && selChannel === c) {
+    if (selAxis) selAxis = null; else selChannel = null;   // 1st tap leaves axis mode, 2nd deselects the channel
+  } else {
+    selBone = b; selChannel = c; selAxis = null; gizmoCh = c; expanded.add(b);
+  }
+  selItems = []; selCtx = null; closePops();
+  afterSelection();
+}
+function onAxisTap(b, c, a) {
+  if (selBone === b && selChannel === c && selAxis === a) selAxis = null;
+  else { selBone = b; selChannel = c; selAxis = a; gizmoCh = c; }
+  selItems = []; selCtx = null; closePops();
+  afterSelection();
+}
+function onToggleBone(b) {
+  if (expanded.has(b)) {
+    expanded.delete(b);
+    if (selBone === b && selChannel) { selChannel = null; selAxis = null; selItems = []; selCtx = null; }
+  } else expanded.add(b);
+  afterSelection();
+}
+function scrollRowIntoView(boneId) {
+  const row = $(`.row.bone[data-bone="${boneId}"]`, rowsEl);
+  if (!row) return;
+  const top = row.offsetTop + $('#rulerRow').offsetHeight;
+  const bottom = top + row.offsetHeight + 8;
+  if (top < scroller.scrollTop + RULER_H) scroller.scrollTop = Math.max(0, top - RULER_H - 8);
+  else if (bottom > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = bottom - scroller.clientHeight;
+}
+function onModelPick(id) {            // called from the 3D tap-to-select
+  if (id !== selBone) { expanded.add(id); onBoneTap(id); setTimeout(() => scrollRowIntoView(id), 40); }
+}
+
+/* =====================================================================
+   UI — interactions, popovers, sheets, play loop
+   ===================================================================== */
+let toastTimer = 0;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2300);
+}
+
+/* ---------- Popovers ---------- */
+function closePops() {
+  $$('.pop').forEach(p => p.classList.remove('show'));
+  $('#btnEase').setAttribute('aria-expanded', 'false');
+  $('#btnSnap').setAttribute('aria-expanded', 'false');
+}
+function placePop(pop, r, align) {
+  pop.style.maxHeight = '';
+  pop.classList.add('show');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  const above = r.top - 14, below = vh - r.bottom - 14;
+  let top, maxH = '';
+  if (h <= above) top = r.top - h - 8;
+  else if (h <= below) top = r.bottom + 8;
+  else if (above >= below) { maxH = Math.max(120, above); top = r.top - Math.min(h, above) - 8; }
+  else { maxH = Math.max(120, below); top = r.bottom + 8; }
+  if (maxH) pop.style.maxHeight = maxH + 'px';
+  let left = align === 'right' ? r.right - w : r.left + r.width / 2 - w / 2;
+  pop.style.left = clamp(left, 8, Math.max(8, vw - w - 8)) + 'px';
+  pop.style.top = Math.max(8, top) + 'px';
+}
+document.addEventListener('pointerdown', e => {
+  if (e.target.closest('.pop') || e.target.closest('#btnEase') || e.target.closest('#btnSnap')) return;
+  if ($('.pop.show')) closePops();
+}, true);
+
+/* ----- Easing picker ----- */
+const cap = s => s[0].toUpperCase() + s.slice(1);
+function buildEasePop() {
+  let h = `<h3 id="easeFor"></h3><div class="ease-head"><span></span><span>In</span><span>Out</span><span>In-Out</span></div>`;
+  h += `<div class="ease-row"><span class="ease-fam">Linear</span><button class="ec wide" data-e="lerp" aria-label="Lerp"><span class="gl">${glyph('lerp')}</span>${curveSvg('lerp')}<span style="font-size:13px">Lerp</span></button></div>`;
+  EASE_FAMILIES.forEach(f => {
+    h += `<div class="ease-row"><span class="ease-fam">${cap(f)}</span>` +
+      ['in', 'out', 'in_out'].map(d => {
+        const e = `ease_${d}_${f}`;
+        return `<button class="ec" data-e="${e}" aria-label="${easeName(e)}"><span class="gl">${glyph(e)}</span>${curveSvg(e)}</button>`;
+      }).join('') + `</div>`;
+  });
+  $('#easePop').innerHTML = h;
+}
+function openEasePop() {
+  const pop = $('#easePop');
+  const cur = selectedEase() || defaultEase;
+  $('#easeFor').innerHTML = selItems.length ? 'Easing of the <b>selected keyframe</b>' : 'Easing for <b>new keyframes</b>';
+  $$('.ec', pop).forEach(b => b.classList.toggle('on', b.dataset.e === cur));
+  closePops();
+  placePop(pop, $('#btnEase').getBoundingClientRect(), 'right');
+  $('#btnEase').setAttribute('aria-expanded', 'true');
+  const on = $('.ec.on', pop);
+  if (on) pop.scrollTop = Math.max(0, on.offsetTop - 120);
+}
+function pickEase(e) {
+  defaultEase = e;
+  if (selItems.length) {
+    let onlyFirst = true;
+    selItems.forEach(i => {
+      const k = getKey(i.v, i.id);
+      if (!k) return;
+      k.ease = e;
+      if (tracks[i.v][0].id !== i.id) onlyFirst = false;
+    });
+    invalidate();
+    renderMarkers();
+    if (onlyFirst) toast('A keyframe\u2019s easing shapes the motion arriving at it \u2014 the first one has nothing to ease from.');
+  }
+  refreshTitle();
+  closePops();
+}
+
+/* ----- Snapping + zoom ----- */
+function setSnap(n) {
+  snap = clamp(Math.round(n) || 24, 1, 120);
+  ph = snapT(ph);
+  layout(true);
+  setPlayheadUI(curT());
+  refreshTitle();
+  refreshSnapPop();
+}
+function setPps(v, anchorClientX) {
+  v = clamp(v, 50, 900);
+  const r = scroller.getBoundingClientRect(), lw = labelW();
+  const ax = anchorClientX !== undefined ? anchorClientX : r.left + lw + (r.width - lw) / 2;
+  const tAnchor = (scroller.scrollLeft + ax - r.left - lw - PAD) / pps;
+  pps = v;
+  layout(true);
+  renderMarkers();
+  setPlayheadUI(curT());
+  scroller.scrollLeft = Math.max(0, PAD + tAnchor * pps - (ax - r.left - lw));
+  const z = $('#zoomIn');
+  if (z) z.value = pps;
+}
+function openSnapPop() {
+  const pop = $('#snapPop');
+  pop.innerHTML = `<h3 id="snapTitle"></h3><div class="chips">${[10, 12, 20, 24, 30, 60].map(n => `<button class="chip-btn" data-snap="${n}">${n}</button>`).join('')}</div>
+    <div class="stepper"><button data-step="-1" aria-label="Fewer steps">\u2212</button><input type="number" id="snapIn" min="1" max="120" inputmode="numeric" aria-label="Steps per second"><button data-step="1" aria-label="More steps">+</button></div>
+    <p class="hint" id="snapHint"></p>
+    <div class="zoom"><span>Zoom</span><input type="range" id="zoomIn" min="50" max="900" value="${Math.round(pps)}" aria-label="Timeline zoom"></div>`;
+  closePops();
+  refreshSnapPop();
+  placePop(pop, $('#btnSnap').getBoundingClientRect(), 'right');
+  $('#btnSnap').setAttribute('aria-expanded', 'true');
+}
+function refreshSnapPop() {
+  const pop = $('#snapPop');
+  if (!pop.classList.contains('show') && !$('#snapTitle')) return;
+  const t = $('#snapTitle'); if (!t) return;
+  t.innerHTML = `Snapping \u00b7 <b>${snap}</b> steps per second`;
+  $$('.chip-btn', pop).forEach(b => b.classList.toggle('on', +b.dataset.snap === snap));
+  const inp = $('#snapIn'); if (inp && document.activeElement !== inp) inp.value = snap;
+  $('#snapHint').textContent = `Playhead and keyframes jump in steps of ${(1 / snap).toFixed(4)} s.`;
+}
+
+/* ---------- Keyframe operations ---------- */
+function afterDataChange(ctx) {
+  if (ctx) normalizeChannel(ctx.bone, ctx.ch);
+  invalidate();
+  layout();
+  renderMarkers();
+}
+function selectAtTime(boneId, chId, axes, t) {
+  const ch = BONE_BY_ID[boneId][chId];
+  const items = [];
+  axes.forEach(a => { const k = findKeyAt(ch.vars[a], t); if (k) items.push({ v: ch.vars[a], id: k.id }); });
+  if (!items.length) return;
+  // in combined mode select the whole bucket at that time
+  if (axes.length === ch.axes.length) {
+    const g = channelGroups(boneId, chId).find(b => Math.abs(b.t - t) < EPS);
+    if (g) { selectItems(boneId, chId, g.items); return; }
+  }
+  selectItems(boneId, chId, items);
+}
+function visibleVals(boneId, chId, t) {
+  const pose = evaluatePose(t), ch = BONE_BY_ID[boneId][chId], out = {};
+  ch.axes.forEach(a => { const v = ch.vars[a]; out[v] = pose[v] !== undefined ? round2(pose[v]) : varDefault(v); });
+  return out;
+}
+function addKeyframe() {
+  if (playing) { toast('Pause the animation to add a keyframe.'); return; }
+  const chId = gizmoChannel();
+  if (!chId) { toast('Select a bone first.'); return; }
+  const ch = BONE_BY_ID[selBone][chId], axes = activeAxes(), t = ph;
+  const created = ensureKeys(selBone, chId, axes, t, { vals: visibleVals(selBone, chId, t), ease: defaultEase, split: axes.length < ch.axes.length });
+  if (!created.length) {
+    selectAtTime(selBone, chId, axes, t);
+    toast('There is already a keyframe at this time.');
+    return;
+  }
+  afterDataChange({ bone: selBone, ch: chId });
+  selectAtTime(selBone, chId, axes, t);
+  expanded.add(selBone);
+  refreshRows();
+}
+function deleteSelected() {
+  if (!selItems.length || !selCtx) return false;
+  const ctx = selCtx;
+  deleteItems(selItems);
+  selItems = []; selCtx = null;
+  closePops();
+  afterDataChange(ctx);
+  return true;
+}
+
+// Moving the gizmo writes into the keyframe(s) at the playhead (created on demand).
+tc.addEventListener('objectChange', () => {
+  if (playing || !selBone) return;
+  const chId = gizmoChannel();
+  if (!chId) return;
+  const ch = BONE_BY_ID[selBone][chId], axes = activeAxes(), t = ph;
+  const read = readBoneChannel(selBone, chId);
+  const created = ensureKeys(selBone, chId, axes, t, { vals: visibleVals(selBone, chId, t), ease: defaultEase, split: axes.length < ch.axes.length });
+  axes.forEach(a => {
+    const v = ch.vars[a], k = findKeyAt(v, t);
+    if (k && Math.abs(k.v - read[v]) > 0.004) k.v = read[v];
+  });
+  invalidate();
+  if (created.length) { normalizeChannel(selBone, chId); layout(); renderMarkers(); expanded.add(selBone); refreshRows(); }
+  selectAtTime(selBone, chId, axes, t);
+});
+
+/* ---------- Keyframe drag / long-press ---------- */
+let drag = null, scrub = null, edgeTimer = null, edgeX = 0, edgeCb = null;
+function startEdge(cb) {
+  edgeCb = cb;
+  if (edgeTimer) return;
+  edgeTimer = setInterval(() => {
+    const r = scroller.getBoundingClientRect(), lw = labelW();
+    let dx = 0;
+    if (edgeX > r.right - 40) dx = Math.min(18, (edgeX - (r.right - 40)) / 2 + 4);
+    else if (edgeX < r.left + lw + 30 && scroller.scrollLeft > 0) dx = -Math.min(18, ((r.left + lw + 30) - edgeX) / 2 + 4);
+    if (dx) { scroller.scrollLeft += dx; if (edgeCb) edgeCb(); }
+  }, 16);
+}
+function stopEdge() { clearInterval(edgeTimer); edgeTimer = null; edgeCb = null; }
+
+function startKeyDrag(e, el) {
+  if (e.button) return;
+  closePops();
+  const info = markerInfo(el);
+  const d = drag = { el, info, id: e.pointerId, x0: e.clientX, sl0: scroller.scrollLeft, t0: info.t, t: info.t,
+    lastX: e.clientX, moved: false, long: false, split: false, timer: 0 };
+  // axis-mode key that currently shares its time with other axes → moving it is a split
+  const bucket = channelGroups(info.bone, info.ch).find(g => Math.abs(g.t - info.t) < EPS);
+  d.split = !!(selAxis && info.items.length === 1 && bucket && bucket.items.length > 1);
+  try { el.setPointerCapture(e.pointerId); } catch (_) {}
+  selectItems(info.bone, info.ch, info.items);
+  d.timer = setTimeout(() => {
+    if (drag === d && !d.moved) { d.long = true; if (navigator.vibrate) navigator.vibrate(12); openKeyPop(d.el); }
+  }, 460);
+}
+function applyDrag() {
+  const d = drag;
+  if (!d || !d.moved) return;
+  const dx = (d.lastX - d.x0) + (scroller.scrollLeft - d.sl0);
+  const nt = snapT(Math.max(0, d.t0 + dx / pps));
+  if (Math.abs(nt - d.t) < 1e-6) return;
+  if (!canMoveItems(d.info.items, nt)) return;     // blocked by another keyframe: stay at the last free spot
+  moveItems(d.info.items, nt);
+  if (d.split) { d.info.items.forEach(i => { const k = getKey(i.v, i.id); if (k) k.split = true; }); d.split = false; }
+  d.t = nt;
+  d.el.style.left = xOf(nt) + 'px';
+  d.el.dataset.t = nt;
+  invalidate();
+  const need = Math.max(2, Math.ceil(Math.max(maxKeyTime(), ph) + 1));
+  if (need !== viewEnd) layout();
+}
+function endKeyDrag(e) {
+  const d = drag;
+  if (!d || (e && e.pointerId !== d.id)) return;
+  clearTimeout(d.timer);
+  stopEdge();
+  drag = null;
+  d.el.classList.remove('dragging');
+  if (d.moved) { afterDataChange({ bone: d.info.bone, ch: d.info.ch }); selectItems(d.info.bone, d.info.ch, d.info.items); }
+}
+window.addEventListener('pointermove', e => {
+  if (drag && e.pointerId === drag.id) {
+    drag.lastX = edgeX = e.clientX;
+    if (!drag.moved && Math.abs(e.clientX - drag.x0) > 6) {
+      drag.moved = true;
+      clearTimeout(drag.timer);
+      drag.el.classList.add('dragging');
+      startEdge(applyDrag);
+    }
+    applyDrag();
+  } else if (scrub && e.pointerId === scrub.id) {
+    edgeX = e.clientX; scrubTo(e.clientX);
+  }
+});
+window.addEventListener('pointerup', e => { endKeyDrag(e); endScrub(e); });
+window.addEventListener('pointercancel', e => { endKeyDrag(e); endScrub(e); });
+
+function startScrub(e) {
+  if (e.button) return;
+  closePops();
+  scrub = { id: e.pointerId };
+  edgeX = e.clientX;
+  try { rulerEl.setPointerCapture(e.pointerId); } catch (_) {}
+  scrubTo(e.clientX);
+  startEdge(() => scrubTo(edgeX));
+}
+function scrubTo(clientX) {
+  const r = rulerEl.getBoundingClientRect();
+  const t = snapT(Math.max(0, (clientX - r.left - PAD) / pps));
+  if (playing) { playT = t; playOrigin = t; }
+  ph = t;
+  if (!playing) layout();
+  setPlayheadUI(curT());
+}
+function endScrub(e) {
+  if (!scrub || (e && e.pointerId !== scrub.id)) return;
+  scrub = null; stopEdge();
+}
+
+/* ----- Keyframe value popover (long-press) ----- */
+const trashSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg>';
+function openKeyPop(el) {
+  const info = markerInfo(el), pop = $('#keyPop');
+  const b = BONE_BY_ID[info.bone], ch = b[info.ch];
+  const items = info.items.slice().sort((p, q) => ch.axes.indexOf(VAR_META[p.v].axis) - ch.axes.indexOf(VAR_META[q.v].axis));
+  const unit = info.ch === 'rotate' ? '\u00b0' : info.ch === 'scale' ? '\u00d7' : '';
+  if (!playing) { ph = info.t; layout(); setPlayheadUI(ph); }
+  pop.innerHTML = `<h3><b>${b.name}</b> \u00b7 ${CH_LABEL[info.ch]} \u00b7 ${fmtT(info.t)} s</h3><div class="kp-fields">` +
+    items.map(it => {
+      const a = VAR_META[it.v].axis, k = getKey(it.v, it.id);
+      return `<div class="kp-f" data-a="${a}"><label>${AXIS_LABEL[a]}</label><input type="number" step="any" inputmode="decimal" data-v="${it.v}" data-id="${it.id}" value="${k ? k.v : 0}" aria-label="${CH_LABEL[info.ch]} ${AXIS_LABEL[a]}"><em>${unit}</em></div>`;
+    }).join('') + `</div><button class="btn-del" id="kpDel">${trashSvg}Delete keyframe</button>`;
+  closePops();
+  placePop(pop, el.getBoundingClientRect(), 'center');
+}
+$('#keyPop').addEventListener('input', e => {
+  const inp = e.target.closest('input[data-v]');
+  if (!inp) return;
+  const k = getKey(inp.dataset.v, +inp.dataset.id), n = parseFloat(inp.value);
+  if (!k || isNaN(n)) return;
+  k.v = n;
+  invalidate();
+});
+$('#keyPop').addEventListener('click', e => { if (e.target.closest('#kpDel')) deleteSelected(); });
+
+/* ---------- Timeline events ---------- */
+scroller.addEventListener('pointerdown', e => {
+  const kf = e.target.closest('.kf');
+  if (kf && !kf.classList.contains('mini')) { startKeyDrag(e, kf); return; }
+  if (e.target.closest('#ruler')) startScrub(e);
+});
+scroller.addEventListener('contextmenu', e => { if (e.target.closest('.kf')) e.preventDefault(); });
+scroller.addEventListener('click', e => {
+  if (e.target.closest('.kf')) return;
+  const tw = e.target.closest('[data-act="toggle"]');
+  if (tw) { onToggleBone(tw.closest('.row').dataset.bone); return; }
+  const ax = e.target.closest('.axbtn');
+  if (ax) { const r = ax.closest('.row'); onAxisTap(r.dataset.bone, r.dataset.ch, ax.dataset.a); return; }
+  const lbl = e.target.closest('.lbl');
+  if (lbl) {
+    const r = lbl.closest('.row');
+    if (r.classList.contains('bone')) onBoneTap(r.dataset.bone);
+    else if (r.classList.contains('ch')) onChannelTap(r.dataset.bone, r.dataset.ch);
+    return;
+  }
+  if (e.target.closest('.lane')) clearSel();
+});
+scroller.addEventListener('wheel', e => {
+  if (e.ctrlKey || e.metaKey) { e.preventDefault(); setPps(pps * Math.exp(-e.deltaY * 0.0025), e.clientX); }
+}, { passive: false });
+
+// two-finger pinch zoom (native one-finger scrolling stays untouched)
+let pinch = null;
+scroller.addEventListener('touchstart', e => {
+  if (e.touches.length === 2 && !drag && !scrub) {
+    const a = e.touches[0], b = e.touches[1];
+    pinch = { d0: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1, pps0: pps };
+    scroller.style.overflow = 'hidden';
+  }
+}, { passive: true });
+scroller.addEventListener('touchmove', e => {
+  if (!pinch || e.touches.length !== 2) return;
+  e.preventDefault();
+  const a = e.touches[0], b = e.touches[1];
+  setPps(pinch.pps0 * Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) / pinch.d0, (a.clientX + b.clientX) / 2);
+}, { passive: false });
+const endPinch = e => { if (pinch && e.touches.length < 2) { pinch = null; scroller.style.overflow = ''; } };
+scroller.addEventListener('touchend', endPinch);
+scroller.addEventListener('touchcancel', endPinch);
+
+/* ---------- Title bar ---------- */
+$('#btnAdd').addEventListener('click', addKeyframe);
+$('#btnEase').addEventListener('click', () => { if ($('#easePop').classList.contains('show')) closePops(); else openEasePop(); });
+$('#btnSnap').addEventListener('click', () => { if ($('#snapPop').classList.contains('show')) closePops(); else openSnapPop(); });
+$('#easePop').addEventListener('click', e => { const b = e.target.closest('.ec'); if (b) pickEase(b.dataset.e); });
+$('#snapPop').addEventListener('click', e => {
+  const c = e.target.closest('[data-snap]'); if (c) { setSnap(+c.dataset.snap); return; }
+  const s = e.target.closest('[data-step]'); if (s) setSnap(snap + +s.dataset.step);
+});
+$('#snapPop').addEventListener('change', e => { if (e.target.id === 'snapIn') setSnap(+e.target.value); });
+$('#snapPop').addEventListener('input', e => { if (e.target.id === 'zoomIn') setPps(+e.target.value); });
+
+/* ---------- Play / pause ---------- */
+const loopEnd = () => Math.max(maxKeyTime() + 0.25, 0.5);
+function togglePlay() {
+  closePops();
+  if (playing) {
+    playing = false;
+    ph = playOrigin;                     // pause returns the playhead to where Play started
+    layout();
+    setPlayheadUI(ph);
+    scrollToTime(ph);
+  } else {
+    playOrigin = ph; playT = ph; playing = true;
+  }
+  $('#btnPlay').classList.toggle('on', playing);
+  $('#btnPlay').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  syncGizmo();
+}
+function scrollToTime(t) {
+  const lw = labelW(), x = xOf(t), view = scroller.clientWidth - lw;
+  if (x < scroller.scrollLeft || x > scroller.scrollLeft + view - 30) scroller.scrollLeft = Math.max(0, x - view * 0.25);
+}
+$('#btnPlay').addEventListener('click', togglePlay);
+
+/* ---------- Stop expression sheet ---------- */
+function showOverlay(id, on) { $('#' + id).classList.toggle('show', on); }
+function exprView(v) {
+  $('#exprMain').hidden = v !== 'main';
+  $('#exprImport').hidden = v !== 'import';
+  $('#exprConfirm').hidden = v !== 'confirm';
+}
+function refreshExpr() {
+  const s = buildExpression();
+  $('#exprOut').value = s;
+  let segs = 0;
+  EXPORT_ORDER.forEach(v => { if (statementForVar(v)) segs += segmentsOf(tracks[v]).length; });
+  $('#exprMeta').textContent = s ? `${segs} segment${segs === 1 ? '' : 's'} \u00b7 ${s.length} characters` : '';
+}
+$('#btnExpr').addEventListener('click', () => {
+  closePops();
+  $('#optArms').checked = options.mirrorArms;
+  $('#optLegs').checked = options.mirrorLegs;
+  exprView('main'); refreshExpr();
+  $('#btnCopy').textContent = 'Copy';
+  showOverlay('exprOverlay', true);
+});
+$('#optArms').addEventListener('change', e => { options.mirrorArms = e.target.checked; invalidate(); refreshExpr(); });
+$('#optLegs').addEventListener('change', e => { options.mirrorLegs = e.target.checked; invalidate(); refreshExpr(); });
+$('#btnCopy').addEventListener('click', async () => {
+  const text = $('#exprOut').value;
+  if (!text) { toast('Nothing to copy yet.'); return; }
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) { const ta = $('#exprOut'); ta.select(); try { document.execCommand('copy'); } catch (__) {} ta.setSelectionRange(0, 0); }
+  const b = $('#btnCopy'); b.textContent = 'Copied';
+  setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+});
+let pendingImport = null;
+$('#btnImport').addEventListener('click', () => { $('#importIn').value = ''; $('#importErr').style.display = 'none'; exprView('import'); });
+$('#btnImportBack').addEventListener('click', () => exprView('main'));
+$('#btnImportGo').addEventListener('click', () => {
+  const text = $('#importIn').value.trim(), err = $('#importErr');
+  const fail = m => { err.textContent = m; err.style.display = 'block'; };
+  if (!text) { fail('Paste a Stop Expression first.'); return; }
+  const parsed = parseStopExpression(text);
+  if (!Object.keys(parsed.tracks).length) { fail('This doesn\u2019t look like a Stop Expression made by this tool. Check the code and try again.'); return; }
+  err.style.display = 'none';
+  pendingImport = parsed;
+  exprView('confirm');
+});
+$('#btnConfirmBack').addEventListener('click', () => exprView('import'));
+$('#btnConfirmGo').addEventListener('click', () => {
+  if (!pendingImport) return;
+  applyImported(pendingImport);
+  Object.keys(pendingImport.tracks).forEach(v => { if (VAR_META[v]) expanded.add(VAR_META[v].bone); });
+  pendingImport = null;
+  selItems = []; selCtx = null;
+  ph = 0;
+  showOverlay('exprOverlay', false);
+  layout(true);
+  afterSelection();
+  setPlayheadUI(0);
+  scroller.scrollLeft = 0;
+  toast('Animation imported.');
+});
+
+/* ---------- Skin sheet ---------- */
+$('#btnSkin').addEventListener('click', () => { closePops(); $('#optRiding').checked = options.riding; showOverlay('skinOverlay', true); drawSkinThumb(); });
+$('#btnUpload').addEventListener('click', () => $('#skinFile').click());
+$('#skinFile').addEventListener('change', e => { loadSkinFile(e.target.files[0]); e.target.value = ''; });
+$('#btnResetSkin').addEventListener('click', loadDefaultSkin);
+$('#optRiding').addEventListener('change', e => { options.riding = e.target.checked; });
+
+$$('.overlay').forEach(o => o.addEventListener('pointerdown', e => { if (e.target === o) o.classList.remove('show'); }));
+$$('[data-close]').forEach(b => b.addEventListener('click', () => $$('.overlay').forEach(o => o.classList.remove('show'))));
+
+/* ---------- Keyboard ---------- */
+window.addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea') return;
+  if (e.key === 'Escape') { closePops(); $$('.overlay').forEach(o => o.classList.remove('show')); return; }
+  if ($('.overlay.show')) return;
+  if (e.code === 'Space' && tag !== 'button') { e.preventDefault(); togglePlay(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { if (deleteSelected()) e.preventDefault(); }
+  else if (e.key === 'k' || e.key === 'K') addKeyframe();
+});
+
+/* ---------- Resizable panel ---------- */
+const tlEl = $('#tl');
+let panelH = 0;
+function setPanelH(h) {
+  panelH = clamp(h, 190, Math.max(190, window.innerHeight - 150));
+  tlEl.style.height = panelH + 'px';
+}
+let gripDrag = null;
+$('#grip').addEventListener('pointerdown', e => { gripDrag = { y0: e.clientY, h0: tlEl.offsetHeight, id: e.pointerId }; $('#grip').setPointerCapture(e.pointerId); });
+$('#grip').addEventListener('pointermove', e => { if (gripDrag && e.pointerId === gripDrag.id) setPanelH(gripDrag.h0 - (e.clientY - gripDrag.y0)); });
+$('#grip').addEventListener('pointerup', () => { gripDrag = null; layout(); });
+$('#grip').addEventListener('click', () => {});   // makes the strip a valid touch target (no touch-adjust to nearby buttons)
+window.addEventListener('resize', () => { setPanelH(panelH || tlEl.offsetHeight); layout(true); renderMarkers(); setPlayheadUI(curT()); });
+
+/* ---------- Frame loop ---------- */
+let lastNow = performance.now(), lastT = -1;
+function followPlayhead() {
+  const lw = labelW(), x = xOf(playT), view = scroller.clientWidth - lw;
+  if (playT < 0.02) { scroller.scrollLeft = 0; return; }
+  if (x > scroller.scrollLeft + view - 36) scroller.scrollLeft = x - view * 0.2;
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - lastNow) / 1000);
+  lastNow = now;
+  if (playing) {
+    playT += dt;
+    if (playT >= loopEnd()) { playT = 0; }
+    followPlayhead();
+  }
+  const t = curT();
+  if (t !== lastT) { setPlayheadUI(t); lastT = t; }
+  poseModel(evaluatePose(t));
+  orbit.update();
+  renderer.render(scene, camera);
+}
+
+/* ---------- Boot ---------- */
+buildEasePop();
+loadDefaultData();
+buildRows();
+setPanelH(Math.round(window.innerHeight * 0.46));
+layout(true);
+afterSelection();
+setPlayheadUI(0);
+loadDefaultSkin();
+requestAnimationFrame(frame);
+
+
+</script>
 </body>
 </html>
