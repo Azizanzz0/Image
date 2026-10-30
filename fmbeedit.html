@@ -1962,7 +1962,7 @@ function renderAnim() {
     addTrackBtn.disabled = true;
   } else {
     const t = f.anim.tracks;
-    animTracksEl.innerHTML = t.length ? t.map(tr => trackHTML(tr, f)).join('') : '<div class="anim-empty">Belum ada animasi.<br>Tekan &ldquo;+ Add Track&rdquo; untuk memulai.</div>';
+    animTracksEl.innerHTML = t.length ? t.map(tr => trackHTML(tr, f)).join('') : '<div class="anim-empty">No animation yet.<br>Click &ldquo;+ Add Track&rdquo; to start.</div>';
     addTrackBtn.disabled = t.length >= ANIM_VARS.length;
   }
   animTracksEl.scrollTop = keep;
