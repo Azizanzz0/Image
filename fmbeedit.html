@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffab05">
 <title>FMBE Edit</title>
 <script>
@@ -33,16 +33,16 @@
 })();
 </script>
 <style>
-:root{--ui:14px;--vh:100vh;--bar:clamp(46px,8.5vh,68px)}
+:root{--ui:14px;--vh:100vh;--bar:clamp(46px,min(8.5vh,15vw),68px);--ph:19.5em}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{
   position:fixed;inset:0;color:#fff;
   font-family:'Nunito',ui-rounded,'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
   background-color:#101115;
   background-image:conic-gradient(#14151a 25%,transparent 0 50%,#14151a 0 75%,transparent 0);
   background-size:44px 44px;
-  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;
 }
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;
   background:radial-gradient(ellipse at 50% 58%,transparent 42%,rgba(0,0,0,.5))}
@@ -69,21 +69,34 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 #stage canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none}
 #stage canvas#view{pointer-events:auto;touch-action:none;outline:none}
 
-/* ---------- GUI base ---------- */
+/* ---------- GUI base : liquid glass ---------- */
 .gui{position:fixed;left:0;top:0;width:var(--w);max-height:calc(var(--vh) - 10px);font-size:var(--ui);
-  display:flex;flex-direction:column;border-radius:.95em;overflow:hidden;z-index:10;
-  box-shadow:0 .5em 1.5em rgba(0,0,0,.5),0 0 0 .07em rgba(255,255,255,.07);
-  transition:box-shadow .2s,transform .2s;
+  display:flex;flex-direction:column;border-radius:1.3em;overflow:hidden;z-index:10;isolation:isolate;touch-action:none;
+  background:radial-gradient(120% 65% at var(--mx,20%) var(--my,0%),rgba(255,255,255,.24),rgba(255,255,255,0) 60%),
+             linear-gradient(160deg,var(--glass-a),var(--glass-b));
+  -webkit-backdrop-filter:blur(var(--blur,20px)) saturate(190%) brightness(1.06);backdrop-filter:blur(var(--blur,20px)) saturate(190%) brightness(1.06);
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 .8em 2.4em rgba(0,0,0,.45),0 .12em .35em rgba(0,0,0,.28),
+             inset 0 .1em .05em rgba(255,255,255,.5),inset 0 -.1em .08em rgba(255,255,255,.14),
+             inset .1em 0 .6em rgba(255,255,255,.08),inset -.1em 0 .6em rgba(255,255,255,.05);
+  transition:box-shadow .25s,transform .25s;
   animation:guiIn .65s cubic-bezier(.2,.9,.25,1.12) backwards;animation-delay:var(--d,0s)}
-.gui.dragging{box-shadow:0 1em 2.4em rgba(0,0,0,.6),0 0 0 .1em rgba(255,255,255,.18);transform:scale(1.015)}
+.gui::before{content:'';position:absolute;left:0;right:0;top:0;height:46%;z-index:-1;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.03) 70%,transparent)}
+.gui::after{content:'';position:absolute;inset:0;z-index:30;pointer-events:none;border-radius:inherit;padding:1px;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.1) 28%,rgba(255,255,255,0) 55%,rgba(255,255,255,.2) 80%,rgba(255,255,255,.7));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.gui{background-color:rgba(26,26,32,.9)}}
+.gui.dragging{box-shadow:0 1em 2.6em rgba(0,0,0,.6),0 0 0 .1em rgba(255,255,255,.2),inset 0 .1em .05em rgba(255,255,255,.6);transform:scale(1.015)}
 @keyframes guiIn{from{opacity:0;transform:translateY(1.4em) scale(.94)}}
 .title{position:relative;flex:none;height:2.7em;display:flex;align-items:center;justify-content:center;
   cursor:grab;touch-action:none;color:#fff}
 .gui.dragging .title{cursor:grabbing}
-.ttl{font:600 1.3em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;text-shadow:0 .06em .12em rgba(0,0,0,.25);pointer-events:none}
+.ttl{font:600 1.3em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;text-shadow:0 .06em .12em rgba(0,0,0,.28);pointer-events:none}
 .fold{position:absolute;right:.55em;top:50%;width:1.9em;height:1.9em;margin-top:-.95em;border:0;border-radius:50%;
-  background:rgba(255,255,255,.22);padding:0;transition:background .2s,transform .15s}
-.fold:hover{background:rgba(255,255,255,.36)}
+  background:rgba(255,255,255,.2);box-shadow:inset 0 .09em .05em rgba(255,255,255,.5),0 .08em .25em rgba(0,0,0,.2);padding:0;transition:background .2s,transform .15s}
+.fold:hover{background:rgba(255,255,255,.34)}
 .fold:active{transform:scale(.88)}
 .fold i{position:absolute;left:50%;top:50%;width:.95em;height:.17em;margin:-.085em 0 0 -.475em;border-radius:1em;background:#fff;
   transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
@@ -91,16 +104,17 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .gui.collapsed .fold i.v{transform:rotate(90deg) scaleX(1)}
 .collapsible{display:grid;grid-template-rows:1fr;flex:1 1 auto;min-height:0;transition:grid-template-rows .38s cubic-bezier(.3,.9,.3,1),visibility 0s}
 .gui.collapsed .collapsible{grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .38s cubic-bezier(.3,.9,.3,1),visibility 0s .38s}
-.inner{min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none}
+.inner{min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;touch-action:pan-y}
 .inner::-webkit-scrollbar{display:none}
+.fox-btn.add .lbl{z-index:1}
 
 /* ---------- GUI 1 : Block Entity ---------- */
-.g-be{--w:16.5em;background:#9a5535}
-.g-be .title{background:#ffbb5c}
+.g-be{--w:16.5em;--glass-a:rgba(236,144,80,.38);--glass-b:rgba(104,46,18,.54)}
+.g-be .title{background:linear-gradient(180deg,rgba(255,204,134,.5),rgba(255,150,50,.14));border-bottom:1px solid rgba(255,255,255,.2)}
 .be-body{padding:.9em;min-height:12.5em}
 .be-list{--rowH:2.6em;--gap:.65em;position:relative;margin:-.4em;
   height:calc(.8em + (var(--n,1) + 1) * (var(--rowH) + var(--gap)) - var(--gap));
-  max-height:50vh;overflow-y:auto;overflow-x:hidden;transition:height .4s cubic-bezier(.3,1.2,.5,1);scrollbar-width:none}
+  max-height:50vh;overflow-y:auto;overflow-x:hidden;transition:height .4s cubic-bezier(.3,1.2,.5,1);scrollbar-width:none;touch-action:pan-y}
 .be-list::-webkit-scrollbar{display:none}
 .row{position:absolute;left:.4em;right:.4em;top:0;height:var(--rowH);z-index:1;
   transform:translateY(calc(.4em + var(--i,0) * (var(--rowH) + var(--gap))));
@@ -116,20 +130,24 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .row.removing .pw{transform:scale(.7);opacity:0}
 @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
 
-.fox-btn{display:flex;align-items:center;height:100%;padding:0 .3em 0 .6em;border-radius:.8em;background:#ff7622;
-  box-shadow:0 .18em 0 rgba(110,35,0,.35);cursor:pointer;position:relative;
-  transition:transform .2s,background .25s,box-shadow .25s}
+.fox-btn{display:flex;align-items:center;height:100%;padding:0 .3em 0 .6em;border-radius:.9em;
+  background:linear-gradient(180deg,rgba(255,158,88,.95),rgba(255,98,18,.93));
+  box-shadow:0 .2em .55em rgba(90,28,0,.38),inset 0 .1em .05em rgba(255,255,255,.62),inset 0 -.14em .25em rgba(130,34,0,.28);
+  cursor:pointer;position:relative;transition:transform .2s,background .25s,box-shadow .25s}
+.fox-btn::after{content:'';position:absolute;left:.4em;right:.4em;top:.12em;height:44%;z-index:0;pointer-events:none;
+  border-radius:.75em .75em 1.2em 1.2em;background:linear-gradient(180deg,rgba(255,255,255,.4),rgba(255,255,255,.03))}
+.fox-btn>.ico,.fox-btn>.name,.fox-btn>.chev,.fox-btn>.tail{position:relative;z-index:1}
 .fox-btn:active{transform:scale(.97)}
-.fox-btn.grp{background:#e2521a;padding-left:.55em}
+.fox-btn.grp{background:linear-gradient(180deg,rgba(246,116,56,.95),rgba(204,64,14,.93));padding-left:.55em}
 .fox-btn .ico{width:1.85em;height:1.85em;flex:none;transition:transform .3s cubic-bezier(.3,1.6,.5,1),filter .25s}
 .fox-btn .name{flex:1 1 0;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 .3em;
-  font:600 1.1em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;color:#fff}
-.fox-btn.sel{background:linear-gradient(180deg,#ffa347,#ff7a22);
-  box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.85);animation:glow 1.9s ease-in-out infinite alternate}
-.fox-btn.target{box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.7)}
-.fox-btn.grp.sel{background:linear-gradient(180deg,#ff8a3d,#ee5f1c)}
+  font:600 1.1em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;color:#fff;text-shadow:0 .06em .12em rgba(90,28,0,.35)}
+.fox-btn.sel{background:linear-gradient(180deg,rgba(255,182,96,.98),rgba(255,122,34,.96));
+  box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.85),inset 0 .1em .05em rgba(255,255,255,.7);animation:glow 1.9s ease-in-out infinite alternate}
+.fox-btn.target{box-shadow:0 0 0 .17em #fff3b8,0 0 .9em .1em rgba(255,222,110,.7),inset 0 .1em .05em rgba(255,255,255,.7)}
+.fox-btn.grp.sel{background:linear-gradient(180deg,rgba(255,142,62,.98),rgba(238,95,28,.96))}
 .fox-btn.sel .ico{transform:scale(1.12) rotate(-6deg);filter:brightness(1.7)}
-@keyframes glow{from{box-shadow:0 0 0 .17em #fff3b8,0 0 .5em 0 rgba(255,222,110,.6)}to{box-shadow:0 0 0 .17em #fff3b8,0 0 1em .15em rgba(255,222,110,.95)}}
+@keyframes glow{from{box-shadow:0 0 0 .17em #fff3b8,0 0 .5em 0 rgba(255,222,110,.6),inset 0 .1em .05em rgba(255,255,255,.7)}to{box-shadow:0 0 0 .17em #fff3b8,0 0 1em .15em rgba(255,222,110,.95),inset 0 .1em .05em rgba(255,255,255,.7)}}
 
 /* tombol buka/tutup Group */
 .chev{flex:none;width:1.9em;height:1.9em;border:0;border-radius:50%;background:rgba(255,255,255,.16);padding:0;margin-right:.15em;
@@ -173,18 +191,22 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .fox-btn.cancel .name{flex:none;font-size:1.1em;padding:0}
 
 /* dim + menu (Duplicate / Select / Delete) */
-.dim{position:absolute;inset:0;z-index:20;background:rgba(28,10,0,.66);opacity:0;pointer-events:none;transition:opacity .28s}
+.dim{position:absolute;inset:0;z-index:20;background:rgba(28,10,0,.58);opacity:0;pointer-events:none;transition:opacity .28s}
 .menu-open .dim{opacity:1;pointer-events:auto}
 .menu{position:absolute;z-index:21;width:0;height:0;pointer-events:none}
 .menu .yb{position:absolute;left:0;top:0;width:2.5em;height:2.5em;margin:-1.25em 0 0 -1.25em;border:0;padding:0;border-radius:50%;
-  background:#ffe24f;box-shadow:0 .12em .5em rgba(0,0,0,.35);transform:scale(0);transition:transform .38s cubic-bezier(.2,1.8,.4,1)}
+  background:radial-gradient(circle at 35% 26%,#fff9c4,#ffe24f 48%,#ffc21a);
+  box-shadow:0 .12em .5em rgba(0,0,0,.38),inset 0 .09em .05em rgba(255,255,255,.85),inset 0 -.14em .22em rgba(200,120,0,.35);
+  transform:scale(0);transition:transform .38s cubic-bezier(.2,1.8,.4,1)}
 .menu .yb i{position:absolute;top:50%;width:.42em;height:.42em;margin-top:-.21em;border-radius:50%;background:#fff8cf}
 .menu .yb i:first-child{left:32%;margin-left:-.21em}
 .menu .yb i:last-child{left:68%;margin-left:-.21em}
-.menu .ln{position:absolute;left:0;top:0;height:.16em;margin-top:-.08em;width:var(--len,0px);border-radius:1em;background:#fff;
-  transform-origin:0 50%;transform:rotate(var(--ang,0deg)) scaleX(0);transition:transform .26s ease .06s}
-.menu .pill{position:absolute;border:0;border-radius:2em;background:#fff;color:#4a2a12;padding:.5em 1em;
-  font:700 .85em/1 'Nunito',ui-rounded,system-ui,sans-serif;white-space:nowrap;box-shadow:0 .12em .4em rgba(0,0,0,.3);
+.menu .ln{position:absolute;left:0;top:0;height:.16em;margin-top:-.08em;width:var(--len,0px);border-radius:1em;background:rgba(255,255,255,.92);
+  box-shadow:0 0 .4em rgba(255,255,255,.5);transform-origin:0 50%;transform:rotate(var(--ang,0deg)) scaleX(0);transition:transform .26s ease .06s}
+.menu .pill{position:absolute;border:0;border-radius:2em;color:#4a2a12;padding:.5em 1em;
+  background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(255,238,218,.92));
+  font:700 .85em/1 'Nunito',ui-rounded,system-ui,sans-serif;white-space:nowrap;
+  box-shadow:0 .14em .45em rgba(0,0,0,.35),inset 0 .08em 0 #fff,inset 0 -.1em .2em rgba(255,170,90,.28);
   transform:translate(-50%,-50%) scale(0);transition:transform .34s cubic-bezier(.2,1.7,.4,1) .12s,background .15s}
 .menu .pill.p2{transition-delay:.17s}
 .menu .pill.p3{transition-delay:.22s;color:#c2321f}
@@ -194,63 +216,158 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
 .menu-open .menu .pill{transform:translate(-50%,-50%) scale(1);pointer-events:auto}
 
 /* ---------- GUI 2 : Main ---------- */
-.g-main{--w:23em;background:#474747}
-.g-main .title{background:#555}
-.tabs{display:flex;justify-content:space-between;gap:.5em}
-.tab{border:0;padding:.4em 1.5em .45em;border-radius:0 0 .85em .85em;background:#505050;color:#b4b4b4;max-width:14em;overflow:hidden;
-  font:600 1.12em/1.1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;white-space:nowrap;
-  transition:background .25s,color .25s,max-width .34s cubic-bezier(.3,.9,.3,1),padding .34s,opacity .25s,margin .34s}
-.tab.active{background:#727272;color:#fff}
-.tab.gone{max-width:0;padding-left:0;padding-right:0;opacity:0;margin-left:-.5em;pointer-events:none}
-.panes{display:grid}
-.pane{grid-area:1/1;min-width:0;opacity:0;visibility:hidden;transform:translateY(.7em);pointer-events:none;
+.g-main{--w:23em;--glass-a:rgba(196,202,222,.32);--glass-b:rgba(44,48,64,.52)}
+.g-main .title{background:linear-gradient(180deg,rgba(232,236,252,.4),rgba(150,158,190,.1));border-bottom:1px solid rgba(255,255,255,.18)}
+.tabs{display:flex;gap:.3em;padding:0 .45em}
+.tab{flex:1 1 auto;border:0;padding:.45em .55em .5em;border-radius:0 0 .95em .95em;background:rgba(255,255,255,.08);color:#dedede;max-width:14em;overflow:hidden;
+  font:600 1em/1.1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;white-space:nowrap;text-align:center;
+  box-shadow:inset 0 -.08em 0 rgba(255,255,255,.1);
+  transition:background .25s,color .25s,max-width .34s cubic-bezier(.3,.9,.3,1),flex-grow .34s,padding .34s,opacity .25s,margin .34s,box-shadow .25s}
+.tab.active{background:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,.14));color:#fff;
+  box-shadow:inset 0 .09em .05em rgba(255,255,255,.6),inset 0 -.09em .1em rgba(255,255,255,.14),0 .1em .4em rgba(0,0,0,.2)}
+.tab.gone{flex-grow:0;max-width:0;padding-left:0;padding-right:0;opacity:0;margin-left:-.3em;pointer-events:none}
+.tabicon{width:1em;height:1em;vertical-align:-.15em;margin-right:.22em}
+.panes{display:grid;height:var(--ph,19.5em)}
+.pane{grid-area:1/1;min-width:0;min-height:0;height:100%;overflow:hidden;opacity:0;visibility:hidden;transform:translateY(.7em);pointer-events:none;
   transition:opacity .25s,transform .3s cubic-bezier(.3,1,.4,1),visibility 0s .25s}
 .pane.active{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition:opacity .28s .05s,transform .32s cubic-bezier(.3,1,.4,1) .05s,visibility 0s}
+#pane-prs{display:flex;align-items:center}
+#pane-prs .cols{width:100%}
 .cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4em;padding:.6em .7em .9em}
-.col{min-width:0;border-radius:.85em;padding:.15em .3em .4em;transition:background .3s}
-.col.active{background:rgba(255,255,255,.055)}
-.colhead{display:block;width:100%;border:0;background:none;color:#cfcfcf;font:600 1em/1 'Nunito',ui-rounded,system-ui,sans-serif;padding:.55em 0 .5em;
+.col{min-width:0;border-radius:.9em;padding:.15em .3em .4em;transition:background .3s,box-shadow .3s}
+.col.active{background:rgba(255,255,255,.08);box-shadow:inset 0 .08em 0 rgba(255,255,255,.2),inset 0 -.06em 0 rgba(255,255,255,.05)}
+.colhead{display:block;width:100%;border:0;background:none;color:#d4d4d4;font:600 1em/1 'Nunito',ui-rounded,system-ui,sans-serif;padding:.55em 0 .5em;
   position:relative;transition:color .25s,opacity .25s}
-.colhead::after{content:'';position:absolute;left:28%;right:28%;bottom:.1em;height:.17em;border-radius:1em;background:#4fe0f0;
+.colhead::after{content:'';position:absolute;left:28%;right:28%;bottom:.1em;height:.17em;border-radius:1em;background:#4fe0f0;box-shadow:0 0 .5em rgba(79,224,240,.7);
   transform:scaleX(0);transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
 .col.active .colhead{color:#fff}
 .col.active .colhead::after{transform:scaleX(1)}
 .col.locked .colhead{opacity:.4;pointer-events:none}
 .col.locked .fld:not(.snapf){opacity:.4}
 .fld{display:flex;gap:.3em;margin-top:.5em;min-width:0;transition:opacity .25s}
-.bdg{flex:0 0 1.95em;height:2.1em;border-radius:.65em;background:#000;display:flex;align-items:center;justify-content:center;
-  font:700 .95em/1 'Nunito',ui-rounded,system-ui,sans-serif}
+.bdg{flex:0 0 1.95em;height:2.1em;border-radius:.65em;background:rgba(0,0,0,.42);box-shadow:inset 0 .1em .25em rgba(0,0,0,.4),0 .06em 0 rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:center;font:700 .95em/1 'Nunito',ui-rounded,system-ui,sans-serif}
 .bdg b{font-weight:700}
 .bdg.x{color:#ff2f2f}.bdg.y{color:#b4ff2b}.bdg.z{color:#6b7bff}.bdg.s{color:#fff;font-size:.8em}
 .bdg.xz b:first-child{color:#ff2f2f}.bdg.xz b:last-child{color:#6b7bff;margin-left:-.28em}
-.fld input{flex:1 1 0;width:0;min-width:0;height:2.1em;border:0;border-radius:.7em;background:#000;color:#80e4ff;padding:0 .55em;
+.fld input{flex:1 1 0;width:0;min-width:0;height:2.1em;border:0;border-radius:.7em;background:rgba(0,0,0,.38);color:#80e4ff;padding:0 .55em;
+  box-shadow:inset 0 .1em .3em rgba(0,0,0,.45),0 .06em 0 rgba(255,255,255,.14);
   font:600 .95em/1 'Nunito',ui-rounded,system-ui,sans-serif;outline:none;transition:box-shadow .2s,opacity .2s}
 .fld input:focus{box-shadow:0 0 0 .14em rgba(79,224,240,.7)}
 .fld input:disabled{opacity:.4}
-.exp-wrap{padding:.9em 1em 1em}
-.exp{height:8em;overflow-y:auto;background:#000;border-radius:.9em;padding:.8em .95em;color:#e8f6a4;
+.exp-wrap{height:100%;display:flex;flex-direction:column;padding:.8em 1em .9em}
+.exp{flex:1 1 auto;min-height:0;overflow-y:auto;background:rgba(0,0,0,.34);border-radius:.9em;padding:.75em .9em;color:#e8f6a4;
+  box-shadow:inset 0 .12em .4em rgba(0,0,0,.45),0 .06em 0 rgba(255,255,255,.14);
   font:500 .98em/1.35 'Nunito',ui-rounded,system-ui,sans-serif;word-break:break-all;user-select:text;-webkit-user-select:text;
-  scrollbar-width:thin;scrollbar-color:#444 transparent}
-.copy{display:block;width:100%;margin-top:.9em;border:0;border-radius:.9em;background:#506fff;color:#52e3f5;
-  font:700 1.6em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;padding:.5em 0;transition:transform .15s,background .25s,color .25s}
+  scrollbar-width:thin;scrollbar-color:#555 transparent;touch-action:pan-y}
+.copy{flex:none;display:block;width:100%;margin-top:.8em;border:0;border-radius:.9em;color:#52e3f5;
+  background:linear-gradient(180deg,rgba(128,152,255,.94),rgba(72,98,242,.92));
+  box-shadow:0 .15em .5em rgba(30,40,160,.4),inset 0 .09em .05em rgba(255,255,255,.55),inset 0 -.14em .22em rgba(20,30,150,.3);
+  font:700 1.45em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;padding:.42em 0;transition:transform .15s,background .25s,color .25s}
 .copy:active{transform:scale(.97)}
-.copy.done{background:#2fbf7a;color:#eafff4;animation:bump .4s cubic-bezier(.2,1.6,.4,1)}
+.copy.done{background:linear-gradient(180deg,#5fe3a2,#2fbf7a);color:#eafff4;animation:bump .4s cubic-bezier(.2,1.6,.4,1)}
 @keyframes bump{0%{transform:scale(.94)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 
 /* ---------- GUI 3 : Texture changer ---------- */
-.g-tex{--w:15.5em;background:#0298b3}
-.g-tex .title{background:#0dc0e0}
-.g-tex .ttl{font-family:'Nunito',ui-rounded,system-ui,sans-serif;font-weight:600;font-size:1.22em}
+.g-tex{--w:15.5em;--glass-a:rgba(70,218,240,.30);--glass-b:rgba(6,92,112,.5)}
+.g-tex .title{background:linear-gradient(180deg,rgba(140,244,255,.5),rgba(20,170,196,.14));border-bottom:1px solid rgba(255,255,255,.2)}
+.g-tex .ttl{font-family:'Nunito',ui-rounded,system-ui,sans-serif;font-weight:600;font-size:1.1em}
 .tex-body{padding:1em}
-.preview{width:82%;aspect-ratio:1;margin:.2em auto 1em;border-radius:.4em;outline:.07em dashed rgba(255,255,255,.14)}
-.preview canvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-.up{display:block;width:100%;border:0;border-radius:.75em;background:#6cf5ff;color:#0a86d6;
-  font:600 1.08em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;padding:.9em 0;transition:transform .15s,background .2s}
-.up:hover{background:#8afaff}
+.tex-side{min-width:0}
+.preview{width:82%;aspect-ratio:1;margin:.2em auto 1em;border-radius:.5em;background:rgba(0,0,0,.18);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),inset 0 .1em .45em rgba(0,0,0,.35),0 .06em 0 rgba(255,255,255,.14)}
+.preview canvas{width:100%;height:100%;display:block;border-radius:inherit;image-rendering:pixelated;image-rendering:crisp-edges}
+.up{display:block;width:100%;border:0;border-radius:.8em;color:#064b78;
+  background:linear-gradient(180deg,rgba(176,252,255,.96),rgba(84,226,246,.92));
+  box-shadow:0 .15em .5em rgba(0,70,90,.35),inset 0 .09em .05em rgba(255,255,255,.75),inset 0 -.12em .2em rgba(0,120,150,.25);
+  font:600 1.08em/1 'Fredoka','Nunito',ui-rounded,system-ui,sans-serif;padding:.9em 0;transition:transform .15s,filter .2s}
+.up:hover{filter:brightness(1.07)}
 .up:active{transform:scale(.97)}
 .note{margin-top:.55em;text-align:center;font:400 .88em/1.2 'Bree Serif',Georgia,serif;color:#fff;transition:color .25s}
 .note.bad{color:#ff2b2b;font-weight:700;text-shadow:0 0 .5em rgba(0,0,0,.4);animation:shake .42s}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-.4em)}40%{transform:translateX(.4em)}60%{transform:translateX(-.25em)}80%{transform:translateX(.25em)}}
+
+/* ---------- GUI 2 : Animate ---------- */
+.anim-wrap{height:100%;min-height:0;display:flex;flex-direction:column;padding:.6em .8em .7em}
+.anim-toolbar{flex:none;display:flex;align-items:center;gap:.5em;margin-bottom:.55em}
+.playbtn{flex:none;width:2.4em;height:2.4em;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#063325;
+  background:linear-gradient(180deg,rgba(160,248,226,.96),rgba(70,208,176,.92));
+  box-shadow:0 .15em .45em rgba(0,60,40,.35),inset 0 .09em .05em rgba(255,255,255,.7),inset 0 -.12em .2em rgba(0,90,60,.25);
+  transition:transform .15s,filter .2s}
+.playbtn:active{transform:scale(.92)}
+.playbtn svg{width:1em;height:1em;display:block}
+.playbtn .pause{display:none}
+.playbtn.playing{background:linear-gradient(180deg,rgba(255,216,146,.97),rgba(255,170,60,.93));color:#4a2a00}
+.playbtn.playing .play{display:none}
+.playbtn.playing .pause{display:block}
+.resetbtn{flex:none;width:2.1em;height:2.1em;border:0;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 .09em .05em rgba(255,255,255,.45),0 .1em .3em rgba(0,0,0,.2);transition:background .2s,transform .15s}
+.resetbtn:active{transform:scale(.9)}
+.resetbtn:hover{background:rgba(255,255,255,.3)}
+.resetbtn svg{width:1em;height:1em;display:block}
+.anim-time{flex:none;min-width:5.6em;font:700 .86em/1 'Nunito',ui-rounded,system-ui,sans-serif;color:#d5f7ee;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scrub{-webkit-appearance:none;appearance:none;flex:1 1 0;min-width:0;height:1.5em;margin:0;padding:0;background:transparent;touch-action:none;cursor:pointer}
+.scrub:disabled{opacity:.4;cursor:default}
+.scrub:focus{outline:none}
+.scrub::-webkit-slider-runnable-track{height:.38em;border-radius:1em;background:rgba(255,255,255,.22);box-shadow:inset 0 .06em .12em rgba(0,0,0,.4)}
+.scrub::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:1.2em;height:1.2em;margin-top:-.41em;border-radius:50%;border:0;
+  background:radial-gradient(circle at 35% 28%,#fff,#c5f1e6);box-shadow:0 .1em .3em rgba(0,0,0,.45)}
+.scrub::-moz-range-track{height:.38em;border-radius:1em;background:rgba(255,255,255,.22)}
+.scrub::-moz-range-thumb{width:1.2em;height:1.2em;border-radius:50%;border:0;background:radial-gradient(circle at 35% 28%,#fff,#c5f1e6)}
+.anim-tracks{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:.55em;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;touch-action:pan-y}
+.anim-tracks::-webkit-scrollbar{display:none}
+.track{flex:none;background:rgba(0,0,0,.24);border-radius:.9em;padding:.55em .6em .6em;border:1px solid rgba(255,255,255,.1);
+  box-shadow:inset 0 .08em 0 rgba(255,255,255,.08)}
+.track-head{display:flex;align-items:center;gap:.4em;margin-bottom:.15em}
+.track-var,.seg select.ease{min-width:0;border:0;border-radius:.6em;background:rgba(0,0,0,.4);color:#fff;
+  box-shadow:inset 0 .1em .25em rgba(0,0,0,.45),0 .06em 0 rgba(255,255,255,.14);font-family:'Nunito',ui-rounded,system-ui,sans-serif}
+.track-var{flex:1;height:2.1em;padding:0 .5em;font-weight:700;font-size:.88em}
+.trk-del,.seg .seg-del{flex:none;border:0;line-height:1;color:#fff;transition:background .2s,transform .15s}
+.trk-del{width:2.1em;height:2.1em;border-radius:.6em;background:rgba(255,80,80,.3);color:#ffd0d0;font-size:1.1em;box-shadow:inset 0 .08em 0 rgba(255,255,255,.25)}
+.trk-del:hover{background:rgba(255,80,80,.48)}
+.trk-del:active,.seg .seg-del:active{transform:scale(.9)}
+.seg{display:grid;grid-template-columns:1.5em repeat(4,minmax(0,1fr));gap:.3em;margin-top:.5em;align-items:end}
+.seg-idx{align-self:center;font:800 .78em/1 'Nunito',ui-rounded,system-ui,sans-serif;color:#9fe8d6}
+.seg label{display:flex;flex-direction:column;gap:.2em;min-width:0}
+.seg label span{font:700 .64em/1 'Nunito',ui-rounded,system-ui,sans-serif;color:#c4e6dd;letter-spacing:.02em}
+.seg input{width:100%;min-width:0;height:2.3em;border:0;border-radius:.55em;background:rgba(0,0,0,.4);color:#80e4ff;padding:0 .35em;
+  box-shadow:inset 0 .1em .25em rgba(0,0,0,.45),0 .06em 0 rgba(255,255,255,.14);font:600 .8em/1 'Nunito',ui-rounded,system-ui,sans-serif;outline:none}
+.seg input:focus,.track-var:focus,.seg select.ease:focus{box-shadow:0 0 0 .14em rgba(79,224,240,.7)}
+.seg input:disabled{opacity:.55}
+.seg select.ease{grid-column:2/5;height:2.1em;padding:0 .4em;font-weight:600;font-size:.78em}
+.seg .seg-del{grid-column:5;justify-self:end;width:2em;height:2em;border-radius:50%;background:rgba(255,255,255,.16);font-size:1em;
+  box-shadow:inset 0 .08em 0 rgba(255,255,255,.3)}
+.seg .seg-del:hover{background:rgba(255,255,255,.28)}
+.seg .seg-del:disabled{opacity:.3;pointer-events:none}
+.add-seg,.add-track{display:block;width:100%;border:0;border-radius:.8em;color:#fff;font:700 .88em/1 'Nunito',ui-rounded,system-ui,sans-serif;
+  background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.1));
+  box-shadow:inset 0 .09em .05em rgba(255,255,255,.4),0 .1em .3em rgba(0,0,0,.18);transition:filter .2s,transform .15s}
+.add-seg{margin-top:.55em;padding:.62em 0}
+.add-track{flex:none;margin-top:.5em;padding:.7em 0}
+.add-seg:hover,.add-track:hover{filter:brightness(1.18)}
+.add-seg:active,.add-track:active{transform:scale(.98)}
+.add-track:disabled{opacity:.4;pointer-events:none}
+.anim-empty{text-align:center;color:#e2e2e2;font:500 .9em/1.45 'Nunito',ui-rounded,system-ui,sans-serif;padding:1.2em .3em}
+
+/* ---------- Landscape ponsel: semua GUI dikecilkan ---------- */
+html.land-compact{--bar:clamp(32px,8vh,44px);--ph:17em;--blur:14px}
+html.land-compact .g-be{--w:14.5em}
+html.land-compact .g-main{--w:20.5em}
+html.land-compact .g-tex{--w:15em}
+html.land-compact .title{height:2.4em}
+html.land-compact .ttl{font-size:1.15em}
+html.land-compact .g-tex .ttl{font-size:1.02em}
+html.land-compact .be-body{padding:.6em;min-height:7.5em}
+html.land-compact .be-list{max-height:calc(var(--vh) - var(--bar) - 9em)}
+html.land-compact .tab{font-size:.9em;padding:.4em .45em .45em}
+html.land-compact .cols{padding:.3em .5em .5em}
+html.land-compact .exp-wrap{padding:.6em .8em .7em}
+html.land-compact .tex-body{display:flex;align-items:center;gap:.7em;padding:.7em}
+html.land-compact .preview{width:5.9em;flex:none;margin:0}
+html.land-compact .tex-side{flex:1 1 0}
+html.land-compact .up{padding:.7em 0;font-size:1em}
+html.land-compact .note{margin-top:.4em}
+
 
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;transition-delay:0s!important}
@@ -301,6 +418,7 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
   <div class="collapsible"><div class="inner">
     <div class="tabs">
       <button class="tab active" data-tab="prs">P&amp;R&amp;S</button>
+      <button class="tab" data-tab="anim" id="animTabBtn"><svg class="tabicon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l12 7-12 7V5z" fill="currentColor"/></svg>Animate</button>
       <button class="tab" data-tab="expr">Stop Expression</button>
     </div>
     <div class="panes">
@@ -326,6 +444,23 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
           </div>
         </div>
       </div>
+      <div class="pane" id="pane-anim">
+        <div class="anim-wrap">
+          <div class="anim-toolbar">
+            <button class="playbtn" id="playBtn" aria-label="Play / Pause animasi">
+              <svg class="play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7V5z" fill="currentColor"/></svg>
+              <svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+            </button>
+            <button class="resetbtn" id="resetBtn" aria-label="Reset waktu animasi">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 7l5 5V9a5 5 0 1 1-5 5H5a7 7 0 1 0 7-9z" fill="currentColor"/></svg>
+            </button>
+            <span class="anim-time" id="animTimeLbl">0.00 / 0.00s</span>
+            <input type="range" class="scrub" id="scrub" min="0" max="1" step="any" value="0" aria-label="Waktu animasi" disabled>
+          </div>
+          <div class="anim-tracks" id="animTracks"></div>
+          <button class="add-track" id="addTrackBtn">+ Add Track</button>
+        </div>
+      </div>
       <div class="pane" id="pane-expr">
         <div class="exp-wrap">
           <div class="exp" id="exp"></div>
@@ -342,8 +477,10 @@ input{font-family:inherit;user-select:text;-webkit-user-select:text}
   <div class="collapsible"><div class="inner">
     <div class="tex-body">
       <div class="preview"><canvas id="texPrev" width="64" height="64"></canvas></div>
-      <button class="up" id="upBtn">Upload Image</button>
-      <div class="note" id="note">Must be 64x64</div>
+      <div class="tex-side">
+        <button class="up" id="upBtn">Upload Image</button>
+        <div class="note" id="note">Must be 64x64</div>
+      </div>
       <input type="file" id="file" accept="image/*" hidden>
     </div>
   </div></div>
@@ -382,6 +519,23 @@ try {
   l.rel = 'stylesheet';
   l.href = 'https://fonts.googleapis.com/css2?family=Bree+Serif&family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap';
   document.head.appendChild(l);
+} catch (_) {}
+
+/* Website TIDAK boleh bisa di-zoom (pinch / double-tap / ctrl+scroll / ctrl +-0).
+   Lapis 1: meta viewport + touch-action:none di CSS.  Lapis 2: iOS Safari mengabaikan user-scalable, jadi gesture* dan
+   touchmove multi-jari dicegat di sini.  Scroll 1 jari di daftar / kotak teks tetap jalan (touch-action:pan-y). */
+try {
+  const stop = e => e.preventDefault();
+  document.addEventListener('gesturestart', stop, { passive: false });
+  document.addEventListener('gesturechange', stop, { passive: false });
+  document.addEventListener('gestureend', stop, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if ((e.touches && e.touches.length > 1) || (e.scale && e.scale !== 1)) e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) e.preventDefault(); }, { passive: false });
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '_' || e.key === '0')) e.preventDefault();
+  }, { passive: false });
 } catch (_) {}
 
 /* ================= vektor & matriks kecil ================= */
@@ -445,7 +599,7 @@ function nextNum(type) {
   return i;
 }
 function newFox() {
-  const f = { type: 'fox', num: nextNum('fox'), name: '', pos: [0, 0, 0], rot: [0, 0, 0], sxz: 1, sy: 1, group: null, row: null };
+  const f = { type: 'fox', num: nextNum('fox'), name: '', pos: [0, 0, 0], rot: [0, 0, 0], sxz: 1, sy: 1, group: null, row: null, anim: { tracks: [] } };
   f.name = 'Fox #' + f.num;
   return f;
 }
@@ -457,12 +611,17 @@ function newGroup() {                       // group = null: mulai di pos/rot 0,
 function cloneFox(f) {
   const c = newFox();
   c.pos = f.pos.slice(); c.rot = f.rot.slice(); c.sxz = f.sxz; c.sy = f.sy;
+  c.anim = { tracks: f.anim.tracks.map(t => ({ id: 'tk' + (++trackSeq), key: t.key,
+    segments: t.segments.map(sg => ({ id: 'sg' + (++segSeq), start: sg.start, dur: sg.dur, val1: sg.val1, val2: sg.val2, ease: sg.ease })) })) };
   return c;
 }
 
 function blockXform(f) {                    // Fox selalu berputar/berpindah di titik pusatnya sendiri
-  const R = eulerR(f.rot);
-  return { R: R, c: [f.pos[0], 8 + f.pos[1], f.pos[2]], ex: col3(R, 0), ey: col3(R, 1), ez: col3(R, 2), sx: f.sxz, sy: f.sy, sz: f.sxz, PR: I3 };
+  const rot = [effectiveVal(f, 'rx'), effectiveVal(f, 'ry'), effectiveVal(f, 'rz')];
+  const pos = [effectiveVal(f, 'px'), effectiveVal(f, 'py'), effectiveVal(f, 'pz')];
+  const sxz = effectiveVal(f, 'sxz'), sy = effectiveVal(f, 'sy');
+  const R = eulerR(rot);
+  return { R: R, c: [pos[0], 8 + pos[1], pos[2]], ex: col3(R, 0), ey: col3(R, 1), ez: col3(R, 2), sx: sxz, sy: sy, sz: sxz, PR: I3 };
 }
 function toWorld(x, p) {
   const a = p[0] * x.sx, b = p[1] * x.sy, c = p[2] * x.sz;
@@ -488,12 +647,20 @@ function getVal(f, k) {
 const r6 = x => Math.round(x * 1e6) / 1e6;
 // Ubah nilai pos/rot. Kalau yang diubah Group, semua Fox anggotanya ikut berubah sebesar selisihnya
 // (tiap Fox tetap di titik pusatnya sendiri, bukan berputar mengelilingi pusat Group).
+const POSK = ['px', 'py', 'pz'], ROTK = ['rx', 'ry', 'rz'];
+function shiftAnim(c, key, dispDelta) {       // keyframe anggota ikut bergeser sebesar selisih yang ditampilkan
+  if (!dispDelta || !c.anim) return;
+  c.anim.tracks.forEach(t => { if (t.key === key) t.segments.forEach(sg => { sg.val1 = r6(sg.val1 + dispDelta); sg.val2 = r6(sg.val2 + dispDelta); }); });
+}
 function setInternal(n, kind, idx, v) {
   const old = n[kind][idx];
   n[kind][idx] = v;
   if (n.type === 'group') {
     const d = v - old;
-    if (d !== 0) n.children.forEach(c => { c[kind][idx] = r6(c[kind][idx] + d); });
+    if (d !== 0) {
+      const key = (kind === 'pos' ? POSK : ROTK)[idx];
+      n.children.forEach(c => { c[kind][idx] = r6(c[kind][idx] + d); shiftAnim(c, key, toDisp(key, d)); });
+    }
   }
 }
 function setVal(f, k, v) {
@@ -510,10 +677,153 @@ const toDisp = (k, v) => INV[k] ? -v : v;      // nilai model -> angka yang dita
 const fromDisp = (k, v) => INV[k] ? -v : v;    // angka yang diketik -> nilai model
 function exprFor(f) {
   if (!f || f.type !== 'fox') return '""';
-  const d = k => fmt(toDisp(k, getVal(f, k)));
-  return '"v.xpos=' + d('px') + ';v.ypos=' + d('py') + ';v.zpos=' + d('pz') +
-         ';v.xrot=' + d('rx') + ';v.yrot=' + d('ry') + ';v.zrot=' + d('rz') +
-         ';v.xzscale=' + d('sxz') + ';v.yscale=' + d('sy') + ';"';
+  const tracks = (f.anim && f.anim.tracks) || [];
+  const parts = ['px', 'py', 'pz', 'rx', 'ry', 'rz', 'sxz', 'sy'].map(k => {
+    const tr = tracks.find(t => t.key === k && t.segments.length);
+    if (tr) return buildTrackStatement(tr);
+    const meta = ANIM_VARS.find(v => v.k === k);
+    return meta.mvar + '=' + fmt(toDisp(k, getVal(f, k))) + ';';
+  });
+  return '"' + parts.join('') + '"';
+}
+
+/* ================= Animate: keyframe/easing, sama formulanya dengan Player Animator (math.ease + q.state_time) ================= */
+const ANIM_VARS = [
+  { k: 'px', label: 'X Position', mvar: 'v.xpos' },
+  { k: 'py', label: 'Y Position', mvar: 'v.ypos' },
+  { k: 'pz', label: 'Z Position', mvar: 'v.zpos' },
+  { k: 'rx', label: 'X Rotation', mvar: 'v.xrot' },
+  { k: 'ry', label: 'Y Rotation', mvar: 'v.yrot' },
+  { k: 'rz', label: 'Z Rotation', mvar: 'v.zrot' },
+  { k: 'sxz', label: 'XZ Scale', mvar: 'v.xzscale' },
+  { k: 'sy', label: 'Y Scale', mvar: 'v.yscale' }
+];
+const EASE_LIST = ['lerp', 'ease_in_sine', 'ease_out_sine', 'ease_in_out_sine', 'ease_in_quad', 'ease_out_quad', 'ease_in_out_quad',
+  'ease_in_cubic', 'ease_out_cubic', 'ease_in_out_cubic', 'ease_in_quart', 'ease_out_quart', 'ease_in_out_quart',
+  'ease_in_quint', 'ease_out_quint', 'ease_in_out_quint', 'ease_in_expo', 'ease_out_expo', 'ease_in_out_expo',
+  'ease_in_circ', 'ease_out_circ', 'ease_in_out_circ', 'ease_in_back', 'ease_out_back', 'ease_in_out_back',
+  'ease_in_elastic', 'ease_out_elastic', 'ease_in_out_elastic', 'ease_in_bounce', 'ease_out_bounce', 'ease_in_out_bounce'];
+function bounceOut(t) {
+  const n1 = 7.5625, d1 = 2.75;
+  if (t < 1 / d1) return n1 * t * t;
+  if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+  if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+  return n1 * (t -= 2.625 / d1) * t + 0.984375;
+}
+function getEase(name, t) {
+  t = clamp(t, 0, 1);
+  switch (name) {
+    case 'lerp': return t;
+    case 'ease_in_sine': return 1 - Math.cos(t * Math.PI / 2);
+    case 'ease_out_sine': return Math.sin(t * Math.PI / 2);
+    case 'ease_in_out_sine': return -(Math.cos(Math.PI * t) - 1) / 2;
+    case 'ease_in_quad': return t * t;
+    case 'ease_out_quad': return 1 - (1 - t) * (1 - t);
+    case 'ease_in_out_quad': return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    case 'ease_in_cubic': return t * t * t;
+    case 'ease_out_cubic': return 1 - Math.pow(1 - t, 3);
+    case 'ease_in_out_cubic': return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    case 'ease_in_quart': return t * t * t * t;
+    case 'ease_out_quart': return 1 - Math.pow(1 - t, 4);
+    case 'ease_in_out_quart': return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+    case 'ease_in_quint': return t * t * t * t * t;
+    case 'ease_out_quint': return 1 - Math.pow(1 - t, 5);
+    case 'ease_in_out_quint': return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+    case 'ease_in_expo': return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+    case 'ease_out_expo': return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+    case 'ease_in_out_expo':
+      if (t === 0) return 0; if (t === 1) return 1;
+      return t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+    case 'ease_in_circ': return 1 - Math.sqrt(1 - Math.pow(t, 2));
+    case 'ease_out_circ': return Math.sqrt(1 - Math.pow(t - 1, 2));
+    case 'ease_in_out_circ': return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) / 2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+    case 'ease_in_back': { const c1 = 1.70158, c3 = c1 + 1; return c3 * t * t * t - c1 * t * t; }
+    case 'ease_out_back': { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+    case 'ease_in_out_back': {
+      const c1 = 1.70158, c2 = c1 * 1.525;
+      return t < 0.5 ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) / 2 : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
+    }
+    case 'ease_in_elastic': { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4); }
+    case 'ease_out_elastic': { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1; }
+    case 'ease_in_out_elastic': {
+      const c5 = (2 * Math.PI) / 4.5;
+      return t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2 : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+    }
+    case 'ease_in_bounce': return 1 - bounceOut(1 - t);
+    case 'ease_out_bounce': return bounceOut(t);
+    case 'ease_in_out_bounce': return t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 + bounceOut(2 * t - 1)) / 2;
+    default: return t;
+  }
+}
+let animPlaying = false, animHold = false, animTime = 0, playBtnEl = null, trackSeq = 0, segSeq = 0, lastTick = 0, scrubDrag = false;
+let timeLbl = null, scrubEl = null;          // diisi di bagian GUI Main
+function newTrack(key, startVal) {
+  return { id: 'tk' + (++trackSeq), key: key, segments: [{ id: 'sg' + (++segSeq), start: 0, dur: 0.5, val1: startVal, val2: startVal, ease: 'lerp' }] };
+}
+function trackTotalDur(tr) { return tr.segments.reduce((s, sg) => s + sg.dur, 0); }
+function recomputeStarts(tr) { let acc = 0; tr.segments.forEach(sg => { sg.start = r4(acc); acc += sg.dur; }); }
+function computePreviewValue(tr, t) {
+  let val = tr.segments.length ? tr.segments[0].val1 : 0;
+  for (const seg of tr.segments) {
+    if (t >= seg.start) {
+      const p = Math.min((t - seg.start) / Math.max(seg.dur, 1e-6), 1);
+      val = val + (seg.val2 - val) * getEase(seg.ease, p);
+    }
+  }
+  return val;
+}
+// Ternary descending dari segmen TERAKHIR ke PERTAMA, gerbang di start-nya sendiri (">=") -- pola sama
+// seperti Player Animator, supaya mengedit durasi segmen manapun tidak pernah membuat logikanya rusak.
+function buildTernary(segs, idx) {
+  const seg = segs[idx];
+  const timeExpr = seg.start === 0 ? 'q.state_time' : '(q.state_time-' + fmt(seg.start) + ')';
+  const fromVal = idx === 0 ? seg.val1 : segs[idx - 1].val2;
+  const thisExpr = 'math.' + seg.ease + '(' + fmt(fromVal) + ',' + fmt(seg.val2) + ',math.min(' + timeExpr + '/' + fmt(seg.dur) + ',1))';
+  if (idx === 0) return thisExpr;
+  const rest = buildTernary(segs, idx - 1);
+  const wrapped = (idx - 1 === 0) ? rest : '(' + rest + ')';
+  return 'q.state_time>=' + fmt(seg.start) + '?' + thisExpr + ':' + wrapped;
+}
+function buildTrackStatement(tr) {
+  const meta = ANIM_VARS.find(v => v.k === tr.key), segs = tr.segments;
+  let body = buildTernary(segs, segs.length - 1);
+  // sebelum segmen pertama mulai, nilainya tetap "From" (kalau tidak, lerp akan menghitung waktu negatif)
+  if (segs[0].start > 0) body = 'q.state_time>=' + fmt(segs[0].start) + '?' + (segs.length > 1 ? '(' + body + ')' : body) + ':' + fmt(segs[0].val1);
+  return meta.mvar + '=' + body + ';';
+}
+function animDuration(f) {
+  let m = 0;
+  ((f.anim && f.anim.tracks) || []).forEach(tr => { const d = trackTotalDur(tr); if (d > m) m = d; });
+  return m;
+}
+const previewing = () => animPlaying || animHold;
+function setPlayingUI() { if (playBtnEl) playBtnEl.classList.toggle('playing', animPlaying); }
+function updateAnimTime() {
+  if (!timeLbl || !scrubEl) return;
+  const f = state.selected, dur = (f && f.type === 'fox') ? animDuration(f) : 0;
+  const t = dur > 0 ? (animPlaying ? animTime % dur : Math.min(animTime, dur)) : 0;
+  timeLbl.textContent = t.toFixed(2) + ' / ' + dur.toFixed(2) + 's';
+  scrubEl.max = dur > 0 ? String(dur) : '1';
+  scrubEl.disabled = !(dur > 0);
+  if (!scrubDrag) scrubEl.value = String(t);
+}
+function stopPreview() {                      // kembali ke pose normal (nilai P&R&S)
+  const was = previewing();
+  animPlaying = false; animHold = false; animTime = 0;
+  setPlayingUI(); updateAnimTime();
+  if (was) requestRender();
+}
+function stopPlayback() { if (animPlaying) { animPlaying = false; animHold = true; setPlayingUI(); requestRender(); } }
+function effectiveVal(f, k) {
+  if (previewing() && f.anim && f.anim.tracks.length) {
+    const tr = f.anim.tracks.find(t => t.key === k && t.segments.length);
+    if (tr) {
+      const dur = animDuration(f);
+      const t = dur > 0 ? (animPlaying ? animTime % dur : Math.min(animTime, dur)) : 0;   // semua variabel satu Fox memakai jam yang sama
+      return fromDisp(k, computePreviewValue(tr, t));
+    }
+  }
+  return getVal(f, k);
 }
 
 /* ================= texture ================= */
@@ -669,7 +979,7 @@ const gctx = cGrid.getContext('2d');
 const octx = cOv.getContext('2d');
 let mctx = null;      // konteks 2D (hanya kalau WebGL tidak ada)
 let GL = null;
-let dpr = 1, fitted = false;
+let dpr = 1, fitted = false, lastLand = null;
 
 /* ---------- WebGL ---------- */
 const VS = 'attribute vec3 aPos;attribute vec2 aUV;attribute vec3 aCol;uniform mat4 uMVP;varying vec2 vUV;varying vec3 vCol;' +
@@ -860,7 +1170,7 @@ function planeBasis(a) {
 }
 function computeGizmo() {
   const s = state.selected;
-  if (!s) return null;
+  if (!s || previewing()) return null;
   const info = selInfo(s), c = info.c;
   if (viewZ(c) < 0.5) return null;
   const sc = project(c);
@@ -1027,7 +1337,8 @@ function resizeCanvas() {
   gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   octx.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (mctx) mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (!fitted) { fitted = true; fitDistance(); }
+  const landNow = W > H;
+  if (!fitted || landNow !== lastLand) { fitted = true; lastLand = landNow; fitDistance(); }
   requestRender();
   return true;
 }
@@ -1050,6 +1361,7 @@ function localXY(e) {
 let drag = null;
 
 function startDrag(axis, e) {
+  stopPlayback();
   const s = state.selected, mode = effMode();
   updateCam();
   const info = selInfo(s), P = info.c;
@@ -1208,17 +1520,33 @@ function setupGui(gui) {
   title.addEventListener('pointercancel', end);
 }
 GUIS.forEach(setupGui);
+GUIS.forEach(g => {                             // kilau liquid glass mengikuti jari / kursor
+  let raf = 0, ev = null;
+  g.addEventListener('pointermove', e => {
+    ev = e;
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      const r = g.getBoundingClientRect();
+      g.style.setProperty('--mx', ((ev.clientX - r.left) / Math.max(1, r.width) * 100).toFixed(1) + '%');
+      g.style.setProperty('--my', ((ev.clientY - r.top) / Math.max(1, r.height) * 100).toFixed(1) + '%');
+    });
+  });
+});
 
+/* Tinggi Main + Texture bila ditumpuk di sisi kanan (dalam satuan em) -> dipakai untuk menyusutkan UI di landscape */
+const EM_LAND_FULL = 46, EM_LAND_COMPACT = 31.6;
 function initialLayout() {
   const bar = $('#topbar').offsetHeight || 56;
-  const W = vw(), H = vh(), m = W < 700 ? 8 : 16;
+  const W = vw(), H = vh();
   if (W < 50 || H < 50) return;
+  const land = W > H, m = (land && H < 600) || W < 700 ? 8 : 16;
   const mw = guiMain.offsetWidth, mh = guiMain.offsetHeight, tw = guiTex.offsetWidth;
-  if (W >= 660) {
+  if (land) {                                   // BE di kiri; Main di kanan atas; Texture tepat di bawah Main
     setPos(guiBE, m, bar + m);
     setPos(guiMain, W - mw - m, bar + m);
     setPos(guiTex, W - tw - m, bar + m + mh + m);
-  } else {
+  } else {                                      // potret: BE kiri atas, Texture kanan atas, Main di bawah
     setPos(guiBE, m, bar + m);
     setPos(guiTex, W - tw - m, bar + m);
     setPos(guiMain, (W - mw) / 2, H - mh - m);
@@ -1226,10 +1554,16 @@ function initialLayout() {
   GUIS.forEach(fitGui);
 }
 function updateUiScale() {
-  const ui = clamp(vw() / 34, 11.5, 15);
-  const root = document.documentElement.style;
-  root.setProperty('--ui', ui.toFixed(2) + 'px');
-  root.setProperty('--vh', vh() + 'px');
+  const W = vw(), H = vh(), land = W > H, compact = land && H < 600;
+  const root = document.documentElement;
+  root.classList.toggle('land-compact', compact);
+  let ui = clamp(W / 34, 11.5, 15);
+  if (land) {                                   // landscape: GUI harus muat di tinggi layar, tidak saling menimpa
+    const bar = $('#topbar').offsetHeight || 40, m = compact ? 8 : 16;
+    ui = clamp(Math.min(ui, (H - bar - 3 * m) / (compact ? EM_LAND_COMPACT : EM_LAND_FULL)), 8, 15);
+  }
+  root.style.setProperty('--ui', ui.toFixed(2) + 'px');
+  root.style.setProperty('--vh', H + 'px');
 }
 let relayoutRaf = 0;
 function relayout() {
@@ -1345,8 +1679,9 @@ function toggleOpen(g) {
   layoutList();
 }
 function select(n) {
+  if (state.selected !== n) stopPreview();
   state.selected = n;
-  syncSel(); syncFields(); syncExpr(); updateMainUI(); requestRender();
+  syncSel(); syncFields(); syncExpr(); updateMainUI(); renderAnim(); requestRender();
 }
 
 /* --- pindah induk --- */
@@ -1533,7 +1868,7 @@ pillDl.addEventListener('click', () => { const n = menuNode; closeMenu(); if (n)
 const fields = {};
 $$('[data-k]').forEach(i => { fields[i.dataset.k] = i; });
 const expEl = $('#exp');
-const exprTab = $('.tab[data-tab="expr"]');
+const exprTab = $('.tab[data-tab="expr"]'), animTabBtn = $('#animTabBtn');
 const scaleCol = $('#scaleCol');
 
 function syncFields() {
@@ -1548,16 +1883,18 @@ function syncFields() {
 }
 function syncExpr() { expEl.textContent = exprFor(state.selected); }
 function activateTab(name) {
+  if (name !== 'anim') stopPreview();
   $$('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
-  $('#pane-prs').classList.toggle('active', name === 'prs');
-  $('#pane-expr').classList.toggle('active', name === 'expr');
+  ['prs', 'anim', 'expr'].forEach(p => $('#pane-' + p).classList.toggle('active', name === p));
+  if (name === 'anim') renderAnim();
 }
-function updateMainUI() {                     // Group: tanpa Stop Expression & skala terkunci
+function updateMainUI() {                     // Group: tanpa Animate & Stop Expression, skala terkunci
   const isG = !!state.selected && state.selected.type === 'group';
   exprTab.classList.toggle('gone', isG);
+  animTabBtn.classList.toggle('gone', isG);
   scaleCol.classList.toggle('locked', isG);
   if (isG) {
-    if ($('#pane-expr').classList.contains('active')) activateTab('prs');
+    if ($('#pane-expr').classList.contains('active') || $('#pane-anim').classList.contains('active')) activateTab('prs');
     if (state.mode === 'scale') setMode('position');
   }
 }
@@ -1590,6 +1927,147 @@ function setMode(m) {
 }
 $$('.col').forEach(c => $('.colhead', c).addEventListener('click', () => setMode(c.dataset.mode)));
 $$('.tab').forEach(t => t.addEventListener('click', () => activateTab(t.dataset.tab)));
+
+/* ---------- tab Animate ---------- */
+const animTracksEl = $('#animTracks'), addTrackBtn = $('#addTrackBtn');
+playBtnEl = $('#playBtn'); timeLbl = $('#animTimeLbl'); scrubEl = $('#scrub');
+
+function fixStarts(tr) {                      // start tiap segmen >= akhir segmen sebelumnya (aturan yang sama dengan Player Animator)
+  let min = 0;
+  tr.segments.forEach(sg => { if (sg.start < min) sg.start = r4(min); min = sg.start + sg.dur; });
+}
+function segHTML(tr, sg, i) {
+  const from = i > 0 ? tr.segments[i - 1].val2 : sg.val1;
+  const inp = (f, v, dis) => '<input data-f="' + f + '" value="' + fmt(v) + '"' + (dis ? ' disabled' : '') + ' autocomplete="off" spellcheck="false">';
+  return '<div class="seg" data-sg="' + sg.id + '"><span class="seg-idx">#' + (i + 1) + '</span>' +
+    '<label><span>Start</span>' + inp('start', sg.start) + '</label>' +
+    '<label><span>Dur</span>' + inp('dur', sg.dur) + '</label>' +
+    '<label><span>From</span>' + inp('val1', from, i > 0) + '</label>' +
+    '<label><span>To</span>' + inp('val2', sg.val2) + '</label>' +
+    '<select class="ease" data-f="ease">' + EASE_LIST.map(e => '<option' + (e === sg.ease ? ' selected' : '') + '>' + e + '</option>').join('') + '</select>' +
+    '<button class="seg-del" data-act="delseg" aria-label="Hapus keyframe"' + (tr.segments.length < 2 ? ' disabled' : '') + '>&times;</button></div>';
+}
+function trackHTML(tr, f) {
+  const taken = f.anim.tracks.filter(t => t !== tr).map(t => t.key);
+  const opts = ANIM_VARS.map(v => '<option value="' + v.k + '"' + (v.k === tr.key ? ' selected' : '') + (taken.indexOf(v.k) >= 0 ? ' disabled' : '') + '>' + v.label + ' (' + v.mvar + ')</option>').join('');
+  return '<div class="track" data-tk="' + tr.id + '"><div class="track-head"><select class="track-var" data-f="var">' + opts + '</select>' +
+    '<button class="trk-del" data-act="deltrack" aria-label="Hapus track">&times;</button></div>' +
+    tr.segments.map((sg, i) => segHTML(tr, sg, i)).join('') +
+    '<button class="add-seg" data-act="addseg">+ Add Keyframe</button></div>';
+}
+function renderAnim() {
+  const f = state.selected, keep = animTracksEl.scrollTop;
+  if (!f || f.type !== 'fox') {
+    animTracksEl.innerHTML = '<div class="anim-empty">Pilih satu Fox untuk membuat animasi.</div>';
+    addTrackBtn.disabled = true;
+  } else {
+    const t = f.anim.tracks;
+    animTracksEl.innerHTML = t.length ? t.map(tr => trackHTML(tr, f)).join('') : '<div class="anim-empty">Belum ada animasi.<br>Tekan &ldquo;+ Add Track&rdquo; untuk memulai.</div>';
+    addTrackBtn.disabled = t.length >= ANIM_VARS.length;
+  }
+  animTracksEl.scrollTop = keep;
+  updateAnimTime();
+}
+function refreshSegInputs(tr) {               // perbarui angka tanpa membangun ulang DOM (supaya fokus keyboard tidak hilang)
+  const tEl = animTracksEl.querySelector('.track[data-tk="' + tr.id + '"]');
+  if (!tEl) return;
+  tr.segments.forEach((sg, i) => {
+    const sEl = tEl.querySelector('.seg[data-sg="' + sg.id + '"]');
+    if (!sEl) return;
+    const put = (k, v) => { const el = sEl.querySelector('[data-f="' + k + '"]'); if (el && el !== document.activeElement) el.value = fmt(v); };
+    put('start', sg.start); put('dur', sg.dur); put('val1', i > 0 ? tr.segments[i - 1].val2 : sg.val1); put('val2', sg.val2);
+  });
+}
+function animCtx(el) {
+  const f = state.selected;
+  if (!f || f.type !== 'fox') return {};
+  const tEl = el.closest('.track'), sEl = el.closest('.seg');
+  const tr = tEl ? f.anim.tracks.find(x => x.id === tEl.dataset.tk) : null;
+  const sg = tr && sEl ? tr.segments.find(x => x.id === sEl.dataset.sg) : null;
+  return { f: f, tr: tr, sg: sg };
+}
+function animChanged(rebuild, tr) {
+  syncExpr(); updateAnimTime(); requestRender();
+  if (rebuild) renderAnim(); else if (tr) refreshSegInputs(tr);
+}
+animTracksEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  const c = animCtx(b);
+  if (!c.tr) return;
+  const act = b.dataset.act;
+  if (act === 'deltrack') c.f.anim.tracks.splice(c.f.anim.tracks.indexOf(c.tr), 1);
+  else if (act === 'addseg') {
+    const last = c.tr.segments[c.tr.segments.length - 1];
+    c.tr.segments.push({ id: 'sg' + (++segSeq), start: r4(last.start + last.dur), dur: 0.5, val1: last.val2, val2: last.val2, ease: 'lerp' });
+  } else if (act === 'delseg' && c.sg && c.tr.segments.length > 1) {
+    const idx = c.tr.segments.indexOf(c.sg);
+    c.tr.segments.splice(idx, 1);
+    if (idx === 0) c.tr.segments[0].val1 = c.sg.val1;      // nilai awal track tetap
+    fixStarts(c.tr);
+  }
+  animChanged(true);
+});
+animTracksEl.addEventListener('input', e => {
+  const el = e.target;
+  if (el.tagName !== 'INPUT') return;
+  const c = animCtx(el);
+  if (!c.sg) return;
+  const v = parseNum(el.value);
+  if (!Number.isFinite(v)) return;
+  const k = el.dataset.f;
+  if (k === 'start') c.sg.start = Math.max(0, r4(v));
+  else if (k === 'dur') c.sg.dur = Math.max(0.01, r4(v));
+  else if (k === 'val1') c.sg.val1 = v;
+  else if (k === 'val2') c.sg.val2 = v;
+  fixStarts(c.tr);
+  animChanged(false, c.tr);
+});
+animTracksEl.addEventListener('change', e => {
+  const el = e.target, c = animCtx(el);
+  if (!c.tr) return;
+  if (el.tagName === 'SELECT') {
+    if (el.dataset.f === 'ease' && c.sg) c.sg.ease = el.value;
+    else if (el.dataset.f === 'var') {
+      if (c.f.anim.tracks.some(t => t !== c.tr && t.key === el.value)) { animChanged(true); return; }
+      c.tr.key = el.value;
+      const base = r4(toDisp(c.tr.key, getVal(c.f, c.tr.key)));
+      c.tr.segments.forEach(sg => { sg.val1 = base; sg.val2 = base; });
+      animChanged(true); return;
+    }
+    animChanged(false, c.tr);
+  } else {                                    // input selesai diketik: rapikan angka
+    fixStarts(c.tr);
+    el.value = fmt(parseNum(el.value) || 0);
+    animChanged(false, c.tr);
+    refreshSegInputs(c.tr);
+  }
+});
+addTrackBtn.addEventListener('click', () => {
+  const f = state.selected;
+  if (!f || f.type !== 'fox') return;
+  const taken = f.anim.tracks.map(t => t.key);
+  const v = ANIM_VARS.find(a => taken.indexOf(a.k) < 0);
+  if (!v) return;
+  f.anim.tracks.push(newTrack(v.k, r4(toDisp(v.k, getVal(f, v.k)))));
+  animChanged(true);
+  setTimeout(() => { animTracksEl.scrollTo({ top: animTracksEl.scrollHeight, behavior: 'smooth' }); }, 30);
+});
+playBtnEl.addEventListener('click', () => {
+  const f = state.selected;
+  if (!f || f.type !== 'fox' || animDuration(f) <= 0) return;
+  if (animPlaying) { animPlaying = false; animHold = true; }              // pause: pose tetap
+  else { animPlaying = true; animHold = false; lastTick = performance.now(); }
+  setPlayingUI(); updateAnimTime(); requestRender();
+});
+$('#resetBtn').addEventListener('click', () => { stopPreview(); });
+scrubEl.addEventListener('pointerdown', () => { scrubDrag = true; });
+['pointerup', 'pointercancel', 'blur'].forEach(ev => scrubEl.addEventListener(ev, () => { scrubDrag = false; }));
+scrubEl.addEventListener('input', () => {
+  animPlaying = false; animHold = true;
+  animTime = parseFloat(scrubEl.value) || 0;
+  setPlayingUI(); updateAnimTime(); requestRender();
+});
 
 const copyBtn = $('#copyBtn');
 let copyTimer = 0;
@@ -1645,8 +2123,16 @@ if (typeof ResizeObserver !== 'undefined') {
 setTimeout(relayout, 300);                    // jaga-jaga kalau ukuran iframe baru stabil belakangan
 setTimeout(relayout, 1200);
 
+lastTick = performance.now();
 (function loop() {
   requestAnimationFrame(loop);
+  const now = performance.now(), dt = Math.min(0.1, (now - lastTick) / 1000);
+  lastTick = now;
+  if (animPlaying) {
+    const f = state.selected;
+    if (!f || f.type !== 'fox' || animDuration(f) <= 0) stopPreview();
+    else { animTime += dt; updateAnimTime(); dirty = true; }
+  }
   if (!dirty) return;
   dirty = false;
   if (cam.W < 2) return;
@@ -1660,7 +2146,10 @@ window.__fmbe = {
   eulerR: eulerR, gimbal: gimbal, toDisp: toDisp, flatNodes: flatNodes, renderFoxes: function () { return renderFoxes; },
   api: { addFoxTop: addFoxTop, select: select, duplicate: duplicate, deleteNode: deleteNode, ungroup: ungroup, enterSelect: enterSelect,
          exitSelect: exitSelect, toggleCheck: toggleCheck, makeGroupFromChecked: makeGroupFromChecked, toggleOpen: toggleOpen,
-         addMembersToTarget: addMembersToTarget, setMode: setMode, openMenu: openMenu, syncFields: syncFields, setVal: setVal }
+         addMembersToTarget: addMembersToTarget, setMode: setMode, openMenu: openMenu, syncFields: syncFields, setVal: setVal,
+         renderAnim: renderAnim, stopPreview: stopPreview, activateTab: activateTab, updateUiScale: updateUiScale, initialLayout: initialLayout },
+  anim: { computePreviewValue: computePreviewValue, getEase: getEase, animDuration: animDuration, fromDisp: fromDisp, getVal: getVal,
+          status: function () { return { playing: animPlaying, hold: animHold, time: animTime }; } }
 };
 })();
 </script>
