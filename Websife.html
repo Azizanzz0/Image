@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Animator V1.3</title>
+    <title>Player Animator Studio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
@@ -353,11 +353,172 @@
                 margin-bottom: 10px;
             }
         }
+
+        :root {
+            --bg: #111827;
+            --surface: #1c2635;
+            --surface2: #263449;
+            --panel: #0d1522;
+            --text: #e8f0ff;
+            --muted: #94a6bf;
+            --primary: #9b8cff;
+            --border: rgba(157, 177, 211, .19);
+            --success: #7de2c3;
+            --danger: #ff7e9d;
+            --warn: #ffd27d;
+            --blue: #69b8ff;
+        }
+        body {
+            background:
+                radial-gradient(ellipse at 10% 0%, rgba(105,184,255,.13), transparent 32%),
+                radial-gradient(ellipse at 95% 88%, rgba(155,140,255,.14), transparent 35%),
+                linear-gradient(145deg, #0e1521, #151e2c 52%, #101725);
+            gap: 18px;
+            padding: 18px;
+        }
+        .left-panel, .right-panel { scrollbar-width: thin; scrollbar-color: #485a78 transparent; }
+        .left-panel { padding-right: 8px; }
+        .right-panel { width: min(470px, 43vw); padding-right: 2px; }
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            background: linear-gradient(145deg, rgba(34,47,66,.96), rgba(24,34,49,.97));
+            box-shadow: 0 14px 34px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+        }
+        .bone-card { border-left: 3px solid #8b83ff; }
+        .segment { border: 1px solid rgba(160,184,220,.09); border-radius: 10px; }
+        input, select, textarea {
+            border: 1px solid rgba(151,174,210,.22);
+            border-radius: 8px;
+            background: #111b2a;
+            color: var(--text);
+        }
+        input:focus, select:focus, textarea:focus { border-color: #9b8cff; box-shadow: 0 0 0 3px rgba(155,140,255,.12); }
+        button {
+            border-radius: 9px;
+            background: linear-gradient(135deg, #9d8cff, #6c9eff);
+            color: #111827;
+            box-shadow: 0 4px 12px rgba(93,117,216,.13);
+        }
+        button:hover { opacity: 1; filter: brightness(1.09); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button.danger { background: linear-gradient(135deg, #ff9ab0, #ec789d); color: #28111c; }
+        .view-tabs { border: 1px solid rgba(161,180,214,.12); border-radius: 10px; }
+        .view-tab.active, .mode-btn.active { background: linear-gradient(135deg, #9c8dff, #6baeff); }
+        .mode-btn { border-radius: 8px; }
+        .axis-readout { background: rgba(10,17,29,.58); border: 1px solid rgba(157,177,211,.12); border-radius: 11px; }
+        .readout-title { color: #b6aaff; }
+        #canvas-container {
+            background: radial-gradient(ellipse at center, #1c2a3f 0%, #0d1522 72%);
+            border: 1px solid rgba(147,174,220,.2);
+            border-radius: 13px;
+            min-height: 260px;
+        }
+        .viewport-heading { margin-bottom: 12px; }
+        .viewport-heading h2 { margin-bottom: 4px; font-size: 19px; letter-spacing: -.02em; }
+        .viewport-subtitle, .sidebar-kicker { color: #8296b5; font-size: 9px; font-weight: 800; letter-spacing: .18em; }
+        .axis-editor-layout { display: flex; flex-direction: column; gap: 9px; min-height: 0; }
+        #canvas-container { order: 1; }
+        .preview-controls { order: 2; }
+        .axis-sidebar { order: 3; }
+        .axis-sidebar { background: rgba(11,18,30,.52); border: 1px solid rgba(157,177,211,.13); border-radius: 12px; padding: 13px; gap: 12px; }
+        .axis-side-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .fullscreen-btn { min-height: 31px; padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #55d5eb, #8b8cff); color: #101827; }
+        .axis-float-fullscreen {
+            position: absolute;
+            right: 14px;
+            bottom: 14px;
+            z-index: 20;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 13px;
+            font-size: 22px;
+            color: #f2f4ff;
+            background: linear-gradient(135deg, rgba(139,119,255,.96), rgba(69,164,255,.96));
+            border: 1px solid rgba(255,255,255,.24);
+            box-shadow: 0 8px 24px rgba(0,0,0,.35);
+        }
+        .viewport-card.axis-fullscreen .axis-float-fullscreen { right: 18px; bottom: 18px; }
+        .bone-picker { gap: 5px; }
+        .bone-picker label { color: #95a9c8; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+        .bone-picker select { width: 100%; padding: 9px 10px; }
+        .axis-mode-toggle { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 5px; }
+        .axis-mode-toggle .mode-btn { padding: 8px 4px; font-size: 11px; }
+        .axis-readout { margin-top: 0; padding: 12px; }
+        .readout-group { padding-top: 8px; border-top: 1px solid rgba(154,177,213,.1); }
+        .readout-group:first-of-type { border-top: 0; padding-top: 0; }
+        .readout-row .form-group { min-width: 58px; flex: 1; }
+        .readout-row input { width: 100%; min-width: 0; padding: 7px; }
+        .axis-reset-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+        .axis-reset-actions button { min-height: 36px; padding: 7px; font-size: 11px; }
+        .axis-hint { margin: 0; color: #8193ae; }
+        .preview-controls { align-items: center; }
+        .viewport-card.axis-fullscreen {
+            position: fixed !important;
+            inset: 12px !important;
+            z-index: 99999;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: linear-gradient(145deg, rgba(25,36,53,.99), rgba(14,22,35,.99));
+            box-shadow: 0 28px 100px rgba(0,0,0,.72);
+        }
+        .viewport-card.axis-fullscreen .viewport-heading { flex: 0 0 auto; }
+        .viewport-card.axis-fullscreen .axis-editor-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+            grid-template-rows: minmax(0, 1fr);
+            flex: 1 1 auto;
+            min-height: 0;
+            gap: 13px;
+        }
+        .viewport-card.axis-fullscreen #axisControls {
+            display: flex !important;
+            grid-column: 2;
+            grid-row: 1;
+            order: 0;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        .viewport-card.axis-fullscreen #canvas-container {
+            grid-column: 1;
+            grid-row: 1;
+            order: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+        .viewport-card.axis-fullscreen #previewControls { display: none !important; }
+        body.axis-fullscreen-active { overflow: hidden; }
+        @media (max-width: 768px) {
+            .right-panel { width: 100%; }
+            .viewport-card.axis-fullscreen { inset: 6px !important; padding: 10px; border-radius: 12px; }
+            .viewport-card.axis-fullscreen .axis-editor-layout { grid-template-columns: minmax(0,1fr) minmax(175px, 38%); gap: 7px; }
+            .viewport-card.axis-fullscreen #axisControls { padding: 8px; gap: 8px; }
+            .viewport-card.axis-fullscreen #canvas-container { border-radius: 9px; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle { grid-template-columns: 1fr; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle .mode-btn { padding: 7px 3px; }
+        }
+        @media (max-width: 480px) {
+            .viewport-card.axis-fullscreen .axis-editor-layout { grid-template-columns: minmax(0,1fr) minmax(145px, 42%); }
+            .viewport-card.axis-fullscreen .viewport-heading h2 { font-size: 16px; }
+            .viewport-card.axis-fullscreen .view-tab { padding: 6px 7px; font-size: 10px; }
+            .viewport-card.axis-fullscreen .axis-side-header { align-items: flex-start; flex-direction: column; }
+            .viewport-card.axis-fullscreen .readout-row { gap: 4px; }
+            .viewport-card.axis-fullscreen .readout-row .form-group { min-width: 42px; }
+            .viewport-card.axis-fullscreen .readout-row input { font-size: 11px; }
+        }
+
     </style>
 </head>
 <body>
     <div class="left-panel">
-        <h1>Player Animator V1.3</h1>
+        <h1>Player Animator <span style="color:#a99cff;">Studio</span></h1>
         <div class="card">
             <div class="toggle-group">
                 <label class="toggle-label">
@@ -375,42 +536,53 @@
         <button onclick="addBone()" style="margin-bottom:30px;width:100%;">+ Add New Bone</button>
     </div>
     <div class="right-panel">
-        <div class="card" style="margin-bottom:0;">
-            <div class="flex-between">
-                <h2 id="viewportTitle">3D Live Preview</h2>
+        <div class="card viewport-card" id="viewportCard" style="margin-bottom:0;">
+            <div class="flex-between viewport-heading">
+                <div>
+                    <h2 id="viewportTitle">3D Live Preview</h2>
+                    <div class="viewport-subtitle">POSE • ANIMATE • PREVIEW</div>
+                </div>
                 <div class="view-tabs">
                     <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
                     <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
                 </div>
             </div>
-            <div id="canvas-container"></div>
-            <div id="previewControls" class="flex-between" style="margin-top:8px;">
-                <button onclick="togglePlay()">Pause / Play</button>
-                <p class="hint" style="margin:0;">Left click + drag: Rotate camera | Scroll: Zoom</p>
-            </div>
-            <div id="axisControls" style="display:none;margin-top:8px;">
-                <div class="flex-between" style="gap:8px;flex-wrap:wrap;">
-                    <select id="boneSelect" onchange="selectBone(this.value)" style="flex:1;min-width:130px;">
-                        <option value="root">Root</option>
-                        <option value="waist">Body / Waist</option>
-                        <option value="head">Head</option>
-                        <option value="rightArm">Right Arm</option>
-                        <option value="leftArm">Left Arm</option>
-                        <option value="rightLeg">Right Leg</option>
-                        <option value="leftLeg">Left Leg</option>
-                    </select>
-                    <div class="mode-toggle">
+            <div id="axisEditorLayout" class="axis-editor-layout">
+                <aside id="axisControls" class="axis-sidebar" style="display:none;">
+                    <div class="axis-side-header">
+                        <span class="sidebar-kicker">TRANSFORM PANEL</span>
+                    </div>
+                    <div class="form-group bone-picker">
+                        <label for="boneSelect">SELECT BONE</label>
+                        <select id="boneSelect" onchange="selectBone(this.value)">
+                            <option value="root">Root</option>
+                            <option value="waist">Body / Waist</option>
+                            <option value="head">Head</option>
+                            <option value="rightArm">Right Arm</option>
+                            <option value="leftArm">Left Arm</option>
+                            <option value="rightLeg">Right Leg</option>
+                            <option value="leftLeg">Left Leg</option>
+                        </select>
+                    </div>
+                    <div class="mode-toggle axis-mode-toggle">
                         <button class="mode-btn active" id="modeRotateBtn" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
                         <button class="mode-btn" id="modeTranslateBtn" onclick="setGizmoMode('translate')">✥ Move</button>
                         <button class="mode-btn" id="modeScaleBtn" onclick="setGizmoMode('scale')" disabled>⤢ Scale</button>
                     </div>
+                    <div id="axisReadout" class="axis-readout"></div>
+                    <div class="axis-reset-actions">
+                        <button class="danger" onclick="resetBonePose()">Reset Bone</button>
+                        <button onclick="resetAllPose()">Reset All</button>
+                    </div>
+                    <p class="hint axis-hint">Select a bone, then drag the gizmo or edit its values. Drag empty space to orbit the camera.</p>
+                </aside>
+                <div id="canvas-container">
+                    <button class="axis-float-fullscreen" id="axisFullscreenToggle" onclick="toggleAxisFullscreen()" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
                 </div>
-                <div id="axisReadout" class="axis-readout"></div>
-                <div class="flex-between" style="gap:8px;margin-top:8px;">
-                    <button class="danger" style="flex:1;" onclick="resetBonePose()">Reset This Part</button>
-                    <button style="flex:1;" onclick="resetAllPose()">Reset All Pose</button>
+                <div id="previewControls" class="flex-between preview-controls">
+                    <button onclick="togglePlay()">Ⅱ / ▶ Play</button>
+                    <p class="hint" style="margin:0;">Drag: Rotate camera&nbsp; • &nbsp;Scroll: Zoom</p>
                 </div>
-                <p class="hint">Tap a body part (or use the dropdown) to select it, then drag the gizmo to pose it — only the axes that part actually has will show. Values are recorded live below. Drag empty space to orbit the camera.</p>
             </div>
         </div>
         <div class="card" style="margin-bottom:0;">
@@ -524,8 +696,9 @@
 
         function addSeg(bIndex) {
             let segs = data[bIndex].segments;
-            let start = segs.length > 0 ? parseFloat(segs[segs.length - 1].start) + parseFloat(segs[segs
-                .length - 1].dur) : 0;
+            const effective = getEffectiveSegments(segs);
+            const last = effective[effective.length - 1];
+            let start = last ? Number((last.start + last.dur).toFixed(2)) : 0;
             segs.push({ start: Number(start.toFixed(2)), dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' });
             renderBones();
         }
@@ -540,23 +713,24 @@
         function validateStart(bIndex, sIndex, val) {
             let numVal = parseFloat(val) || 0;
             if (sIndex > 0) {
-                let prevSeg = data[bIndex].segments[sIndex - 1];
-                let minStart = Number((prevSeg.start + prevSeg.dur).toFixed(2));
-                if (numVal < minStart) {
-                    let inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
-                    let errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
+                const prevSeg = data[bIndex].segments[sIndex - 1];
+                const minEnd = Number((prevSeg.start + prevSeg.dur).toFixed(2));
+                const isDuplicateTime = Math.abs(numVal - prevSeg.start) < 0.000001;
+                if (!isDuplicateTime && numVal < minEnd) {
+                    const inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
+                    const errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
                     inputEl.style.color = "var(--danger)";
                     inputEl.style.borderColor = "var(--danger)";
-                    errEl.innerText = `Cannot be below ${minStart}`;
+                    errEl.innerText = `Use ${prevSeg.start} or ≥ ${minEnd}`;
                     errEl.classList.add('show');
-                    data[bIndex].segments[sIndex].start = minStart;
+                    data[bIndex].segments[sIndex].start = minEnd;
                     generate();
                     setTimeout(() => {
                         if (inputEl && errEl) {
                             inputEl.style.color = "";
                             inputEl.style.borderColor = "";
                             errEl.classList.remove('show');
-                            inputEl.value = minStart;
+                            inputEl.value = minEnd;
                         }
                     }, 2000);
                     return;
@@ -565,43 +739,60 @@
             updateSeg(bIndex, sIndex, 'start', numVal);
         }
 
-        function buildDescendingTernary(segments, idx) {
-            // Walks from the LAST segment back to the FIRST. Each segment is gated on its
-            // OWN start time (">="), exactly like the original per-segment blocks — so
-            // editing any segment's start (including the first one) can never desync the
-            // logic the way a "next segment's start" cutoff could. Segment 0 is the final,
-            // unconditional fallback (its own gating is handled by the outer wrapper in
-            // buildBoneStatement). Nested ternaries are always wrapped in parentheses:
-            // Molang's docs note that unparenthesized nested ternaries were mis-parsed
-            // before a past versioned fix, so parentheses keep this safe on any version.
-            const seg = segments[idx];
-            const timeExpr = seg.start === 0 ? `q.state_time` : `(q.state_time-${seg.start})`;
-            const easeFunc = seg.ease === 'lerp' ? 'lerp' : seg.ease;
-            // Every segment interpolates between two literal numbers we already know at
-            // generation time: its own val1 (segment 0) or the PREVIOUS segment's val2
-            // (any later segment). Using the bone variable itself as the "from" value here
-            // would re-lerp toward the target on every single game tick, which makes the
-            // value race to the target almost immediately instead of moving at a constant,
-            // duration-matched rate — that's what made later keyframes look sped up even
-            // though their duration matched the first one.
-            const fromVal = idx === 0 ? seg.val1 : segments[idx - 1].val2;
-            const thisExpr =
-                `math.${easeFunc}(${fromVal},${seg.val2},math.min(${timeExpr}/${seg.dur},1))`;
-            if (idx === 0) return thisExpr;
-            const rest = buildDescendingTernary(segments, idx - 1);
-            const wrappedRest = (idx - 1 === 0) ? rest : `(${rest})`;
-            return `q.state_time>=${seg.start}?${thisExpr}:${wrappedRest}`;
+        function getEffectiveSegments(segments) {
+            const seen = new Set();
+            return (segments || []).filter(segment => {
+                const start = Number(segment.start) || 0;
+                const key = start.toFixed(6);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function buildInterpolation(segment, fromValue, toValue) {
+            const ease = segment.ease === 'lerp' ? 'lerp' : segment.ease;
+            const start = Number(segment.start) || 0;
+            const duration = Math.max(Number(segment.dur) || 0, 0.0001);
+            const elapsed = start === 0 ? 'q.state_time' : `(q.state_time-${start})`;
+            return `math.${ease}(${fromValue},${toValue},math.min(${elapsed}/${duration},1))`;
+        }
+
+        function buildKeyframeExpression(segments, boneVarName) {
+            const frames = getEffectiveSegments(segments);
+            if (!frames.length) return '';
+            if (frames.length === 1) {
+                return buildInterpolation(frames[0], frames[0].val1, frames[0].val2);
+            }
+
+            const count = frames.length;
+            const first = buildInterpolation(frames[0], frames[0].val1, frames[0].val2);
+            if (count === 2) {
+                const second = buildInterpolation(frames[1], boneVarName, frames[1].val2);
+                return `q.state_time<${frames[1].start}?${first}:${second}`;
+            }
+            if (count === 3) {
+                const second = buildInterpolation(frames[1], frames[0].val2, frames[1].val2);
+                const third = buildInterpolation(frames[2], frames[1].val2, frames[2].val2);
+                return `q.state_time<${frames[1].start}?${first}:(q.state_time<${frames[2].start}?${second}:${third})`;
+            }
+
+            let expression = buildInterpolation(frames[count - 1], frames[count - 2].val2, frames[count - 1].val2);
+            for (let i = count - 2; i >= 0; i--) {
+                const fromValue = i === 0 ? frames[0].val1 : frames[i - 1].val2;
+                const current = buildInterpolation(frames[i], fromValue, frames[i].val2);
+                expression = `q.state_time<${frames[i + 1].start}?${current}:(${expression})`;
+            }
+            return expression;
         }
 
         function buildBoneStatement(segments, boneVarName) {
-            const lastIdx = segments.length - 1;
-            const valueExpr = buildDescendingTernary(segments, lastIdx);
-            const firstStart = segments[0].start;
-            if (firstStart === 0) return `${boneVarName}=${valueExpr};`;
-            // First keyframe doesn't start at 0: gate the whole assignment in a block so
-            // nothing is written to the variable before its start time is reached, just
-            // like the original format did for every segment.
-            return `q.state_time>=${firstStart}?{${boneVarName}=${valueExpr};};`;
+            const frames = getEffectiveSegments(segments);
+            if (!frames.length) return '';
+            const expression = buildKeyframeExpression(frames, boneVarName);
+            const firstStart = Number(frames[0].start) || 0;
+            if (firstStart === 0) return `${boneVarName}=${expression};`;
+            return `q.state_time>=${firstStart}?{${boneVarName}=${expression};};`;
         }
 
         function generate() {
@@ -642,9 +833,10 @@
         }
 
         function onRidingToggle() {
-            // 3D view updates automatically via animation loop.
-            // Riding pose does NOT affect variables or Stop_Expression output.
-            // No generate() call here per user requirement.
+            if (viewMode === 'axis') {
+                attachGizmo();
+                renderAxisReadout();
+            }
         }
 
         function copyCode() {
@@ -653,9 +845,7 @@
             document.execCommand('copy');
         }
 
-        /* =====================================================================
-           IMPORT FEATURE — parse a pasted Stop_Expression back into keyframe data
-           ===================================================================== */
+        
         let pendingImportResult = null;
 
         function splitTopLevelCommas(str) {
@@ -747,9 +937,6 @@
         }
 
         function splitTopLevelStatements(text) {
-            // Splits on ';' but only where it sits outside both ( ) and { } nesting, so a
-            // gate block like "q.state_time>=1?{bone=expr;};" is kept as ONE statement
-            // instead of being cut at the semicolon that lives inside its braces.
             let depth = 0;
             let parts = [];
             let last = 0;
@@ -768,8 +955,6 @@
         }
 
         function unwrapGateBlock(statement) {
-            // Recognizes "q.state_time>=NUM?{ ... }" and returns just the interior.
-            // Plain (ungated) statements are returned unchanged.
             const m = statement.match(/^q\.state_time\s*>=\s*[\d.]+\s*\?\s*\{(.+)\}$/s);
             if (!m) return statement;
             let inner = m[1].trim();
@@ -802,15 +987,10 @@
                 }
                 const chain = parseBoneChain(rhs);
                 if (!chain) return;
-                // Appended (not overwritten) so bones exported as several separate gated
-                // statements (the older format) are merged back into one full chain.
                 if (!boneMap[boneName]) { boneMap[boneName] = []; order.push(boneName); }
                 boneMap[boneName].push(...chain);
             });
             const parsedData = order.map(boneName => {
-                // A chain can come out in descending start order (current format) or
-                // already-ascending order (older/legacy format) depending on how it was
-                // written — sorting here makes reconstruction correct either way.
                 const sortedChain = boneMap[boneName].slice().sort((a, b) => a.start - b.start);
                 const segments = sortedChain.map((call, idx) => {
                     let val1 = 0;
@@ -974,11 +1154,6 @@
         const boneObjects = {};
         modelBones.forEach(b => {
             const group = new THREE.Group();
-            // Minecraft Bedrock composes bone rotation in Z, then Y, then X order (ZYX),
-            // not three.js's default XYZ. With only one axis active this makes no visible
-            // difference, but combining two or three axes at once produced a preview that
-            // no longer matched in-game behavior. Matching the order here keeps the Axis
-            // Editor / Live Preview an exact match for what Minecraft actually renders.
             group.rotation.order = 'ZYX';
             if (b.cubes) {
                 b.cubes.forEach(c => {
@@ -1046,9 +1221,7 @@
         }
         loadTextureFromUrl(DEFAULT_TEXTURE_URL);
 
-        /* =====================================================================
-           AXIS EDITOR (posing gizmo) — extended with scale + riding support
-           ===================================================================== */
+        
         let viewMode = 'preview';
         let manualPose = {};
         let selectedBone = null;
@@ -1106,9 +1279,9 @@
         function getRidingOffsetDeg(boneName, axis) {
             if (!isRidingEnabled()) return 0;
             if (boneName === 'rightLeg' && axis === 'x') return -81;
-            if (boneName === 'rightLeg' && axis === 'z') return -18;
+            if (boneName === 'rightLeg' && axis === 'y') return -18;
             if (boneName === 'leftLeg' && axis === 'x') return -81;
-            if (boneName === 'leftLeg' && axis === 'z') return 18;
+            if (boneName === 'leftLeg' && axis === 'y') return 18;
             return 0;
         }
 
@@ -1126,11 +1299,11 @@
                 const leftLeg = boneObjects['leftLeg'];
                 if (rightLeg) {
                     rightLeg.rotation.x = -81 * (Math.PI / 180);
-                    rightLeg.rotation.z = -18 * (Math.PI / 180);
+                    rightLeg.rotation.y = -18 * (Math.PI / 180);
                 }
                 if (leftLeg) {
                     leftLeg.rotation.x = -81 * (Math.PI / 180);
-                    leftLeg.rotation.z = 18 * (Math.PI / 180);
+                    leftLeg.rotation.y = 18 * (Math.PI / 180);
                 }
             }
         }
@@ -1209,21 +1382,40 @@
         });
 
         function setViewMode(mode) {
+            if (mode === 'preview' && document.getElementById('viewportCard').classList.contains('axis-fullscreen')) {
+                toggleAxisFullscreen(false);
+            }
             viewMode = mode;
             document.getElementById('tabPreview').classList.toggle('active', mode === 'preview');
             document.getElementById('tabAxis').classList.toggle('active', mode === 'axis');
-            document.getElementById('previewControls').style.display = mode === 'preview' ? 'flex' :
-                'none';
-            document.getElementById('axisControls').style.display = mode === 'axis' ? 'block' : 'none';
-            document.getElementById('viewportTitle').textContent = mode === 'preview' ? '3D Live Preview' :
-                'Axis Editor';
+            document.getElementById('previewControls').style.display = mode === 'preview' ? 'flex' : 'none';
+            document.getElementById('axisControls').style.display = mode === 'axis' ? 'flex' : 'none';
+            document.getElementById('viewportTitle').textContent = mode === 'preview' ? '3D Live Preview' : 'Axis Editor';
             if (mode === 'axis') {
                 if (!selectedBone) selectedBone = 'rightArm';
                 selectBone(selectedBone);
             } else {
                 transformControls.detach();
             }
+            requestAnimationFrame(resizeViewport);
         }
+
+        function toggleAxisFullscreen(force) {
+            if (viewMode !== 'axis' && force !== false) setViewMode('axis');
+            const card = document.getElementById('viewportCard');
+            const active = typeof force === 'boolean' ? force : !card.classList.contains('axis-fullscreen');
+            card.classList.toggle('axis-fullscreen', active);
+            document.body.classList.toggle('axis-fullscreen-active', active);
+            const button = document.getElementById('axisFullscreenToggle');
+            if (button) { button.textContent = active ? '↙' : '⛶'; button.title = active ? 'Exit fullscreen' : 'Fullscreen'; }
+            requestAnimationFrame(() => requestAnimationFrame(resizeViewport));
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && document.getElementById('viewportCard').classList.contains('axis-fullscreen')) {
+                toggleAxisFullscreen(false);
+            }
+        });
 
         function selectBone(name) {
             selectedBone = name;
@@ -1329,42 +1521,33 @@
             }
             const prefix = boneVarPrefix[selectedBone];
             const cfg = boneAxisConfig[selectedBone];
+            const axisField = (axis, supported, key, fallback = 0) => {
+                const value = manualPose[key] !== undefined ? manualPose[key] : fallback;
+                return `<div class="form-group"><label>${axis}</label><input type="number" step="0.01" value="${value}" ${supported ? `onchange="setPoseValue('${key}', this.value)"` : 'disabled'}></div>`;
+            };
             let html = `<div class="readout-title">${boneDisplayName[selectedBone]}</div>`;
-            if (cfg.rotate.length > 0) {
-                html +=
-                    `<div class="readout-group"><label class="group-label">Rotation (degrees)</label><div class="readout-row">`;
-                cfg.rotate.forEach(axis => {
-                    const key = `${prefix}.${axis}`;
-                    const val = manualPose[key] !== undefined ? manualPose[key] : 0;
-                    html +=
-                        `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-                });
-                html += `</div></div>`;
-            }
-            if (cfg.translate.length > 0) {
-                html +=
-                    `<div class="readout-group"><label class="group-label">Position</label><div class="readout-row">`;
-                cfg.translate.forEach(axis => {
-                    const key = `${prefix}.${axis}pos`;
-                    const val = manualPose[key] !== undefined ? manualPose[key] : 0;
-                    html +=
-                        `<div class="form-group"><label>${axis.toUpperCase()}</label><input type="number" step="0.1" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-                });
-                html += `</div></div>`;
-            }
-            if (cfg.scale.length > 0) {
-                const varMap = scaleVarMap[selectedBone];
-                html +=
-                    `<div class="readout-group"><label class="group-label">Scale</label><div class="readout-row">`;
-                cfg.scale.forEach(axis => {
-                    const key = varMap[axis];
-                    const val = manualPose[key] !== undefined ? manualPose[key] : 1;
-                    const label = axis === 'xz' ? 'XZ' : axis.toUpperCase();
-                    html +=
-                        `<div class="form-group"><label>${label}</label><input type="number" step="0.01" value="${val}" onchange="setPoseValue('${key}', this.value)"></div>`;
-                });
-                html += `</div></div>`;
-            }
+            html += '<div class="readout-group"><label class="group-label">ROTATION · DEG</label><div class="readout-row">';
+            ['x', 'y', 'z'].forEach(axis => {
+                const key = `${prefix}.${axis}`;
+                html += axisField(axis.toUpperCase(), cfg.rotate.includes(axis), key, 0);
+            });
+            html += '</div></div>';
+            html += '<div class="readout-group"><label class="group-label">POSITION</label><div class="readout-row">';
+            ['x', 'y', 'z'].forEach(axis => {
+                const key = `${prefix}.${axis}pos`;
+                html += axisField(axis.toUpperCase(), cfg.translate.includes(axis), key, 0);
+            });
+            html += '</div></div>';
+            html += '<div class="readout-group"><label class="group-label">SCALE</label><div class="readout-row">';
+            const scaleAxes = [
+                { axis: 'xz', label: 'XZ', key: scaleVarMap[selectedBone]?.xz },
+                { axis: 'y', label: 'Y', key: scaleVarMap[selectedBone]?.y }
+            ];
+            scaleAxes.forEach(item => {
+                if (item.key) html += axisField(item.label, cfg.scale.includes(item.axis), item.key, 1);
+                else html += `<div class="form-group"><label>${item.label}</label><input type="number" value="—" disabled></div>`;
+            });
+            html += '</div></div>';
             cont.innerHTML = html;
         }
 
@@ -1391,7 +1574,7 @@
             renderAxisReadout();
         }
 
-        /* ===================================================================== */
+        
         let isPlaying = true;
         let animTime = 0;
         const clock = new THREE.Clock();
@@ -1474,7 +1657,7 @@
                 let currentValues = {};
                 data.forEach(bData => {
                     let val = 0;
-                    bData.segments.forEach((seg, idx) => {
+                    getEffectiveSegments(bData.segments).forEach((seg, idx) => {
                         if (idx === 0) val = seg.val1;
                         if (t >= seg.start) {
                             let progress = Math.min((t - seg.start) / seg.dur, 1);
@@ -1518,11 +1701,15 @@
 
         renderBones();
         animate();
-        window.addEventListener('resize', () => { const w = container.clientWidth; const h = container
-                .clientHeight;
+        function resizeViewport() {
+            const w = Math.max(container.clientWidth, 1);
+            const h = Math.max(container.clientHeight, 1);
             camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(w, h); });
+            renderer.setSize(w, h);
+        }
+
+        window.addEventListener('resize', resizeViewport);
         window.togglePlay = togglePlay;
         window.copyCode = copyCode;
         window.addBone = addBone;
@@ -1536,6 +1723,7 @@
         window.uploadSkin = uploadSkin;
         window.validateStart = validateStart;
         window.setViewMode = setViewMode;
+        window.toggleAxisFullscreen = toggleAxisFullscreen;
         window.selectBone = selectBone;
         window.setGizmoMode = setGizmoMode;
         window.setPoseValue = setPoseValue;
