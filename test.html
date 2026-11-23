@@ -421,7 +421,7 @@
         #canvas-container { order: 1; }
         .preview-controls { order: 2; }
         .axis-sidebar { order: 3; }
-        .axis-sidebar { background: rgba(11,18,30,.52); border: 1px solid rgba(157,177,211,.13); border-radius: 12px; padding: 13px; gap: 12px; }
+        .axis-sidebar { display:flex; flex-direction:column; background: rgba(11,18,30,.52); border: 1px solid rgba(157,177,211,.13); border-radius: 12px; padding: 13px; gap: 12px; }
         .axis-side-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
         .fullscreen-btn { min-height: 31px; padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #55d5eb, #8b8cff); color: #101827; }
         .axis-float-fullscreen {
@@ -494,7 +494,22 @@
             min-height: 0;
         }
         .viewport-card.axis-fullscreen #previewControls { display: none !important; }
-        body.axis-fullscreen-active { overflow: hidden; }
+        body.axis-fullscreen-active, body.preview-fullscreen-active { overflow: hidden; }
+        .viewport-card.preview-fullscreen {
+            position: fixed !important; inset: 0 !important; z-index: 99999;
+            width: 100vw !important; height: 100vh !important; height: 100dvh !important;
+            max-width: none !important; margin: 0 !important; padding: clamp(8px,1.5vw,18px) !important;
+            display: flex; flex-direction: column; overflow: hidden; border-radius: 0 !important;
+            background: linear-gradient(145deg,rgba(25,36,53,.99),rgba(14,22,35,.99));
+        }
+        .viewport-card.preview-fullscreen .axis-editor-layout {
+            display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; gap: 8px;
+        }
+        .viewport-card.preview-fullscreen #canvas-container {
+            order: 1; flex: 1 1 auto; width: 100%; min-height: 0; height: auto;
+        }
+        .viewport-card.preview-fullscreen #axisControls { display: none !important; }
+        .viewport-card.preview-fullscreen #previewControls { display: flex !important; order: 2; flex: 0 0 auto; }
         @media (max-width: 768px) {
             .right-panel { width: 100%; }
             .viewport-card.axis-fullscreen { inset: 6px !important; padding: 10px; border-radius: 12px; }
@@ -1437,6 +1452,42 @@
 
         
         let viewMode = 'preview';
+        const viewportCard = document.getElementById('viewportCard');
+        function setViewMode(mode) {
+            viewMode = mode === 'axis' ? 'axis' : 'preview';
+            const axis = viewMode === 'axis';
+            document.getElementById('tabPreview').classList.toggle('active', !axis);
+            document.getElementById('tabAxis').classList.toggle('active', axis);
+            document.getElementById('viewportTitle').textContent = axis ? 'Axis Editor' : '3D Live Preview';
+            document.getElementById('axisControls').style.display = axis ? 'flex' : 'none';
+            document.getElementById('previewControls').style.display = axis ? 'none' : 'flex';
+            document.getElementById('axisFullscreenToggle').title = axis ? 'Fullscreen Axis Editor' : 'Fullscreen Live Preview';
+            document.getElementById('axisFullscreenToggle').setAttribute('aria-label', axis ? 'Fullscreen Axis Editor' : 'Fullscreen Live Preview');
+            if (axis) { if (!selectedBone) selectBone('rightArm'); attachGizmo(); renderAxisReadout(); }
+            else { detachCustomGizmo(); }
+            requestAnimationFrame(resizeViewport);
+        }
+        function toggleAxisFullscreen() {
+            const isAxis = viewMode === 'axis';
+            const cls = isAxis ? 'axis-fullscreen' : 'preview-fullscreen';
+            const active = viewportCard.classList.toggle(cls);
+            document.body.classList.toggle(isAxis ? 'axis-fullscreen-active' : 'preview-fullscreen-active', active);
+            const button = document.getElementById('axisFullscreenToggle');
+            button.textContent = active ? '⤢' : '⛶';
+            button.title = active ? 'Exit fullscreen' : (isAxis ? 'Fullscreen Axis Editor' : 'Fullscreen Live Preview');
+            requestAnimationFrame(() => { resizeViewport(); if (isAxis) { attachGizmo(); renderAxisReadout(); } });
+        }
+        function exitViewportFullscreen() {
+            viewportCard.classList.remove('axis-fullscreen', 'preview-fullscreen');
+            document.body.classList.remove('axis-fullscreen-active', 'preview-fullscreen-active');
+            const button = document.getElementById('axisFullscreenToggle');
+            if (button) { button.textContent = '⛶'; button.title = viewMode === 'axis' ? 'Fullscreen Axis Editor' : 'Fullscreen Live Preview'; }
+            requestAnimationFrame(resizeViewport);
+        }
+        window.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && (viewportCard.classList.contains('axis-fullscreen') || viewportCard.classList.contains('preview-fullscreen'))) exitViewportFullscreen();
+        });
+
         let manualPose = {};
         let selectedBone = null;
         let gizmoMode = 'rotate';
@@ -1768,6 +1819,23 @@
             gizmoCtx.fill();
         }
 
+        gizmoCanvas.addEventListener('pointermove', event => {
+            if (activeGizmoDrag) { updateCustomGizmoDrag(event); return; }
+            if (viewMode !== 'axis') return;
+            const rect = gizmoCanvas.getBoundingClientRect();
+            const next = hitTestCustomGizmo(event.clientX - rect.left, event.clientY - rect.top, event.pointerType === 'touch');
+            if (next !== hoverAxis) { hoverAxis = next; gizmoCanvas.style.cursor = next ? 'grab' : 'default'; drawCustomGizmo(); }
+        });
+        gizmoCanvas.addEventListener('pointerdown', event => {
+            if (viewMode !== 'axis') return;
+            const rect = gizmoCanvas.getBoundingClientRect();
+            const axis = hitTestCustomGizmo(event.clientX - rect.left, event.clientY - rect.top, event.pointerType === 'touch');
+            if (axis && startCustomGizmoDrag(axis, event)) { event.preventDefault(); event.stopImmediatePropagation(); }
+        }, true);
+        gizmoCanvas.addEventListener('pointerup', event => endCustomGizmoDrag(event));
+        gizmoCanvas.addEventListener('pointercancel', event => endCustomGizmoDrag(event));
+        gizmoCanvas.addEventListener('lostpointercapture', event => endCustomGizmoDrag(event));
+
         function startCustomGizmoDrag(axis, event) {
             const layout = getCustomGizmoData();
             if (!layout || !layout.handles[axis]) return false;
@@ -1936,6 +2004,25 @@
             });
             html += '</div></div>';
             cont.innerHTML = html;
+        }
+
+        function selectBone(name) {
+            if (!boneObjects[name]) return;
+            selectedBone = name;
+            const picker = document.getElementById('boneSelect');
+            if (picker) picker.value = name;
+            attachGizmo();
+            renderAxisReadout();
+        }
+
+        function setGizmoMode(mode) {
+            if (!['rotate', 'translate', 'scale'].includes(mode)) return;
+            if (mode === 'scale' && (!scaleVarMap[selectedBone] || !boneAxisConfig[selectedBone]?.scale.length)) return;
+            gizmoMode = mode;
+            document.getElementById('modeRotateBtn').classList.toggle('active', mode === 'rotate');
+            document.getElementById('modeTranslateBtn').classList.toggle('active', mode === 'translate');
+            document.getElementById('modeScaleBtn').classList.toggle('active', mode === 'scale');
+            attachGizmo();
         }
 
         function setPoseValue(key, valStr) {
@@ -2107,6 +2194,7 @@
         }
 
         window.addEventListener('resize', resizeViewport);
+        if (window.ResizeObserver) { const viewportObserver = new ResizeObserver(() => resizeViewport()); viewportObserver.observe(container); viewportObserver.observe(viewportCard); }
         window.togglePlay = togglePlay;
         window.copyCode = copyCode;
         window.addBone = addBone;
