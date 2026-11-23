@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Animator Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js">
+    </script>
+    <style>
+        :root {
+            --bg: #1e1e2e;
+            --surface: #313244;
+            --surface2: #45475a;
+            --text: #cdd6f4;
+            --primary: #89b4fa;
+            --danger: #f38ba8;
+            --border: #585b70;
+            --success: #a6e3a1;
+            --panel: #11111b;
+            --warn: #f9e2af;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1,
+        h2,
+        h3 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .left-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 15px;
+            height: calc(100vh - 40px);
+            pointer-events: auto;
+        }
+        .right-panel {
+            width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .card {
+            background: var(--surface);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        .bone-card {
+            border-left: 5px solid var(--primary);
+        }
+        .segment {
+            background: var(--surface2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 80px;
+        }
+        .form-group.start-group {
+            position: relative;
+        }
+        .form-group label {
+            font-size: 11px;
+            margin-bottom: 4px;
+            color: #bac2de;
+        }
+        input,
+        select {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 6px;
+            border-radius: 4px;
+            outline: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        input:focus,
+        select:focus {
+            border-color: var(--primary);
+        }
+        button {
+            background: var(--primary);
+            color: #11111b;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.2s;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        button.danger {
+            background: var(--danger);
+            padding: 6px 10px;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .error-msg {
+            color: var(--danger);
+            font-size: 10px;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            white-space: nowrap;
+            margin-top: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        .error-msg.show {
+            opacity: 1;
+        }
+        textarea {
+            width: 100%;
+            height: 130px;
+            background: var(--panel);
+            color: var(--success);
+            font-family: monospace;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 6px;
+            resize: vertical;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 340px;
+            background: var(--panel);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        #fileUpload {
+            display: none;
+        }
+        .view-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            padding: 3px;
+            border-radius: 7px;
+        }
+        .view-tab {
+            background: transparent;
+            color: var(--text);
+            padding: 6px 10px;
+            font-size: 12px;
+            opacity: 0.65;
+            border-radius: 5px;
+        }
+        .view-tab.active {
+            background: var(--primary);
+            color: #11111b;
+            opacity: 1;
+        }
+        .view-tab:hover {
+            opacity: 1;
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 6px;
+        }
+        .mode-btn {
+            background: var(--surface2);
+            color: var(--text);
+            padding: 7px 10px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .mode-btn.active {
+            background: var(--primary);
+            color: #11111b;
+            opacity: 1;
+        }
+        .mode-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .hint {
+            font-size: 11px;
+            color: #bac2de;
+            margin: 8px 0 0 0;
+            line-height: 1.4;
+        }
+        .axis-readout {
+            background: var(--surface2);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .readout-title {
+            font-weight: bold;
+            font-size: 13px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .readout-group {
+            margin-bottom: 8px;
+        }
+        .readout-group:last-child {
+            margin-bottom: 0;
+        }
+        .group-label {
+            font-size: 11px;
+            color: #bac2de;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .readout-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .readout-row .form-group {
+            min-width: 70px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-box {
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .modal-box textarea {
+            width: 100%;
+            height: 160px;
+        }
+        .modal-box label {
+            font-size: 12px;
+            color: #bac2de;
+            display: block;
+            margin-bottom: 6px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-cancel {
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .import-error {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                padding: 10px;
+                height: auto;
+                overflow-y: auto;
+                gap: 15px;
+            }
+            .left-panel {
+                width: 100%;
+                height: auto;
+                max-height: 60vh;
+                padding-right: 5px;
+                overflow-y: auto;
+            }
+            .right-panel {
+                width: 100%;
+                height: auto;
+                max-height: none;
+                overflow-y: visible;
+            }
+            #canvas-container {
+                height: 280px;
+            }
+            .card {
+                margin-bottom: 10px;
+            }
+        }
+
+        :root {
+            --bg: #111827;
+            --surface: #1c2635;
+            --surface2: #263449;
+            --panel: #0d1522;
+            --text: #e8f0ff;
+            --muted: #94a6bf;
+            --primary: #9b8cff;
+            --border: rgba(157, 177, 211, .19);
+            --success: #7de2c3;
+            --danger: #ff7e9d;
+            --warn: #ffd27d;
+            --blue: #69b8ff;
+        }
+        body {
+            background:
+                radial-gradient(ellipse at 10% 0%, rgba(105,184,255,.13), transparent 32%),
+                radial-gradient(ellipse at 95% 88%, rgba(155,140,255,.14), transparent 35%),
+                linear-gradient(145deg, #0e1521, #151e2c 52%, #101725);
+            gap: 18px;
+            padding: 18px;
+        }
+        .left-panel, .right-panel { scrollbar-width: thin; scrollbar-color: #485a78 transparent; }
+        .left-panel { padding-right: 8px; }
+        .right-panel { width: min(470px, 43vw); padding-right: 2px; }
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            background: linear-gradient(145deg, rgba(34,47,66,.96), rgba(24,34,49,.97));
+            box-shadow: 0 14px 34px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+        }
+        .bone-card { border-left: 3px solid #8b83ff; }
+        .segment { border: 1px solid rgba(160,184,220,.09); border-radius: 10px; }
+        input, select, textarea {
+            border: 1px solid rgba(151,174,210,.22);
+            border-radius: 8px;
+            background: #111b2a;
+            color: var(--text);
+        }
+        input:focus, select:focus, textarea:focus { border-color: #9b8cff; box-shadow: 0 0 0 3px rgba(155,140,255,.12); }
+        button {
+            border-radius: 9px;
+            background: linear-gradient(135deg, #9d8cff, #6c9eff);
+            color: #111827;
+            box-shadow: 0 4px 12px rgba(93,117,216,.13);
+        }
+        button:hover { opacity: 1; filter: brightness(1.09); transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button.danger { background: linear-gradient(135deg, #ff9ab0, #ec789d); color: #28111c; }
+        .view-tabs { border: 1px solid rgba(161,180,214,.12); border-radius: 10px; }
+        .view-tab.active, .mode-btn.active { background: linear-gradient(135deg, #9c8dff, #6baeff); }
+        .mode-btn { border-radius: 8px; }
+        .axis-readout { background: rgba(10,17,29,.58); border: 1px solid rgba(157,177,211,.12); border-radius: 11px; }
+        .readout-title { color: #b6aaff; }
+        #canvas-container {
+            background: radial-gradient(ellipse at center, #1c2a3f 0%, #0d1522 72%);
+            border: 1px solid rgba(147,174,220,.2);
+            border-radius: 13px;
+            min-height: 260px;
+        }
+        .viewport-heading { margin-bottom: 12px; }
+        .viewport-heading h2 { margin-bottom: 4px; font-size: 19px; letter-spacing: -.02em; }
+        .viewport-subtitle, .sidebar-kicker { color: #8296b5; font-size: 9px; font-weight: 800; letter-spacing: .18em; }
+        .axis-editor-layout { display: flex; flex-direction: column; gap: 9px; min-height: 0; }
+        #canvas-container { order: 1; }
+        .preview-controls { order: 2; }
+        .axis-sidebar { order: 3; }
+        .axis-sidebar { background: rgba(11,18,30,.52); border: 1px solid rgba(157,177,211,.13); border-radius: 12px; padding: 13px; gap: 12px; }
+        .axis-side-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .fullscreen-btn { min-height: 31px; padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #55d5eb, #8b8cff); color: #101827; }
+        .axis-float-fullscreen {
+            position: absolute;
+            right: 14px;
+            bottom: 14px;
+            z-index: 20;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 13px;
+            font-size: 22px;
+            color: #f2f4ff;
+            background: linear-gradient(135deg, rgba(139,119,255,.96), rgba(69,164,255,.96));
+            border: 1px solid rgba(255,255,255,.24);
+            box-shadow: 0 8px 24px rgba(0,0,0,.35);
+        }
+        .viewport-card.axis-fullscreen .axis-float-fullscreen { right: 18px; bottom: 18px; }
+        .bone-picker { gap: 5px; }
+        .bone-picker label { color: #95a9c8; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+        .bone-picker select { width: 100%; padding: 9px 10px; }
+        .axis-mode-toggle { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 5px; }
+        .axis-mode-toggle .mode-btn { padding: 8px 4px; font-size: 11px; }
+        .axis-readout { margin-top: 0; padding: 12px; }
+        .readout-group { padding-top: 8px; border-top: 1px solid rgba(154,177,213,.1); }
+        .readout-group:first-of-type { border-top: 0; padding-top: 0; }
+        .readout-row .form-group { min-width: 58px; flex: 1; }
+        .readout-row input { width: 100%; min-width: 0; padding: 7px; }
+        .axis-reset-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+        .axis-reset-actions button { min-height: 36px; padding: 7px; font-size: 11px; }
+        .axis-hint { margin: 0; color: #8193ae; }
+        .preview-controls { align-items: center; }
+        .viewport-card.axis-fullscreen {
+            position: fixed !important;
+            inset: 12px !important;
+            z-index: 99999;
+            width: auto !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: linear-gradient(145deg, rgba(25,36,53,.99), rgba(14,22,35,.99));
+            box-shadow: 0 28px 100px rgba(0,0,0,.72);
+        }
+        .viewport-card.axis-fullscreen .viewport-heading { flex: 0 0 auto; }
+        .viewport-card.axis-fullscreen .axis-editor-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+            grid-template-rows: minmax(0, 1fr);
+            flex: 1 1 auto;
+            min-height: 0;
+            gap: 13px;
+        }
+        .viewport-card.axis-fullscreen #axisControls {
+            display: flex !important;
+            grid-column: 2;
+            grid-row: 1;
+            order: 0;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        .viewport-card.axis-fullscreen #canvas-container {
+            grid-column: 1;
+            grid-row: 1;
+            order: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+        }
+        .viewport-card.axis-fullscreen #previewControls { display: none !important; }
+        body.axis-fullscreen-active { overflow: hidden; }
+        @media (max-width: 768px) {
+            .right-panel { width: 100%; }
+            .viewport-card.axis-fullscreen { inset: 6px !important; padding: 10px; border-radius: 12px; }
+            .viewport-card.axis-fullscreen .axis-editor-layout { grid-template-columns: minmax(0,1fr) minmax(175px, 38%); gap: 7px; }
+            .viewport-card.axis-fullscreen #axisControls { padding: 8px; gap: 8px; }
+            .viewport-card.axis-fullscreen #canvas-container { border-radius: 9px; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle { grid-template-columns: 1fr; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle .mode-btn { padding: 7px 3px; }
+        }
+        @media (max-width: 480px) {
+            .viewport-card.axis-fullscreen .axis-editor-layout { grid-template-columns: minmax(0,1fr) minmax(145px, 42%); }
+            .viewport-card.axis-fullscreen .viewport-heading h2 { font-size: 16px; }
+            .viewport-card.axis-fullscreen .view-tab { padding: 6px 7px; font-size: 10px; }
+            .viewport-card.axis-fullscreen .axis-side-header { align-items: flex-start; flex-direction: column; }
+            .viewport-card.axis-fullscreen .readout-row { gap: 4px; }
+            .viewport-card.axis-fullscreen .readout-row .form-group { min-width: 42px; }
+            .viewport-card.axis-fullscreen .readout-row input { font-size: 11px; }
+        }
+
+
+        #canvas-container { position: relative; min-width: 0; min-height: 0; }
+        .viewport-card, .axis-editor-layout { min-width: 0; }
+        .axis-sidebar, .axis-sidebar * { min-width: 0; }
+        #canvas-container > canvas:not(.gizmo-overlay) { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+        #canvas-container > .gizmo-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            display: block;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        #canvas-container > .axis-float-fullscreen { z-index: 8; }
+        .viewport-card.axis-fullscreen {
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            max-width: none !important;
+            border-radius: 0 !important;
+            padding: clamp(8px, 1.5vw, 18px) !important;
+        }
+        .viewport-card.axis-fullscreen .axis-editor-layout {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .viewport-card.axis-fullscreen #axisControls {
+            min-width: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .viewport-card.axis-fullscreen .axis-readout {
+            min-width: 0;
+            overflow: hidden;
+        }
+        .viewport-card.axis-fullscreen .readout-row { min-width: 0; gap: 6px; }
+        .viewport-card.axis-fullscreen .readout-row .form-group { min-width: 0; flex: 1 1 0; }
+        .viewport-card.axis-fullscreen .readout-row input { min-width: 0; width: 100%; }
+        @media (orientation: portrait) and (max-width: 768px) {
+            .viewport-card.axis-fullscreen .viewport-heading {
+                min-height: 38px;
+                margin-bottom: 7px;
+                gap: 5px;
+            }
+            .viewport-card.axis-fullscreen .viewport-heading h2 { font-size: 16px; }
+            .viewport-card.axis-fullscreen .viewport-subtitle { display: none; }
+            .viewport-card.axis-fullscreen .view-tab { padding: 6px 8px; font-size: 10px; }
+            .viewport-card.axis-fullscreen .axis-editor-layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-rows: minmax(0, 40fr) minmax(0, 60fr);
+                gap: 8px;
+                flex: 1 1 auto;
+            }
+            .viewport-card.axis-fullscreen #canvas-container {
+                grid-column: 1;
+                grid-row: 1;
+                min-height: 0;
+                width: 100%;
+                height: 100%;
+            }
+            .viewport-card.axis-fullscreen #axisControls {
+                grid-column: 1;
+                grid-row: 2;
+                display: grid !important;
+                grid-template-columns: minmax(105px, .72fr) minmax(0, 1.28fr);
+                grid-template-rows: auto auto minmax(0, 1fr) auto;
+                align-items: stretch;
+                gap: 6px 9px;
+                padding: 8px;
+                min-height: 0;
+                overflow: hidden;
+            }
+            .viewport-card.axis-fullscreen .axis-side-header {
+                grid-column: 1;
+                grid-row: 1;
+                align-items: center;
+                min-width: 0;
+            }
+            .viewport-card.axis-fullscreen .sidebar-kicker {
+                font-size: 9px;
+                letter-spacing: .12em;
+            }
+            .viewport-card.axis-fullscreen .bone-picker {
+                grid-column: 1;
+                grid-row: 2;
+                min-width: 0;
+                gap: 4px;
+            }
+            .viewport-card.axis-fullscreen .bone-picker label { font-size: 9px; }
+            .viewport-card.axis-fullscreen .bone-picker select {
+                width: 100%;
+                min-width: 0;
+                padding: 7px 6px;
+                font-size: 12px;
+            }
+            .viewport-card.axis-fullscreen .axis-mode-toggle {
+                grid-column: 1;
+                grid-row: 3;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                align-content: center;
+                gap: 5px;
+            }
+            .viewport-card.axis-fullscreen .axis-mode-toggle .mode-btn {
+                min-width: 0;
+                min-height: 30px;
+                padding: 5px 4px;
+                font-size: 10px;
+                white-space: nowrap;
+            }
+            .viewport-card.axis-fullscreen #axisReadout {
+                grid-column: 2;
+                grid-row: 1 / 4;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-around;
+                min-width: 0;
+                min-height: 0;
+                padding: 8px;
+                margin: 0;
+                gap: 4px;
+            }
+            .viewport-card.axis-fullscreen .readout-title {
+                font-size: 14px;
+                margin-bottom: 2px;
+            }
+            .viewport-card.axis-fullscreen .readout-group {
+                padding-top: 5px;
+                margin: 0;
+            }
+            .viewport-card.axis-fullscreen .group-label {
+                display: block;
+                font-size: 9px;
+                margin-bottom: 3px;
+            }
+            .viewport-card.axis-fullscreen .readout-row { gap: 4px; }
+            .viewport-card.axis-fullscreen .readout-row .form-group { flex: 1 1 0; }
+            .viewport-card.axis-fullscreen .readout-row .form-group label { font-size: 9px; margin-bottom: 2px; }
+            .viewport-card.axis-fullscreen .readout-row input {
+                height: 29px;
+                padding: 4px;
+                font-size: 11px;
+            }
+            .viewport-card.axis-fullscreen .axis-reset-actions {
+                grid-column: 1;
+                grid-row: 4;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+            }
+            .viewport-card.axis-fullscreen .axis-reset-actions button {
+                min-width: 0;
+                min-height: 30px;
+                padding: 4px 2px;
+                font-size: 9px;
+            }
+            .viewport-card.axis-fullscreen .axis-hint { display: none; }
+            .viewport-card.axis-fullscreen .axis-float-fullscreen { right: 10px; bottom: 10px; }
+        }
+        @media (orientation: landscape) and (max-width: 900px) {
+            .viewport-card.axis-fullscreen { padding: 8px !important; }
+            .viewport-card.axis-fullscreen .axis-editor-layout {
+                grid-template-columns: minmax(0, 1fr) minmax(220px, 30vw);
+                gap: 8px;
+            }
+            .viewport-card.axis-fullscreen #axisControls {
+                padding: 8px;
+                gap: 7px;
+                overflow: hidden;
+            }
+            .viewport-card.axis-fullscreen .axis-hint { display: none; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle .mode-btn { padding: 6px 3px; font-size: 10px; }
+        }
+        @media (min-width: 769px) {
+            .viewport-card.axis-fullscreen .axis-editor-layout {
+                grid-template-columns: minmax(0, 1fr) minmax(270px, 340px);
+            }
+        }
+
+
+        @media (orientation: landscape) and (max-width: 900px) {
+            .viewport-card.axis-fullscreen #axisControls {
+                display: grid !important;
+                grid-template-rows: auto auto minmax(0, 1fr) auto;
+                gap: 5px;
+                align-content: stretch;
+            }
+            .viewport-card.axis-fullscreen .axis-side-header { min-height: 16px; }
+            .viewport-card.axis-fullscreen .bone-picker { gap: 3px; }
+            .viewport-card.axis-fullscreen .bone-picker label,
+            .viewport-card.axis-fullscreen .group-label { font-size: 9px; }
+            .viewport-card.axis-fullscreen .bone-picker select { padding: 5px 6px; font-size: 11px; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 4px; }
+            .viewport-card.axis-fullscreen .axis-mode-toggle .mode-btn { min-height: 27px; padding: 4px 2px; font-size: 9px; }
+            .viewport-card.axis-fullscreen #axisReadout { padding: 7px; margin: 0; }
+            .viewport-card.axis-fullscreen .readout-title { font-size: 12px; margin-bottom: 1px; }
+            .viewport-card.axis-fullscreen .readout-group { padding-top: 3px; margin-bottom: 1px; }
+            .viewport-card.axis-fullscreen .readout-row { gap: 3px; }
+            .viewport-card.axis-fullscreen .readout-row .form-group { min-width: 0; }
+            .viewport-card.axis-fullscreen .readout-row .form-group label { font-size: 8px; margin-bottom: 1px; }
+            .viewport-card.axis-fullscreen .readout-row input { height: 24px; padding: 3px; font-size: 10px; }
+            .viewport-card.axis-fullscreen .axis-reset-actions button { min-height: 27px; padding: 4px; font-size: 9px; }
+        }
+
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <h1>Player Animator <span style="color:#a99cff;">Studio</span></h1>
+        <div class="card">
+            <div class="toggle-group">
+                <label class="toggle-label">
+                    <input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="playerRiding" onchange="onRidingToggle()"> Player Riding
+                </label>
+                <label class="toggle-label">
+                    <input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs
+                </label>
+            </div>
+        </div>
+        <div id="bonesContainer"></div>
+        <button onclick="addBone()" style="margin-bottom:30px;width:100%;">+ Add New Bone</button>
+    </div>
+    <div class="right-panel">
+        <div class="card viewport-card" id="viewportCard" style="margin-bottom:0;">
+            <div class="flex-between viewport-heading">
+                <div>
+                    <h2 id="viewportTitle">3D Live Preview</h2>
+                    <div class="viewport-subtitle">POSE • ANIMATE • PREVIEW</div>
+                </div>
+                <div class="view-tabs">
+                    <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
+                    <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
+                </div>
+            </div>
+            <div id="axisEditorLayout" class="axis-editor-layout">
+                <aside id="axisControls" class="axis-sidebar" style="display:none;">
+                    <div class="axis-side-header">
+                        <span class="sidebar-kicker">TRANSFORM PANEL</span>
+                    </div>
+                    <div class="form-group bone-picker">
+                        <label for="boneSelect">SELECT BONE</label>
+                        <select id="boneSelect" onchange="selectBone(this.value)">
+                            <option value="root">Root</option>
+                            <option value="waist">Body / Waist</option>
+                            <option value="head">Head</option>
+                            <option value="rightArm">Right Arm</option>
+                            <option value="leftArm">Left Arm</option>
+                            <option value="rightLeg">Right Leg</option>
+                            <option value="leftLeg">Left Leg</option>
+                        </select>
+                    </div>
+                    <div class="mode-toggle axis-mode-toggle">
+                        <button class="mode-btn active" id="modeRotateBtn" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
+                        <button class="mode-btn" id="modeTranslateBtn" onclick="setGizmoMode('translate')">✥ Move</button>
+                        <button class="mode-btn" id="modeScaleBtn" onclick="setGizmoMode('scale')" disabled>⤢ Scale</button>
+                    </div>
+                    <div id="axisReadout" class="axis-readout"></div>
+                    <div class="axis-reset-actions">
+                        <button class="danger" onclick="resetBonePose()">Reset Bone</button>
+                        <button onclick="resetAllPose()">Reset All</button>
+                    </div>
+                    <p class="hint axis-hint">Select a bone, then drag the gizmo or edit its values. Drag empty space to orbit the camera.</p>
+                </aside>
+                <div id="canvas-container">
+                    <button class="axis-float-fullscreen" id="axisFullscreenToggle" onclick="toggleAxisFullscreen()" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
+                </div>
+                <div id="previewControls" class="flex-between preview-controls">
+                    <button onclick="togglePlay()">Ⅱ / ▶ Play</button>
+                    <p class="hint" style="margin:0;">Drag: Rotate camera&nbsp; • &nbsp;Scroll: Zoom</p>
+                </div>
+            </div>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+            <h2>Custom Skin</h2>
+            <div style="margin-top:10px;display:flex;gap:10px;">
+                <button onclick="document.getElementById('fileUpload').click()">Upload Image</button>
+                <button onclick="resetSkin()">Reset Default</button>
+                <input type="file" id="fileUpload" accept="image/*" onchange="uploadSkin(event)">
+            </div>
+        </div>
+        <div class="card" style="flex:1;display:flex;flex-direction:column;margin-bottom:0;">
+            <div class="flex-between" style="margin-bottom:10px;">
+                <h2>Stop_Expression (playanimation)</h2>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="copyCode()">Copy</button>
+                    <button onclick="openImportModal()">Import</button>
+                </div>
+            </div>
+            <textarea id="output" readonly style="flex:1;"></textarea>
+        </div>
+    </div>
+
+    <div id="importOverlay" class="modal-overlay">
+        <div class="modal-box">
+            <div id="importPhaseInput">
+                <h2>Import Stop_Expression</h2>
+                <p class="hint" style="margin-top:0;">Paste a Stop_Expression code below, then tap Import.</p>
+                <label for="importInput">Stop_Expression code</label>
+                <textarea id="importInput" placeholder="Paste your Stop_Expression here..."></textarea>
+                <div id="importError" class="import-error"></div>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+                    <button onclick="attemptImport()">Import</button>
+                </div>
+            </div>
+            <div id="importPhaseConfirm" style="display:none;">
+                <h2>Replace all keyframes?</h2>
+                <p class="hint" style="margin-top:0;">Do you want to import this? If you continue, all of your current keyframe progress will be lost and replaced with the imported data.</p>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="cancelImportConfirm()">Cancel</button>
+                    <button class="danger" onclick="confirmReplaceImport()">Replace</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png";
+        const boneVariables = [
+            "v.root.x", "v.root.z",
+            "v.root.xpos", "v.root.ypos", "v.root.zpos",
+            "v.body.x", "v.body.y", "v.body.z",
+            "v.body.xpos", "v.body.ypos",
+            "v.body_head.xzscale", "v.body_head.yscale",
+            "v.head.x", "v.head.y", "v.head.z",
+            "v.head.xpos", "v.head.ypos", "v.head.zpos",
+            "v.rightleg.x", "v.leftleg.x",
+            "v.rightarm.x", "v.rightarm.y", "v.rightarm.z", "v.rightarm.ypos",
+            "v.leftarm.x", "v.leftarm.y", "v.leftarm.z", "v.leftarm.ypos"
+        ];
+        const easeList = [
+            "lerp", "ease_in_sine", "ease_out_sine", "ease_in_out_sine",
+            "ease_in_quad", "ease_out_quad", "ease_in_out_quad",
+            "ease_in_cubic", "ease_out_cubic", "ease_in_out_cubic",
+            "ease_in_quart", "ease_out_quart", "ease_in_out_quart",
+            "ease_in_quint", "ease_out_quint", "ease_in_out_quint",
+            "ease_in_expo", "ease_out_expo", "ease_in_out_expo",
+            "ease_in_circ", "ease_out_circ", "ease_in_out_circ",
+            "ease_in_back", "ease_out_back", "ease_in_out_back",
+            "ease_in_elastic", "ease_out_elastic", "ease_in_out_elastic",
+            "ease_in_bounce", "ease_out_bounce", "ease_in_out_bounce"
+        ];
+        let data = [
+            { bone: 'v.rightarm.x', segments: [
+                { start: 0, dur: 0.5, val1: 0, val2: -90, ease: 'ease_out_back' },
+                { start: 0.5, dur: 0.5, val1: 0, val2: 0, ease: 'ease_in_out_sine' }
+            ] }
+        ];
+
+        const trashIcon =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#11111b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+        const keyframeIcon =
+            `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>`;
+
+        function renderBones() {
+            const container = document.getElementById('bonesContainer');
+            container.innerHTML = '';
+            data.forEach((bData, bIndex) => {
+                let boneOptions = boneVariables.map(v =>
+                    `<option value="${v}" ${bData.bone === v ? 'selected' : ''}>${v}</option>`).join('');
+                let html =
+                    `<div class="card bone-card"><div class="flex-between"><div class="form-group"><select onchange="updateBone(${bIndex}, this.value)" style="font-weight:bold;font-size:14px;">${boneOptions}</select></div><button class="danger" onclick="removeBone(${bIndex})" title="Remove Bone">${trashIcon}</button></div><div id="segments-${bIndex}">`;
+                bData.segments.forEach((seg, sIndex) => {
+                    let easeOptions = easeList.map(e => {
+                        let label = e === 'lerp' ? 'lerp (linear)' : e.replace(/_/g, ' ');
+                        return `<option value="${e}" ${seg.ease === e ? 'selected' : ''}>${label}</option>`;
+                    }).join('');
+                    html +=
+                        `<div class="segment"><div class="form-group" style="width:20px;"><label>#${sIndex + 1}</label></div><div class="form-group start-group" style="width:55px;"><label>Start</label><input type="number" step="0.1" id="start-${bIndex}-${sIndex}" value="${seg.start}" onchange="validateStart(${bIndex}, ${sIndex}, this.value)"><span id="err-${bIndex}-${sIndex}" class="error-msg"></span></div><div class="form-group" style="width:55px;"><label>Dur</label><input type="number" step="0.1" value="${seg.dur}" oninput="updateSeg(${bIndex}, ${sIndex}, 'dur', this.value)"></div>${sIndex === 0 ? `<div class="form-group" style="width:60px;"><label>From</label><input type="number" value="${seg.val1}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val1', this.value)"></div>` : ''}<div class="form-group" style="width:60px;"><label>To</label><input type="number" value="${seg.val2}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val2', this.value)"></div><div class="form-group"><label>Ease</label><select onchange="updateSeg(${bIndex}, ${sIndex}, 'ease', this.value)">${easeOptions}</select></div><div class="form-group"><button class="danger" style="margin-top:15px;" onclick="removeSeg(${bIndex}, ${sIndex})" title="Remove Keyframe">${trashIcon}</button></div></div>`;
+                });
+                html += `</div><br><button onclick="addSeg(${bIndex})">${keyframeIcon} Add Keyframe</button></div>`;
+                container.innerHTML += html;
+            });
+            generate();
+        }
+
+        function addBone() { data.push({ bone: boneVariables[0], segments: [{ start: 0, dur: 0.5, val1: 0,
+                val2: 45, ease: 'lerp' }] }); renderBones(); }
+
+        function removeBone(i) { data.splice(i, 1); renderBones(); }
+
+        function addSeg(bIndex) {
+            let segs = data[bIndex].segments;
+            const effective = getEffectiveSegments(segs);
+            const last = effective[effective.length - 1];
+            let start = last ? Number((last.start + last.dur).toFixed(2)) : 0;
+            segs.push({ start: Number(start.toFixed(2)), dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' });
+            renderBones();
+        }
+
+        function removeSeg(bIndex, sIndex) { data[bIndex].segments.splice(sIndex, 1); renderBones(); }
+
+        function updateBone(bIndex, val) { data[bIndex].bone = val; generate(); }
+
+        function updateSeg(bIndex, sIndex, key, val) { data[bIndex].segments[sIndex][key] = key === 'ease' ?
+                val : parseFloat(val) || 0; generate(); }
+
+        function validateStart(bIndex, sIndex, val) {
+            let numVal = parseFloat(val) || 0;
+            if (sIndex > 0) {
+                const prevSeg = data[bIndex].segments[sIndex - 1];
+                const minEnd = Number((prevSeg.start + prevSeg.dur).toFixed(2));
+                const isDuplicateTime = Math.abs(numVal - prevSeg.start) < 0.000001;
+                if (!isDuplicateTime && numVal < minEnd) {
+                    const inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
+                    const errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
+                    inputEl.style.color = "var(--danger)";
+                    inputEl.style.borderColor = "var(--danger)";
+                    errEl.innerText = `Use ${prevSeg.start} or ≥ ${minEnd}`;
+                    errEl.classList.add('show');
+                    data[bIndex].segments[sIndex].start = minEnd;
+                    generate();
+                    setTimeout(() => {
+                        if (inputEl && errEl) {
+                            inputEl.style.color = "";
+                            inputEl.style.borderColor = "";
+                            errEl.classList.remove('show');
+                            inputEl.value = minEnd;
+                        }
+                    }, 2000);
+                    return;
+                }
+            }
+            updateSeg(bIndex, sIndex, 'start', numVal);
+        }
+
+        function getEffectiveSegments(segments) {
+            const seen = new Set();
+            return (segments || []).filter(segment => {
+                const start = Number(segment.start) || 0;
+                const key = start.toFixed(6);
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function buildInterpolation(segment, fromValue, toValue) {
+            const ease = segment.ease === 'lerp' ? 'lerp' : segment.ease;
+            const start = Number(segment.start) || 0;
+            const duration = Math.max(Number(segment.dur) || 0, 0.0001);
+            const elapsed = start === 0 ? 'q.state_time' : `(q.state_time-${start})`;
+            return `math.${ease}(${fromValue},${toValue},math.min(${elapsed}/${duration},1))`;
+        }
+
+        function buildKeyframeExpression(segments, boneVarName) {
+            const frames = getEffectiveSegments(segments);
+            if (!frames.length) return '';
+            if (frames.length === 1) {
+                return buildInterpolation(frames[0], frames[0].val1, frames[0].val2);
+            }
+
+            const count = frames.length;
+            const first = buildInterpolation(frames[0], frames[0].val1, frames[0].val2);
+            if (count === 2) {
+                const second = buildInterpolation(frames[1], boneVarName, frames[1].val2);
+                return `q.state_time<${frames[1].start}?${first}:${second}`;
+            }
+            if (count === 3) {
+                const second = buildInterpolation(frames[1], frames[0].val2, frames[1].val2);
+                const third = buildInterpolation(frames[2], frames[1].val2, frames[2].val2);
+                return `q.state_time<${frames[1].start}?${first}:(q.state_time<${frames[2].start}?${second}:${third})`;
+            }
+
+            let expression = buildInterpolation(frames[count - 1], frames[count - 2].val2, frames[count - 1].val2);
+            for (let i = count - 2; i >= 0; i--) {
+                const fromValue = i === 0 ? frames[0].val1 : frames[i - 1].val2;
+                const current = buildInterpolation(frames[i], fromValue, frames[i].val2);
+                expression = `q.state_time<${frames[i + 1].start}?${current}:(${expression})`;
+            }
+            return expression;
+        }
+
+        function buildBoneStatement(segments, boneVarName) {
+            const frames = getEffectiveSegments(segments);
+            if (!frames.length) return '';
+            const expression = buildKeyframeExpression(frames, boneVarName);
+            const firstStart = Number(frames[0].start) || 0;
+            if (firstStart === 0) return `${boneVarName}=${expression};`;
+            return `q.state_time>=${firstStart}?{${boneVarName}=${expression};};`;
+        }
+
+        function generate() {
+            let mirrorArms = document.getElementById('mirrorArms').checked;
+            let mirrorLegs = document.getElementById('mirrorLegs').checked;
+            let outStr = "";
+            let used = new Set();
+            data.forEach(bData => {
+                used.add(bData.bone);
+                if (!bData.segments || bData.segments.length === 0) return;
+                outStr += buildBoneStatement(bData.segments, bData.bone);
+            });
+            if (mirrorArms) {
+                if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr +=
+                    `v.leftarm.x=v.rightarm.x;`;
+                else if (used.has("v.leftarm.x") && !used.has("v.rightarm.x")) outStr +=
+                    `v.rightarm.x=v.leftarm.x;`;
+                if (used.has("v.rightarm.y") && !used.has("v.leftarm.y")) outStr +=
+                    `v.leftarm.y=-v.rightarm.y;`;
+                else if (used.has("v.leftarm.y") && !used.has("v.rightarm.y")) outStr +=
+                    `v.rightarm.y=-v.leftarm.y;`;
+                if (used.has("v.rightarm.z") && !used.has("v.leftarm.z")) outStr +=
+                    `v.leftarm.z=-v.rightarm.z;`;
+                else if (used.has("v.leftarm.z") && !used.has("v.rightarm.z")) outStr +=
+                    `v.rightarm.z=-v.leftarm.z;`;
+                if (used.has("v.rightarm.ypos") && !used.has("v.leftarm.ypos")) outStr +=
+                    `v.leftarm.ypos=v.rightarm.ypos;`;
+                else if (used.has("v.leftarm.ypos") && !used.has("v.rightarm.ypos")) outStr +=
+                    `v.rightarm.ypos=v.leftarm.ypos;`;
+            }
+            if (mirrorLegs) {
+                if (used.has("v.rightleg.x") && !used.has("v.leftleg.x")) outStr +=
+                    `v.leftleg.x=v.rightleg.x;`;
+                else if (used.has("v.leftleg.x") && !used.has("v.rightleg.x")) outStr +=
+                    `v.rightleg.x=v.leftleg.x;`;
+            }
+            document.getElementById('output').value = outStr;
+        }
+
+        function onRidingToggle() {
+            if (viewMode === 'axis') {
+                attachGizmo();
+                renderAxisReadout();
+            }
+        }
+
+        function copyCode() {
+            let outputBox = document.getElementById('output');
+            outputBox.select();
+            document.execCommand('copy');
+        }
+
+        
+        let pendingImportResult = null;
+
+        function splitTopLevelCommas(str) {
+            let depth = 0;
+            let parts = [];
+            let last = 0;
+            for (let i = 0; i < str.length; i++) {
+                const c = str[i];
+                if (c === '(') depth++;
+                else if (c === ')') depth--;
+                else if (c === ',' && depth === 0) {
+                    parts.push(str.slice(last, i));
+                    last = i + 1;
+                }
+            }
+            parts.push(str.slice(last));
+            return parts;
+        }
+
+        function splitTopLevelTernary(str) {
+            let depth = 0;
+            let qIndex = -1,
+                colonIndex = -1;
+            for (let i = 0; i < str.length; i++) {
+                const c = str[i];
+                if (c === '(') depth++;
+                else if (c === ')') depth--;
+                else if (c === '?' && depth === 0 && qIndex === -1) qIndex = i;
+                else if (c === ':' && depth === 0 && qIndex !== -1 && colonIndex === -1) colonIndex =
+                    i;
+            }
+            if (qIndex === -1 || colonIndex === -1) return null;
+            return {
+                truePart: str.slice(qIndex + 1, colonIndex).trim(),
+                falsePart: str.slice(colonIndex + 1).trim()
+            };
+        }
+
+        function stripOuterParens(str) {
+            str = str.trim();
+            while (str[0] === '(' && str[str.length - 1] === ')') {
+                let depth = 0,
+                    fullyWraps = true;
+                for (let i = 0; i < str.length; i++) {
+                    if (str[i] === '(') depth++;
+                    else if (str[i] === ')') {
+                        depth--;
+                        if (depth === 0 && i !== str.length - 1) { fullyWraps = false; break; }
+                    }
+                }
+                if (!fullyWraps) break;
+                str = str.slice(1, -1).trim();
+            }
+            return str;
+        }
+
+        function parseMathCall(str) {
+            str = stripOuterParens(str.trim());
+            const m = str.match(/^math\.([a-zA-Z_]+)\((.*)\)$/s);
+            if (!m) return null;
+            const easeRaw = m[1];
+            const args = splitTopLevelCommas(m[2]);
+            if (args.length < 3) return null;
+            const val1Expr = args[0].trim();
+            const val2Expr = args[1].trim();
+            const minExpr = stripOuterParens(args.slice(2).join(',').trim());
+            const minMatch = minExpr.match(/^math\.min\((.+)\/([\d.]+)\s*,\s*1\)$/s);
+            if (!minMatch) return null;
+            let timeExpr = minMatch[1].trim();
+            const dur = parseFloat(minMatch[2]);
+            let start = 0;
+            let sub = timeExpr.match(/^\(?\s*q\.state_time\s*-\s*([\d.]+)\s*\)?$/);
+            if (sub) start = parseFloat(sub[1]);
+            return { val1Expr, val2Expr, ease: easeRaw, dur, start };
+        }
+
+        function parseBoneChain(str) {
+            str = stripOuterParens(str.trim());
+            const split = splitTopLevelTernary(str);
+            if (!split) {
+                const call = parseMathCall(str);
+                return call ? [call] : null;
+            }
+            const trueCall = parseMathCall(split.truePart);
+            if (!trueCall) return null;
+            const restChain = parseBoneChain(split.falsePart);
+            if (!restChain) return null;
+            return [trueCall, ...restChain];
+        }
+
+        function splitTopLevelStatements(text) {
+            let depth = 0;
+            let parts = [];
+            let last = 0;
+            for (let i = 0; i < text.length; i++) {
+                const c = text[i];
+                if (c === '(' || c === '{') depth++;
+                else if (c === ')' || c === '}') depth--;
+                else if (c === ';' && depth === 0) {
+                    parts.push(text.slice(last, i));
+                    last = i + 1;
+                }
+            }
+            const tail = text.slice(last);
+            parts.push(tail);
+            return parts.map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        function unwrapGateBlock(statement) {
+            const m = statement.match(/^q\.state_time\s*>=\s*[\d.]+\s*\?\s*\{(.+)\}$/s);
+            if (!m) return statement;
+            let inner = m[1].trim();
+            if (inner.endsWith(';')) inner = inner.slice(0, -1).trim();
+            return inner;
+        }
+
+        function parseStopExpression(text) {
+            const statements = splitTopLevelStatements(text);
+            const boneMap = {};
+            const order = [];
+            let mirrorArms = false;
+            let mirrorLegs = false;
+            const mirrorArmVars = new Set([
+                'v.leftarm.x', 'v.rightarm.x', 'v.leftarm.y', 'v.rightarm.y',
+                'v.leftarm.z', 'v.rightarm.z', 'v.leftarm.ypos', 'v.rightarm.ypos'
+            ]);
+            statements.forEach(rawSt => {
+                const st = unwrapGateBlock(rawSt);
+                const m = st.match(/^(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\s*=\s*(.+)$/s);
+                if (!m) return;
+                const boneName = m[1];
+                const rhs = m[2].trim();
+                const mirrorMatch = rhs.match(/^-?\s*(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)$/);
+                if (mirrorMatch) {
+                    const refBone = mirrorMatch[1];
+                    if (mirrorArmVars.has(boneName) && refBone.includes('arm')) mirrorArms = true;
+                    if (boneName.includes('leg') && refBone.includes('leg')) mirrorLegs = true;
+                    return;
+                }
+                const chain = parseBoneChain(rhs);
+                if (!chain) return;
+                if (!boneMap[boneName]) { boneMap[boneName] = []; order.push(boneName); }
+                boneMap[boneName].push(...chain);
+            });
+            const parsedData = order.map(boneName => {
+                const sortedChain = boneMap[boneName].slice().sort((a, b) => a.start - b.start);
+                const segments = sortedChain.map((call, idx) => {
+                    let val1 = 0;
+                    if (idx === 0) {
+                        const n = parseFloat(call.val1Expr);
+                        val1 = isNaN(n) ? 0 : n;
+                    }
+                    const n2 = parseFloat(call.val2Expr);
+                    const val2 = isNaN(n2) ? 0 : n2;
+                    const ease = easeList.includes(call.ease) ? call.ease : 'lerp';
+                    return { start: call.start, dur: call.dur, val1, val2, ease };
+                });
+                return { bone: boneName, segments };
+            });
+            return { data: parsedData, mirrorArms, mirrorLegs };
+        }
+
+        function openImportModal() {
+            document.getElementById('importInput').value = '';
+            document.getElementById('importError').style.display = 'none';
+            document.getElementById('importPhaseInput').style.display = 'block';
+            document.getElementById('importPhaseConfirm').style.display = 'none';
+            document.getElementById('importOverlay').style.display = 'flex';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importOverlay').style.display = 'none';
+            pendingImportResult = null;
+        }
+
+        function attemptImport() {
+            const text = document.getElementById('importInput').value.trim();
+            const errEl = document.getElementById('importError');
+            if (!text) {
+                errEl.textContent = 'Please paste a Stop_Expression first.';
+                errEl.style.display = 'block';
+                return;
+            }
+            const parsed = parseStopExpression(text);
+            if (!parsed.data.length) {
+                errEl.textContent =
+                    "This doesn't look like a valid Stop_Expression. Please check the code and try again.";
+                errEl.style.display = 'block';
+                return;
+            }
+            errEl.style.display = 'none';
+            pendingImportResult = parsed;
+            document.getElementById('importPhaseInput').style.display = 'none';
+            document.getElementById('importPhaseConfirm').style.display = 'block';
+        }
+
+        function cancelImportConfirm() {
+            document.getElementById('importPhaseInput').style.display = 'block';
+            document.getElementById('importPhaseConfirm').style.display = 'none';
+        }
+
+        function confirmReplaceImport() {
+            if (!pendingImportResult) return;
+            data = pendingImportResult.data;
+            document.getElementById('mirrorArms').checked = pendingImportResult.mirrorArms;
+            document.getElementById('mirrorLegs').checked = pendingImportResult.mirrorLegs;
+            pendingImportResult = null;
+            closeImportModal();
+            renderBones();
+        }
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1,
+        1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+        renderer.domElement.style.pointerEvents = 'none';
+        const gizmoCanvas = document.createElement('canvas');
+        gizmoCanvas.className = 'gizmo-overlay';
+        container.appendChild(gizmoCanvas);
+        const gizmoCtx = gizmoCanvas.getContext('2d');
+        const controls = new THREE.OrbitControls(camera, gizmoCanvas);
+        camera.position.set(30, 24, 60);
+        controls.target.set(0, 15, 0);
+        controls.update();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        function createMinecraftBoxGeometry(size, uvOffset, inflate = 0, mirror = false) {
+            const [w, h, d] = size;
+            const geom = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2);
+            const [u, v] = uvOffset;
+            const tw = 64,
+                th = 64;
+            let faces;
+            if (!mirror) {
+                faces = [
+                    [u + d + w, v + d, d, h],
+                    [u, v + d, d, h],
+                    [u + d, v, w, d],
+                    [u + d + w, v, w, d],
+                    [u + d, v + d, w, h],
+                    [u + d + w + d, v + d, w, h]
+                ];
+            } else {
+                faces = [
+                    [u, v + d, d, h],
+                    [u + d + w, v + d, d, h],
+                    [u + d + w, v, -w, d],
+                    [u + d + w + w, v, -w, d],
+                    [u + d + w, v + d, -w, h],
+                    [u + d + w + d + w, v + d, -w, h]
+                ];
+            }
+            const uvAttr = geom.attributes.uv;
+            let pos = 0;
+            faces.forEach(([x, y, fw, fh]) => {
+                const u0 = x / tw,
+                    v0 = 1 - (y + fh) / th;
+                const u1 = (x + fw) / tw,
+                    v1 = 1 - y / th;
+                uvAttr.setXY(pos++, u0, v1);
+                uvAttr.setXY(pos++, u1, v1);
+                uvAttr.setXY(pos++, u0, v0);
+                uvAttr.setXY(pos++, u1, v0);
+            });
+            uvAttr.needsUpdate = true;
+            return geom;
+        }
+
+        const textureLoader = new THREE.TextureLoader();
+        let skinTexture = null;
+        const baseMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 });
+        const outerMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true,
+            alphaTest: 0.5, side: THREE.DoubleSide });
+
+        const modelBones = [
+            { name: "root", pivot: [0, 0, 0] },
+            { name: "waist", parent: "root", pivot: [0, 12, 0] },
+            { name: "body", parent: "waist", pivot: [0, 24, 0], cubes: [
+                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16], outer: false },
+                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 32], outer: true, inflate: 0.25 }
+            ] },
+            { name: "head", parent: "body", pivot: [0, 24, 0], cubes: [
+                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0], outer: false },
+                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [32, 0], outer: true, inflate: 0.5 }
+            ] },
+            { name: "leftArm", parent: "body", pivot: [5, 22, 0], cubes: [
+                { origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48], outer: false },
+                { origin: [4, 12, -2], size: [4, 12, 4], uv: [48, 48], outer: true, inflate: 0.25 }
+            ] },
+            { name: "rightArm", parent: "body", pivot: [-5, 22, 0], cubes: [
+                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16], outer: false },
+                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 32], outer: true, inflate: 0.25 }
+            ] },
+            { name: "leftLeg", parent: "root", pivot: [1.9, 12, 0], cubes: [
+                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [16, 48], outer: false },
+                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [0, 48], outer: true, inflate: 0.25 }
+            ] },
+            { name: "rightLeg", parent: "root", pivot: [-1.9, 12, 0], cubes: [
+                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 16], outer: false },
+                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 32], outer: true, inflate: 0.25 }
+            ] }
+        ];
+
+        const selectableMeshes = [];
+        const boneObjects = {};
+        modelBones.forEach(b => {
+            const group = new THREE.Group();
+            group.rotation.order = 'ZYX';
+            if (b.cubes) {
+                b.cubes.forEach(c => {
+                    const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c
+                        .mirror || false);
+                    const mat = c.outer ? outerMaterial : baseMaterial;
+                    const mesh = new THREE.Mesh(geom, mat);
+                    mesh.position.set(
+                        c.origin[0] + c.size[0] / 2 - b.pivot[0],
+                        c.origin[1] + c.size[1] / 2 - b.pivot[1],
+                        c.origin[2] + c.size[2] / 2 - b.pivot[2]
+                    );
+                    mesh.userData.boneName = b.name;
+                    selectableMeshes.push(mesh);
+                    group.add(mesh);
+                });
+            }
+            boneObjects[b.name] = group;
+        });
+
+        modelBones.forEach(b => {
+            const group = boneObjects[b.name];
+            const parentPivot = b.parent ? (modelBones.find(x => x.name === b.parent).pivot || [0, 0,
+                0]) : [0, 0, 0];
+            const initX = b.pivot[0] - parentPivot[0];
+            const initY = b.pivot[1] - parentPivot[1];
+            const initZ = b.pivot[2] - parentPivot[2];
+            group.userData.initialPos = { x: initX, y: initY, z: initZ };
+            group.position.set(initX, initY, initZ);
+            if (b.parent) boneObjects[b.parent].add(group);
+            else scene.add(group);
+        });
+
+        function applyTexture(texture) {
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            baseMaterial.map = texture;
+            baseMaterial.color.setHex(0xffffff);
+            baseMaterial.needsUpdate = true;
+            outerMaterial.map = texture;
+            outerMaterial.color.setHex(0xffffff);
+            outerMaterial.needsUpdate = true;
+        }
+
+        function loadTextureFromUrl(url) {
+            textureLoader.load(url, (tex) => { skinTexture = tex;
+                applyTexture(skinTexture); });
+        }
+
+        function resetSkin() { loadTextureFromUrl(DEFAULT_TEXTURE_URL); }
+
+        function uploadSkin(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => { const texture = new THREE.Texture(img);
+                    texture.needsUpdate = true;
+                    applyTexture(texture); };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+        loadTextureFromUrl(DEFAULT_TEXTURE_URL);
+
+        
+        let viewMode = 'preview';
+        let manualPose = {};
+        let selectedBone = null;
+        let gizmoMode = 'rotate';
+
+        const boneVarPrefix = {
+            root: 'v.root',
+            waist: 'v.body',
+            head: 'v.head',
+            rightArm: 'v.rightarm',
+            leftArm: 'v.leftarm',
+            rightLeg: 'v.rightleg',
+            leftLeg: 'v.leftleg'
+        };
+        const boneAxisConfig = {
+            root: { rotate: ['x', 'z'], translate: ['x', 'y', 'z'], scale: [] },
+            waist: { rotate: ['x', 'y', 'z'], translate: ['x', 'y'], scale: ['xz', 'y'] },
+            head: { rotate: ['x', 'y', 'z'], translate: ['x', 'y', 'z'], scale: [] },
+            rightArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
+            leftArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
+            rightLeg: { rotate: ['x'], translate: [], scale: [] },
+            leftLeg: { rotate: ['x'], translate: [], scale: [] }
+        };
+        const scaleVarMap = {
+            waist: { xz: 'v.body_head.xzscale', y: 'v.body_head.yscale' }
+        };
+        const boneDisplayName = {
+            root: 'Root',
+            waist: 'Body / Waist',
+            head: 'Head',
+            rightArm: 'Right Arm',
+            leftArm: 'Left Arm',
+            rightLeg: 'Right Leg',
+            leftLeg: 'Left Leg'
+        };
+        const invertedBones = ["v.rightarm.y", "v.leftarm.y", "v.rightarm.z", "v.leftarm.z", "v.head.y",
+            "v.head.z", "v.body.y", "v.body.z"
+        ];
+
+        function mapName(str) {
+            if (str.includes("rightarm")) return "rightArm";
+            if (str.includes("leftarm")) return "leftArm";
+            if (str.includes("rightleg")) return "rightLeg";
+            if (str.includes("leftleg")) return "leftLeg";
+            if (str.includes("body")) return "waist";
+            if (str.includes("head")) return "head";
+            return "root";
+        }
+
+        function isRidingEnabled() {
+            const el = document.getElementById('playerRiding');
+            return el ? el.checked : false;
+        }
+
+        function getRidingOffsetDeg(boneName, axis) {
+            if (!isRidingEnabled()) return 0;
+            if (boneName === 'rightLeg' && axis === 'x') return -81;
+            if (boneName === 'rightLeg' && axis === 'y') return -18;
+            if (boneName === 'leftLeg' && axis === 'x') return -81;
+            if (boneName === 'leftLeg' && axis === 'y') return 18;
+            return 0;
+        }
+
+        function resetBonesToBindPose() {
+            Object.values(boneObjects).forEach(b => {
+                b.rotation.set(0, 0, 0);
+                b.scale.set(1, 1, 1);
+                if (b.userData.initialPos) {
+                    b.position.set(b.userData.initialPos.x, b.userData.initialPos.y, b.userData
+                        .initialPos.z);
+                }
+            });
+            if (isRidingEnabled()) {
+                const rightLeg = boneObjects['rightLeg'];
+                const leftLeg = boneObjects['leftLeg'];
+                if (rightLeg) {
+                    rightLeg.rotation.x = -81 * (Math.PI / 180);
+                    rightLeg.rotation.y = -18 * (Math.PI / 180);
+                }
+                if (leftLeg) {
+                    leftLeg.rotation.x = -81 * (Math.PI / 180);
+                    leftLeg.rotation.y = 18 * (Math.PI / 180);
+                }
+            }
+        }
+
+        function applyValuesToBones(values) {
+            for (const [key, val] of Object.entries(values)) {
+                const targetBone = boneObjects[mapName(key)];
+                if (!targetBone) continue;
+                if (key.endsWith(".ypos")) {
+                    targetBone.position.y = targetBone.userData.initialPos.y + val;
+                    continue;
+                }
+                if (key.endsWith(".xpos")) {
+                    targetBone.position.x = targetBone.userData.initialPos.x + val;
+                    continue;
+                }
+                if (key.endsWith(".zpos")) {
+                    targetBone.position.z = targetBone.userData.initialPos.z + val;
+                    continue;
+                }
+                if (key === 'v.body_head.xzscale') {
+                    targetBone.scale.x = val;
+                    targetBone.scale.z = val;
+                    continue;
+                }
+                if (key === 'v.body_head.yscale') {
+                    targetBone.scale.y = val;
+                    continue;
+                }
+                let rad = val * (Math.PI / 180);
+                if (invertedBones.includes(key)) rad = -rad;
+                if (key.endsWith(".x")) targetBone.rotation.x += rad;
+                if (key.endsWith(".y")) targetBone.rotation.y += rad;
+                if (key.endsWith(".z")) targetBone.rotation.z += rad;
+            }
+        }
+
+
+        const raycaster = new THREE.Raycaster();
+        const pointerNDC = new THREE.Vector2();
+        const AXCOL = { x: '#ff3d4f', y: '#2be25c', z: '#3f6dff' };
+        const GIZMO_HIGHLIGHT = '#ffe14a';
+        const AXIS_INDEX = { x: 0, y: 1, z: 2 };
+        let hoverAxis = null;
+        let activeGizmoDrag = null;
+        let lastGizmoLayout = null;
+
+        function eventRay(event) {
+            const rect = gizmoCanvas.getBoundingClientRect();
+            pointerNDC.x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+            pointerNDC.y = -((event.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+            raycaster.setFromCamera(pointerNDC, camera);
+            return raycaster.ray.clone();
+        }
+
+        function planeBasis3(axis) {
+            const helper = Math.abs(axis.y) < 0.9
+                ? new THREE.Vector3(0, 1, 0)
+                : new THREE.Vector3(1, 0, 0);
+            const u = new THREE.Vector3().crossVectors(helper, axis).normalize();
+            return { u, v: new THREE.Vector3().crossVectors(axis, u).normalize() };
+        }
+
+        function closestLineParameter(point, direction, ray) {
+            const w = new THREE.Vector3().subVectors(point, ray.origin);
+            const b = direction.dot(ray.direction);
+            const dd = direction.dot(w);
+            const ee = ray.direction.dot(w);
+            const den = 1 - b * b;
+            if (Math.abs(den) < 1e-4) return null;
+            return (b * ee - dd) / den;
+        }
+
+        function getCustomGizmoData() {
+            if (viewMode !== 'axis' || !selectedBone || !boneObjects[selectedBone]) return null;
+
+            const object = boneObjects[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+            object.updateWorldMatrix(true, false);
+            camera.updateMatrixWorld(true);
+
+            const pivot = object.getWorldPosition(new THREE.Vector3());
+            const parentQ = object.parent
+                ? object.parent.getWorldQuaternion(new THREE.Quaternion())
+                : new THREE.Quaternion();
+            const localX = new THREE.Vector3(1, 0, 0);
+            const localY = new THREE.Vector3(0, 1, 0);
+            const localZ = new THREE.Vector3(0, 0, 1);
+            const qZ = new THREE.Quaternion().setFromAxisAngle(localZ, object.rotation.z);
+            const qY = new THREE.Quaternion().setFromAxisAngle(localY, object.rotation.y);
+            const axes = {
+                x: localX.clone().applyQuaternion(qY).applyQuaternion(qZ).applyQuaternion(parentQ).normalize(),
+                y: localY.clone().applyQuaternion(qZ).applyQuaternion(parentQ).normalize(),
+                z: localZ.clone().applyQuaternion(parentQ).normalize()
+            };
+            const worldQ = object.getWorldQuaternion(new THREE.Quaternion());
+            const translateAxes = {
+                x: localX.clone().applyQuaternion(parentQ).normalize(),
+                y: localY.clone().applyQuaternion(parentQ).normalize(),
+                z: localZ.clone().applyQuaternion(parentQ).normalize()
+            };
+            const scaleAxes = {
+                x: localX.clone().applyQuaternion(worldQ).normalize(),
+                y: localY.clone().applyQuaternion(worldQ).normalize(),
+                z: localZ.clone().applyQuaternion(worldQ).normalize()
+            };
+
+            const distance = camera.position.distanceTo(pivot);
+            const gizmoLength = distance * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * 0.34;
+            const mode = gizmoMode;
+            let supported = mode === 'rotate' ? cfg.rotate : mode === 'translate' ? cfg.translate : cfg.scale.map(a => a === 'xz' ? 'x' : a);
+            if (mode === 'scale' && cfg.scale.includes('xz')) supported = [...supported, 'z'];
+            const center = projectGizmoPoint(pivot);
+            if (!center) return null;
+
+            const result = { object, pivot, center, axes, translateAxes, scaleAxes, gizmoLength, mode, handles: {}, supported };
+            if (mode === 'rotate') {
+                supported.forEach(axisName => {
+                    const basis = planeBasis3(axes[axisName]);
+                    const points = [];
+                    for (let i = 0; i <= 72; i++) {
+                        const angle = i / 72 * Math.PI * 2;
+                        const point = pivot.clone()
+                            .addScaledVector(basis.u, Math.cos(angle) * 0.8 * gizmoLength)
+                            .addScaledVector(basis.v, Math.sin(angle) * 0.8 * gizmoLength);
+                        const screen = projectGizmoPoint(point);
+                        if (!screen) return;
+                        points.push(screen);
+                    }
+                    result.handles[axisName] = { kind: 'ring', points, basis };
+                });
+            } else {
+                supported.forEach(axisName => {
+                    const direction = mode === 'translate' ? translateAxes[axisName] : scaleAxes[axisName];
+                    const end = projectGizmoPoint(pivot.clone().addScaledVector(direction, gizmoLength));
+                    if (end) result.handles[axisName] = { kind: mode === 'translate' ? 'arrow' : 'box', start: center, end, direction };
+                });
+            }
+            return result;
+        }
+
+        function projectGizmoPoint(point) {
+            const p = point.clone().project(camera);
+            if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || p.z < -1 || p.z > 1) return null;
+            const rect = gizmoCanvas.getBoundingClientRect();
+            return [(p.x + 1) * rect.width / 2, (1 - p.y) * rect.height / 2];
+        }
+
+        function screenSegmentDistance(px, py, a, b) {
+            const dx = b[0] - a[0], dy = b[1] - a[1];
+            const lengthSq = dx * dx + dy * dy;
+            let t = lengthSq ? ((px - a[0]) * dx + (py - a[1]) * dy) / lengthSq : 0;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(px - (a[0] + dx * t), py - (a[1] + dy * t));
+        }
+
+        function hitTestCustomGizmo(x, y, touch) {
+            const layout = getCustomGizmoData();
+            if (!layout) return null;
+            const threshold = touch ? 25 : 14;
+            let best = null, bestDistance = threshold;
+            ['x', 'y', 'z'].forEach(axis => {
+                const handle = layout.handles[axis];
+                if (!handle) return;
+                let distance = Infinity;
+                if (handle.kind === 'ring') {
+                    for (let i = 0; i < handle.points.length - 1; i++) {
+                        distance = Math.min(distance, screenSegmentDistance(x, y, handle.points[i], handle.points[i + 1]));
+                    }
+                } else {
+                    const a = handle.start, b = handle.end;
+                    const shortened = [a[0] + (b[0] - a[0]) * 0.12, a[1] + (b[1] - a[1]) * 0.12];
+                    distance = screenSegmentDistance(x, y, shortened, b);
+                }
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    best = axis;
+                }
+            });
+            return best;
+        }
+
+        function drawCustomGizmo() {
+            const rect = gizmoCanvas.getBoundingClientRect();
+            gizmoCtx.clearRect(0, 0, rect.width, rect.height);
+            const layout = getCustomGizmoData();
+            lastGizmoLayout = layout;
+            if (!layout) return;
+            gizmoCtx.lineCap = 'round';
+            gizmoCtx.lineJoin = 'round';
+
+            ['x', 'y', 'z'].forEach(axis => {
+                const handle = layout.handles[axis];
+                if (!handle) return;
+                const color = axis === hoverAxis ? GIZMO_HIGHLIGHT : AXCOL[axis];
+                if (handle.kind === 'ring') {
+                    gizmoCtx.beginPath();
+                    handle.points.forEach((point, index) => {
+                        if (index === 0) gizmoCtx.moveTo(point[0], point[1]);
+                        else gizmoCtx.lineTo(point[0], point[1]);
+                    });
+                    gizmoCtx.strokeStyle = 'rgba(0,0,0,.45)';
+                    gizmoCtx.lineWidth = 5;
+                    gizmoCtx.stroke();
+                    gizmoCtx.strokeStyle = color;
+                    gizmoCtx.lineWidth = 2.7;
+                    gizmoCtx.stroke();
+                    return;
+                }
+                const a = handle.start, b = handle.end;
+                const dx = b[0] - a[0], dy = b[1] - a[1];
+                const length = Math.hypot(dx, dy) || 1;
+                const ux = dx / length, uy = dy / length, px = -uy, py = ux;
+                const cut = handle.kind === 'arrow' ? 15 : 6;
+                const bx = b[0] - ux * cut, by = b[1] - uy * cut;
+                gizmoCtx.beginPath();
+                gizmoCtx.moveTo(a[0], a[1]);
+                gizmoCtx.lineTo(bx, by);
+                gizmoCtx.strokeStyle = 'rgba(0,0,0,.45)';
+                gizmoCtx.lineWidth = 5;
+                gizmoCtx.stroke();
+                gizmoCtx.strokeStyle = color;
+                gizmoCtx.lineWidth = 2.7;
+                gizmoCtx.stroke();
+
+                gizmoCtx.fillStyle = color;
+                gizmoCtx.beginPath();
+                if (handle.kind === 'arrow') {
+                    gizmoCtx.moveTo(b[0] + ux * 2, b[1] + uy * 2);
+                    gizmoCtx.lineTo(bx + px * 7, by + py * 7);
+                    gizmoCtx.lineTo(bx - px * 7, by - py * 7);
+                } else {
+                    const size = 6.5, cx = b[0] - ux, cy = b[1] - uy;
+                    gizmoCtx.moveTo(cx + (ux + px) * size, cy + (uy + py) * size);
+                    gizmoCtx.lineTo(cx + (ux - px) * size, cy + (uy - py) * size);
+                    gizmoCtx.lineTo(cx + (-ux - px) * size, cy + (-uy - py) * size);
+                    gizmoCtx.lineTo(cx + (-ux + px) * size, cy + (-uy + py) * size);
+                }
+                gizmoCtx.closePath();
+                gizmoCtx.strokeStyle = 'rgba(0,0,0,.5)';
+                gizmoCtx.lineWidth = 1.5;
+                gizmoCtx.stroke();
+                gizmoCtx.fill();
+            });
+            gizmoCtx.fillStyle = '#fff';
+            gizmoCtx.beginPath();
+            gizmoCtx.arc(layout.center[0], layout.center[1], 3.5, 0, Math.PI * 2);
+            gizmoCtx.fill();
+        }
+
+        function startCustomGizmoDrag(axis, event) {
+            const layout = getCustomGizmoData();
+            if (!layout || !layout.handles[axis]) return false;
+            const object = layout.object;
+            const ray = eventRay(event);
+            const startData = { axis, mode: layout.mode, object, pivot: layout.pivot.clone(), pointerId: event.pointerId };
+
+            if (layout.mode === 'rotate') {
+                const normal = layout.axes[axis].clone().normalize();
+                const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, layout.pivot);
+                const hit = new THREE.Vector3();
+                if (!ray.intersectPlane(plane, hit)) return false;
+                const vector = hit.sub(layout.pivot);
+                const basis = planeBasis3(normal);
+                startData.basis = basis;
+                startData.lastAngle = Math.atan2(vector.dot(basis.v), vector.dot(basis.u));
+                startData.accumulated = 0;
+                startData.startValue = object.rotation[axis];
+            } else {
+                const direction = layout.mode === 'translate' ? layout.translateAxes[axis] : layout.scaleAxes[axis];
+                const t0 = closestLineParameter(layout.pivot, direction, ray);
+                if (t0 === null) return false;
+                startData.direction = direction;
+                startData.t0 = t0;
+                startData.startValue = layout.mode === 'translate'
+                    ? object.position[AXIS_INDEX[axis]]
+                    : (axis === 'y' ? object.scale.y : object.scale.x);
+            }
+
+            activeGizmoDrag = startData;
+            controls.enabled = false;
+            gizmoCanvas.style.cursor = 'grabbing';
+            try { gizmoCanvas.setPointerCapture(event.pointerId); } catch (_) {}
+            return true;
+        }
+
+        function updateCustomGizmoDrag(event) {
+            const drag = activeGizmoDrag;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            const object = drag.object;
+            const ray = eventRay(event);
+
+            if (drag.mode === 'rotate') {
+                const layout = getCustomGizmoData();
+                const normal = layout ? layout.axes[drag.axis].clone().normalize() : null;
+                if (!normal) return;
+                const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, layout.pivot);
+                const hit = new THREE.Vector3();
+                if (!ray.intersectPlane(plane, hit)) return;
+                const vector = hit.sub(layout.pivot);
+                const angle = Math.atan2(vector.dot(drag.basis.v), vector.dot(drag.basis.u));
+                let delta = angle - drag.lastAngle;
+                while (delta > Math.PI) delta -= Math.PI * 2;
+                while (delta < -Math.PI) delta += Math.PI * 2;
+                drag.accumulated += delta;
+                drag.lastAngle = angle;
+                object.rotation[drag.axis] = drag.startValue + drag.accumulated;
+            } else {
+                const t = closestLineParameter(drag.pivot, drag.direction, ray);
+                if (t === null) return;
+                const value = drag.startValue + (drag.mode === 'translate' ? (t - drag.t0) : (t - drag.t0) / 8);
+                if (drag.mode === 'translate') {
+                    object.position[AXIS_INDEX[drag.axis]] = value;
+                } else if (drag.axis === 'y') {
+                    object.scale.y = value;
+                } else {
+                    object.scale.x = value;
+                    object.scale.z = value;
+                }
+            }
+            object.updateMatrixWorld(true);
+            onGizmoChange();
+            drawCustomGizmo();
+        }
+
+        function endCustomGizmoDrag(event) {
+            if (!activeGizmoDrag || (event && activeGizmoDrag.pointerId !== event.pointerId)) return;
+            activeGizmoDrag = null;
+            controls.enabled = true;
+            gizmoCanvas.style.cursor = 'default';
+            drawCustomGizmo();
+        }
+
+        function detachCustomGizmo() {
+            activeGizmoDrag = null;
+            hoverAxis = null;
+            drawCustomGizmo();
+        }
+
+        function attachGizmo() {
+            detachCustomGizmo();
+            drawCustomGizmo();
+        }
+
+        function onGizmoChange() {
+            if (!selectedBone) return;
+            const bone = boneObjects[selectedBone];
+            const prefix = boneVarPrefix[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+
+            if (gizmoMode === 'rotate') {
+                cfg.rotate.forEach(axis => {
+                    const key = `${prefix}.${axis}`;
+                    const offset = getRidingOffsetDeg(selectedBone, axis);
+                    let deg = bone.rotation[axis] * (180 / Math.PI);
+                    deg = deg - offset;
+                    if (invertedBones.includes(key)) deg = -deg;
+                    manualPose[key] = Math.round(deg * 100) / 100;
+                });
+            } else if (gizmoMode === 'translate') {
+                cfg.translate.forEach(axis => {
+                    const key = `${prefix}.${axis}pos`;
+                    const delta = bone.position[axis] - bone.userData.initialPos[axis];
+                    manualPose[key] = Math.round(delta * 100) / 100;
+                });
+            } else if (gizmoMode === 'scale') {
+                const varMap = scaleVarMap[selectedBone];
+                if (varMap) {
+                    cfg.scale.forEach(axis => {
+                        if (axis === 'xz') {
+                            bone.scale.z = bone.scale.x;
+                            manualPose[varMap.xz] = Math.round(bone.scale.x * 100) / 100;
+                        } else if (axis === 'y') {
+                            manualPose[varMap.y] = Math.round(bone.scale.y * 100) / 100;
+                        }
+                    });
+                }
+            }
+            renderAxisReadout();
+        }
+
+        function renderAxisReadout() {
+            const cont = document.getElementById('axisReadout');
+            if (!cont) return;
+            if (!selectedBone) {
+                cont.innerHTML = '<p class="hint" style="margin:0;">Select a body part to edit.</p>';
+                return;
+            }
+            const prefix = boneVarPrefix[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+            const axisField = (axis, supported, key, fallback = 0) => {
+                const value = manualPose[key] !== undefined ? manualPose[key] : fallback;
+                return `<div class="form-group"><label>${axis}</label><input type="number" step="0.01" value="${value}" ${supported ? `onchange="setPoseValue('${key}', this.value)"` : 'disabled'}></div>`;
+            };
+            let html = `<div class="readout-title">${boneDisplayName[selectedBone]}</div>`;
+            html += '<div class="readout-group"><label class="group-label">ROTATION · DEG</label><div class="readout-row">';
+            ['x', 'y', 'z'].forEach(axis => {
+                const key = `${prefix}.${axis}`;
+                html += axisField(axis.toUpperCase(), cfg.rotate.includes(axis), key, 0);
+            });
+            html += '</div></div>';
+            html += '<div class="readout-group"><label class="group-label">POSITION</label><div class="readout-row">';
+            ['x', 'y', 'z'].forEach(axis => {
+                const key = `${prefix}.${axis}pos`;
+                html += axisField(axis.toUpperCase(), cfg.translate.includes(axis), key, 0);
+            });
+            html += '</div></div>';
+            html += '<div class="readout-group"><label class="group-label">SCALE</label><div class="readout-row">';
+            const scaleAxes = [
+                { axis: 'xz', label: 'XZ', key: scaleVarMap[selectedBone]?.xz },
+                { axis: 'y', label: 'Y', key: scaleVarMap[selectedBone]?.y }
+            ];
+            scaleAxes.forEach(item => {
+                if (item.key) html += axisField(item.label, cfg.scale.includes(item.axis), item.key, 1);
+                else html += `<div class="form-group"><label>${item.label}</label><input type="number" value="—" disabled></div>`;
+            });
+            html += '</div></div>';
+            cont.innerHTML = html;
+        }
+
+        function setPoseValue(key, valStr) {
+            manualPose[key] = parseFloat(valStr) || 0;
+            renderAxisReadout();
+        }
+
+        function resetBonePose() {
+            if (!selectedBone) return;
+            const prefix = boneVarPrefix[selectedBone];
+            const cfg = boneAxisConfig[selectedBone];
+            cfg.rotate.forEach(axis => delete manualPose[`${prefix}.${axis}`]);
+            cfg.translate.forEach(axis => delete manualPose[`${prefix}.${axis}pos`]);
+            cfg.scale.forEach(axis => {
+                const varMap = scaleVarMap[selectedBone];
+                if (varMap && varMap[axis]) delete manualPose[varMap[axis]];
+            });
+            renderAxisReadout();
+        }
+
+        function resetAllPose() {
+            manualPose = {};
+            renderAxisReadout();
+        }
+
+        
+        let isPlaying = true;
+        let animTime = 0;
+        const clock = new THREE.Clock();
+
+        function togglePlay() { isPlaying = !isPlaying; }
+
+        function bounceOut(t) {
+            const n1 = 7.5625,
+                d1 = 2.75;
+            if (t < 1 / d1) return n1 * t * t;
+            else if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
+            else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
+            else return n1 * (t -= 2.625 / d1) * t + 0.984375;
+        }
+
+        function getEase(name, t) {
+            t = Math.max(0, Math.min(1, t));
+            if (name === 'lerp') return t;
+            if (name === 'ease_in_sine') return 1 - Math.cos((t * Math.PI) / 2);
+            if (name === 'ease_out_sine') return Math.sin((t * Math.PI) / 2);
+            if (name === 'ease_in_out_sine') return -(Math.cos(Math.PI * t) - 1) / 2;
+            if (name === 'ease_in_quad') return t * t;
+            if (name === 'ease_out_quad') return 1 - (1 - t) * (1 - t);
+            if (name === 'ease_in_out_quad') return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) /
+                2;
+            if (name === 'ease_in_cubic') return t * t * t;
+            if (name === 'ease_out_cubic') return 1 - Math.pow(1 - t, 3);
+            if (name === 'ease_in_out_cubic') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2,
+                3) / 2;
+            if (name === 'ease_in_quart') return t * t * t * t;
+            if (name === 'ease_out_quart') return 1 - Math.pow(1 - t, 4);
+            if (name === 'ease_in_out_quart') return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t +
+                2, 4) / 2;
+            if (name === 'ease_in_quint') return t * t * t * t * t;
+            if (name === 'ease_out_quint') return 1 - Math.pow(1 - t, 5);
+            if (name === 'ease_in_out_quint') return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 *
+                t + 2, 5) / 2;
+            if (name === 'ease_in_expo') return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
+            if (name === 'ease_out_expo') return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+            if (name === 'ease_in_out_expo') { if (t === 0) return 0; if (t === 1) return 1; return t <
+                    0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2; }
+            if (name === 'ease_in_circ') return 1 - Math.sqrt(1 - Math.pow(t, 2));
+            if (name === 'ease_out_circ') return Math.sqrt(1 - Math.pow(t - 1, 2));
+            if (name === 'ease_in_out_circ') return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) /
+                2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
+            if (name === 'ease_in_back') { const c1 = 1.70158,
+                    c3 = c1 + 1; return c3 * t * t * t - c1 * t * t; }
+            if (name === 'ease_out_back') { const c1 = 1.70158,
+                    c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+            if (name === 'ease_in_out_back') { const c1 = 1.70158,
+                    c2 = c1 * 1.525; return t < 0.5 ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) /
+                    2 : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2; }
+            if (name === 'ease_in_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
+                    1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4); }
+            if (name === 'ease_out_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
+                    1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1; }
+            if (name === 'ease_in_out_elastic') { const c5 = (2 * Math.PI) / 4.5; return t === 0 ? 0 : t ===
+                    1 ? 1 : t < 0.5 ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) /
+                    2 : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1; }
+            if (name === 'ease_in_bounce') return 1 - bounceOut(1 - t);
+            if (name === 'ease_out_bounce') return bounceOut(t);
+            if (name === 'ease_in_out_bounce') return t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 +
+                bounceOut(2 * t - 1)) / 2;
+            return t;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            let dt = clock.getDelta();
+            resetBonesToBindPose();
+            if (viewMode === 'preview') {
+                if (isPlaying) animTime += dt;
+                let maxDur = 0;
+                data.forEach(bData => {
+                    bData.segments.forEach(seg => { let end = seg.start + seg.dur; if (end >
+                            maxDur) maxDur = end; });
+                });
+                let totalAnimDuration = Math.max(maxDur, 0.1);
+                let t = animTime % totalAnimDuration;
+                let currentValues = {};
+                data.forEach(bData => {
+                    let val = 0;
+                    getEffectiveSegments(bData.segments).forEach((seg, idx) => {
+                        if (idx === 0) val = seg.val1;
+                        if (t >= seg.start) {
+                            let progress = Math.min((t - seg.start) / seg.dur, 1);
+                            val = val + (seg.val2 - val) * getEase(seg.ease, progress);
+                        }
+                    });
+                    currentValues[bData.bone] = val;
+                });
+                if (document.getElementById('mirrorArms').checked) {
+                    if (currentValues["v.rightarm.x"] !== undefined && currentValues["v.leftarm.x"] ===
+                        undefined) currentValues["v.leftarm.x"] = currentValues["v.rightarm.x"];
+                    else if (currentValues["v.leftarm.x"] !== undefined && currentValues["v.rightarm.x"] ===
+                        undefined) currentValues["v.rightarm.x"] = currentValues["v.leftarm.x"];
+                    if (currentValues["v.rightarm.y"] !== undefined && currentValues["v.leftarm.y"] ===
+                        undefined) currentValues["v.leftarm.y"] = -currentValues["v.rightarm.y"];
+                    else if (currentValues["v.leftarm.y"] !== undefined && currentValues["v.rightarm.y"] ===
+                        undefined) currentValues["v.rightarm.y"] = -currentValues["v.leftarm.y"];
+                    if (currentValues["v.rightarm.z"] !== undefined && currentValues["v.leftarm.z"] ===
+                        undefined) currentValues["v.leftarm.z"] = -currentValues["v.rightarm.z"];
+                    else if (currentValues["v.leftarm.z"] !== undefined && currentValues["v.rightarm.z"] ===
+                        undefined) currentValues["v.rightarm.z"] = -currentValues["v.leftarm.z"];
+                    if (currentValues["v.rightarm.ypos"] !== undefined && currentValues["v.leftarm.ypos"] ===
+                        undefined) currentValues["v.leftarm.ypos"] = currentValues["v.rightarm.ypos"];
+                    else if (currentValues["v.leftarm.ypos"] !== undefined && currentValues[
+                        "v.rightarm.ypos"] === undefined) currentValues["v.rightarm.ypos"] = currentValues[
+                        "v.leftarm.ypos"];
+                }
+                if (document.getElementById('mirrorLegs').checked) {
+                    if (currentValues["v.rightleg.x"] !== undefined && currentValues["v.leftleg.x"] ===
+                        undefined) currentValues["v.leftleg.x"] = currentValues["v.rightleg.x"];
+                    else if (currentValues["v.leftleg.x"] !== undefined && currentValues["v.rightleg.x"] ===
+                        undefined) currentValues["v.rightleg.x"] = currentValues["v.leftleg.x"];
+                }
+                applyValuesToBones(currentValues);
+            } else {
+                applyValuesToBones(manualPose);
+            }
+            controls.update();
+            renderer.render(scene, camera);
+            drawCustomGizmo();
+        }
+
+        renderBones();
+        resizeViewport();
+        animate();
+        function resizeViewport() {
+            const w = Math.max(container.clientWidth, 1);
+            const h = Math.max(container.clientHeight, 1);
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setPixelRatio(dpr);
+            renderer.setSize(w, h, false);
+            gizmoCanvas.width = Math.round(w * dpr);
+            gizmoCanvas.height = Math.round(h * dpr);
+            gizmoCanvas.style.width = w + 'px';
+            gizmoCanvas.style.height = h + 'px';
+            gizmoCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawCustomGizmo();
+        }
+
+        window.addEventListener('resize', resizeViewport);
+        window.togglePlay = togglePlay;
+        window.copyCode = copyCode;
+        window.addBone = addBone;
+        window.removeBone = removeBone;
+        window.addSeg = addSeg;
+        window.removeSeg = removeSeg;
+        window.updateBone = updateBone;
+        window.updateSeg = updateSeg;
+        window.generate = generate;
+        window.resetSkin = resetSkin;
+        window.uploadSkin = uploadSkin;
+        window.validateStart = validateStart;
+        window.setViewMode = setViewMode;
+        window.toggleAxisFullscreen = toggleAxisFullscreen;
+        window.selectBone = selectBone;
+        window.setGizmoMode = setGizmoMode;
+        window.setPoseValue = setPoseValue;
+        window.resetBonePose = resetBonePose;
+        window.resetAllPose = resetAllPose;
+        window.onRidingToggle = onRidingToggle;
+        window.openImportModal = openImportModal;
+        window.closeImportModal = closeImportModal;
+        window.attemptImport = attemptImport;
+        window.cancelImportConfirm = cancelImportConfirm;
+        window.confirmReplaceImport = confirmReplaceImport;
+    </script>
+</body>
+</html>
