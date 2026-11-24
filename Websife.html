@@ -1,1740 +1,936 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Animator Studio</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js">
-    </script>
-    <style>
-        :root {
-            --bg: #1e1e2e;
-            --surface: #313244;
-            --surface2: #45475a;
-            --text: #cdd6f4;
-            --primary: #89b4fa;
-            --danger: #f38ba8;
-            --border: #585b70;
-            --success: #a6e3a1;
-            --panel: #11111b;
-            --warn: #f9e2af;
-        }
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            gap: 20px;
-            height: 100vh;
-            overflow: hidden;
-        }
-        h1,
-        h2,
-        h3 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-        .left-panel {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 15px;
-            height: calc(100vh - 40px);
-            pointer-events: auto;
-        }
-        .right-panel {
-            width: 440px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            height: calc(100vh - 40px);
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-        .card {
-            background: var(--surface);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-        .bone-card {
-            border-left: 5px solid var(--primary);
-        }
-        .segment {
-            background: var(--surface2);
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: flex-end;
-        }
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 80px;
-        }
-        .form-group.start-group {
-            position: relative;
-        }
-        .form-group label {
-            font-size: 11px;
-            margin-bottom: 4px;
-            color: #bac2de;
-        }
-        input,
-        select {
-            background: var(--bg);
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 6px;
-            border-radius: 4px;
-            outline: none;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-        input:focus,
-        select:focus {
-            border-color: var(--primary);
-        }
-        button {
-            background: var(--primary);
-            color: #11111b;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: opacity 0.2s;
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        button:hover {
-            opacity: 0.8;
-        }
-        button.danger {
-            background: var(--danger);
-            padding: 6px 10px;
-        }
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .error-msg {
-            color: var(--danger);
-            font-size: 10px;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            white-space: nowrap;
-            margin-top: 3px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            font-weight: bold;
-        }
-        .error-msg.show {
-            opacity: 1;
-        }
-        textarea {
-            width: 100%;
-            height: 130px;
-            background: var(--panel);
-            color: var(--success);
-            font-family: monospace;
-            border: 1px solid var(--border);
-            padding: 10px;
-            border-radius: 6px;
-            resize: vertical;
-            box-sizing: border-box;
-            font-size: 13px;
-        }
-        #canvas-container {
-            width: 100%;
-            height: 340px;
-            background: var(--panel);
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            position: relative;
-        }
-        #fileUpload {
-            display: none;
-        }
-        .view-tabs {
-            display: flex;
-            gap: 4px;
-            background: var(--bg);
-            padding: 3px;
-            border-radius: 7px;
-        }
-        .view-tab {
-            background: transparent;
-            color: var(--text);
-            padding: 6px 10px;
-            font-size: 12px;
-            opacity: 0.65;
-            border-radius: 5px;
-        }
-        .view-tab.active {
-            background: var(--primary);
-            color: #11111b;
-            opacity: 1;
-        }
-        .view-tab:hover {
-            opacity: 1;
-        }
-        .mode-toggle {
-            display: flex;
-            gap: 6px;
-        }
-        .mode-btn {
-            background: var(--surface2);
-            color: var(--text);
-            padding: 7px 10px;
-            font-size: 12px;
-            opacity: 0.7;
-        }
-        .mode-btn.active {
-            background: var(--primary);
-            color: #11111b;
-            opacity: 1;
-        }
-        .mode-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        .hint {
-            font-size: 11px;
-            color: #bac2de;
-            margin: 8px 0 0 0;
-            line-height: 1.4;
-        }
-        .axis-readout {
-            background: var(--surface2);
-            border-radius: 6px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .readout-title {
-            font-weight: bold;
-            font-size: 13px;
-            color: var(--primary);
-            margin-bottom: 8px;
-        }
-        .readout-group {
-            margin-bottom: 8px;
-        }
-        .readout-group:last-child {
-            margin-bottom: 0;
-        }
-        .group-label {
-            font-size: 11px;
-            color: #bac2de;
-            display: block;
-            margin-bottom: 4px;
-        }
-        .readout-row {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .readout-row .form-group {
-            min-width: 70px;
-        }
-        .toggle-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .toggle-label input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-        }
-        .toggle-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .modal-box {
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 20px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        .modal-box textarea {
-            width: 100%;
-            height: 160px;
-        }
-        .modal-box label {
-            font-size: 12px;
-            color: #bac2de;
-            display: block;
-            margin-bottom: 6px;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .btn-cancel {
-            background: var(--panel);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        .import-error {
-            color: var(--danger);
-            font-size: 12px;
-            margin-top: 8px;
-            display: none;
-        }
-        @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-                padding: 10px;
-                height: auto;
-                overflow-y: auto;
-                gap: 15px;
-            }
-            .left-panel {
-                width: 100%;
-                height: auto;
-                max-height: 60vh;
-                padding-right: 5px;
-                overflow-y: auto;
-            }
-            .right-panel {
-                width: 100%;
-                height: auto;
-                max-height: none;
-                overflow-y: visible;
-            }
-            #canvas-container {
-                height: 280px;
-            }
-            .card {
-                margin-bottom: 10px;
-            }
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player Animator Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{--bg:#111827;--surface2:#263449;--panel:#0d1522;--text:#e8f0ff;--primary:#9b8cff;--danger:#ff7e9d;--border:rgba(157,177,211,.19);--cv-h:340px}
+*{box-sizing:border-box}
+body{margin:0;padding:18px;height:100vh;height:100dvh;display:flex;gap:18px;overflow:hidden;color:var(--text);font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:radial-gradient(ellipse at 10% 0%,rgba(105,184,255,.13),transparent 32%),radial-gradient(ellipse at 95% 88%,rgba(155,140,255,.14),transparent 35%),linear-gradient(145deg,#0e1521,#151e2c 52%,#101725)}
+h1,h2{margin:0;font-size:18px}
+h1{margin-bottom:12px}
+h1 span{color:#a99cff}
+.left-panel,.right-panel{min-width:0;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#485a78 transparent}
+.left-panel{flex:1;padding-right:8px}
+.right-panel{width:min(470px,43vw);display:flex;flex-direction:column;gap:15px;padding-right:2px}
 
-        :root {
-            --bg: #111827;
-            --surface: #1c2635;
-            --surface2: #263449;
-            --panel: #0d1522;
-            --text: #e8f0ff;
-            --muted: #94a6bf;
-            --primary: #9b8cff;
-            --border: rgba(157, 177, 211, .19);
-            --success: #7de2c3;
-            --danger: #ff7e9d;
-            --warn: #ffd27d;
-            --blue: #69b8ff;
-        }
-        body {
-            background:
-                radial-gradient(ellipse at 10% 0%, rgba(105,184,255,.13), transparent 32%),
-                radial-gradient(ellipse at 95% 88%, rgba(155,140,255,.14), transparent 35%),
-                linear-gradient(145deg, #0e1521, #151e2c 52%, #101725);
-            gap: 18px;
-            padding: 18px;
-        }
-        .left-panel, .right-panel { scrollbar-width: thin; scrollbar-color: #485a78 transparent; }
-        .left-panel { padding-right: 8px; }
-        .right-panel { width: min(470px, 43vw); padding-right: 2px; }
-        .card {
-            border: 1px solid var(--border);
-            border-radius: 15px;
-            background: linear-gradient(145deg, rgba(34,47,66,.96), rgba(24,34,49,.97));
-            box-shadow: 0 14px 34px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
-        }
-        .bone-card { border-left: 3px solid #8b83ff; }
-        .segment { border: 1px solid rgba(160,184,220,.09); border-radius: 10px; }
-        input, select, textarea {
-            border: 1px solid rgba(151,174,210,.22);
-            border-radius: 8px;
-            background: #111b2a;
-            color: var(--text);
-        }
-        input:focus, select:focus, textarea:focus { border-color: #9b8cff; box-shadow: 0 0 0 3px rgba(155,140,255,.12); }
-        button {
-            border-radius: 9px;
-            background: linear-gradient(135deg, #9d8cff, #6c9eff);
-            color: #111827;
-            box-shadow: 0 4px 12px rgba(93,117,216,.13);
-        }
-        button:hover { opacity: 1; filter: brightness(1.09); transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-        button.danger { background: linear-gradient(135deg, #ff9ab0, #ec789d); color: #28111c; }
-        .view-tabs { border: 1px solid rgba(161,180,214,.12); border-radius: 10px; }
-        .view-tab.active, .mode-btn.active { background: linear-gradient(135deg, #9c8dff, #6baeff); }
-        .mode-btn { border-radius: 8px; }
-        .axis-readout { background: rgba(10,17,29,.58); border: 1px solid rgba(157,177,211,.12); border-radius: 11px; }
-        .readout-title { color: #b6aaff; }
-        #canvas-container {
-            background: radial-gradient(ellipse at center, #1c2a3f 0%, #0d1522 72%);
-            border: 1px solid rgba(147,174,220,.2);
-            border-radius: 13px;
-            min-height: 260px;
-        }
-        .viewport-heading { margin-bottom: 12px; }
-        .viewport-heading h2 { margin-bottom: 4px; font-size: 19px; letter-spacing: -.02em; }
-        .viewport-subtitle, .sidebar-kicker { color: #8296b5; font-size: 9px; font-weight: 800; letter-spacing: .18em; }
-        .axis-editor-layout { display: flex; flex-direction: column; gap: 9px; min-height: 0; }
-        #canvas-container { order: 1; }
-        .preview-controls { order: 2; }
-        .axis-sidebar { order: 3; }
-        .axis-sidebar { background: rgba(11,18,30,.52); border: 1px solid rgba(157,177,211,.13); border-radius: 12px; padding: 13px; gap: 12px; }
-        .axis-side-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .fullscreen-btn { min-height: 31px; padding: 6px 10px; font-size: 11px; background: linear-gradient(135deg, #55d5eb, #8b8cff); color: #101827; }
-        .axis-float-fullscreen {
-            position: absolute;
-            right: 14px;
-            bottom: 14px;
-            z-index: 20;
-            width: 42px;
-            height: 42px;
-            padding: 0;
-            border-radius: 13px;
-            font-size: 22px;
-            color: #f2f4ff;
-            background: linear-gradient(135deg, rgba(139,119,255,.96), rgba(69,164,255,.96));
-            border: 1px solid rgba(255,255,255,.24);
-            box-shadow: 0 8px 24px rgba(0,0,0,.35);
-        }
-        .viewport-card.axis-fullscreen .axis-float-fullscreen { right: 18px; bottom: 18px; }
-        .bone-picker { gap: 5px; }
-        .bone-picker label { color: #95a9c8; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
-        .bone-picker select { width: 100%; padding: 9px 10px; }
-        .axis-mode-toggle { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 5px; }
-        .axis-mode-toggle .mode-btn { padding: 8px 4px; font-size: 11px; }
-        .axis-readout { margin-top: 0; padding: 12px; }
-        .readout-group { padding-top: 8px; border-top: 1px solid rgba(154,177,213,.1); }
-        .readout-group:first-of-type { border-top: 0; padding-top: 0; }
-        .readout-row .form-group { min-width: 58px; flex: 1; }
-        .readout-row input { width: 100%; min-width: 0; padding: 7px; }
-        .axis-reset-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
-        .axis-reset-actions button { min-height: 36px; padding: 7px; font-size: 11px; }
-        .axis-hint { margin: 0; color: #8193ae; }
-        .preview-controls { align-items: center; }
-        .viewport-card.axis-fullscreen {
-            position: fixed !important;
-            inset: 12px !important;
-            z-index: 99999;
-            width: auto !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background: linear-gradient(145deg, rgba(25,36,53,.99), rgba(14,22,35,.99));
-            box-shadow: 0 28px 100px rgba(0,0,0,.72);
-        }
-        .viewport-card.axis-fullscreen .viewport-heading { flex: 0 0 auto; }
-        .viewport-card.axis-fullscreen .axis-editor-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
-            grid-template-rows: minmax(0, 1fr);
-            flex: 1 1 auto;
-            min-height: 0;
-            gap: 13px;
-        }
-        .viewport-card.axis-fullscreen #axisControls {
-            display: flex !important;
-            grid-column: 2;
-            grid-row: 1;
-            order: 0;
-            min-height: 0;
-            overflow-y: auto;
-        }
-        .viewport-card.axis-fullscreen #canvas-container {
-            grid-column: 1;
-            grid-row: 1;
-            order: 0;
-            width: 100%;
-            height: 100%;
-            min-height: 0;
-        }
-        .viewport-card.axis-fullscreen #previewControls { display: none !important; }
-        body.axis-fullscreen-active { overflow: hidden; }
-        @media (max-width: 768px) {
-            .right-panel { width: 100%; }
-            .viewport-card.axis-fullscreen { inset: 6px !important; padding: 10px; border-radius: 12px; }
-            .viewport-card.axis-fullscreen .axis-editor-layout { grid-template-columns: minmax(0,1fr) minmax(175px, 38%); gap: 7px; }
-            .viewport-card.axis-fullscreen #axisControls { padding: 8px; gap: 8px; }
-            .viewport-card.axis-fullscreen #canvas-container { border-radius: 9px; }
-            .viewport-card.axis-fullscreen .axis-mode-toggle { grid-template-columns: 1fr; }
-            .viewport-card.axis-fullscreen .axis-mode-toggle .mode-btn { padding: 7px 3px; }
-        }
-        @media (max-width: 480px) {
-            .viewport-card.axis-fullscreen .axis-editor-layout { grid-template-columns: minmax(0,1fr) minmax(145px, 42%); }
-            .viewport-card.axis-fullscreen .viewport-heading h2 { font-size: 16px; }
-            .viewport-card.axis-fullscreen .view-tab { padding: 6px 7px; font-size: 10px; }
-            .viewport-card.axis-fullscreen .axis-side-header { align-items: flex-start; flex-direction: column; }
-            .viewport-card.axis-fullscreen .readout-row { gap: 4px; }
-            .viewport-card.axis-fullscreen .readout-row .form-group { min-width: 42px; }
-            .viewport-card.axis-fullscreen .readout-row input { font-size: 11px; }
-        }
+.card{margin-bottom:15px;padding:15px;border:1px solid var(--border);border-radius:15px;background:linear-gradient(145deg,rgba(34,47,66,.96),rgba(24,34,49,.97));box-shadow:0 14px 34px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.035)}
+.right-panel .card{margin-bottom:0}
+.bone-card{border-left:3px solid #8b83ff}
+.segment{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:10px;padding:10px;background:var(--surface2);border:1px solid rgba(160,184,220,.09);border-radius:10px}
+.form-group{display:flex;flex-direction:column;min-width:80px}
+.start-group{position:relative}
+.form-group label{margin-bottom:4px;font-size:11px;color:#bac2de}
+.flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+.toggle-group{display:flex;flex-wrap:wrap;align-items:center;gap:15px}
+.toggle-label{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;user-select:none}
+.toggle-label input{width:16px;height:16px;cursor:pointer}
 
-    </style>
+input,select,textarea{padding:6px;color:var(--text);font-size:13px;background:#111b2a;border:1px solid rgba(151,174,210,.22);border-radius:8px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(155,140,255,.12)}
+textarea{width:100%;height:130px;padding:10px;font-family:monospace;resize:vertical}
+button{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border:0;border-radius:9px;cursor:pointer;font-size:13px;font-weight:bold;color:#111827;background:linear-gradient(135deg,#9d8cff,#6c9eff);box-shadow:0 4px 12px rgba(93,117,216,.13);transition:filter .2s,transform .2s}
+button:hover{filter:brightness(1.09);transform:translateY(-1px)}
+button:active{transform:none}
+button:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
+button.danger{padding:6px 10px;color:#28111c;background:linear-gradient(135deg,#ff9ab0,#ec789d)}
+.error-msg{position:absolute;top:100%;left:0;margin-top:3px;font-size:10px;font-weight:bold;white-space:nowrap;color:var(--danger);opacity:0;transition:opacity .3s;pointer-events:none}
+.error-msg.show{opacity:1}
+#fileUpload{display:none}
+.expr{flex:1;display:flex;flex-direction:column;min-height:200px}
+.expr textarea{flex:1}
+
+.viewport-card{container-type:inline-size}
+.viewport-heading{margin-bottom:12px}
+.viewport-heading h2{font-size:19px;letter-spacing:-.02em}
+.view-tabs{display:flex;gap:4px;padding:3px;background:var(--bg);border:1px solid rgba(161,180,214,.12);border-radius:10px}
+.view-tab{padding:6px 10px;font-size:12px;color:var(--text);background:transparent;box-shadow:none;opacity:.65}
+.view-tab:hover{opacity:1}
+.view-tab.active,.mode-btn.active{color:#111827;background:linear-gradient(135deg,#9c8dff,#6baeff);opacity:1}
+.axis-editor-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.axis-editor-layout>*{min-width:0}
+#canvas-container{position:relative;min-height:var(--cv-h);overflow:hidden;background:radial-gradient(ellipse at center,#1c2a3f 0%,#0d1522 72%);border:1px solid rgba(147,174,220,.2);border-radius:13px}
+#canvas-container>canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#canvas-container>.gizmo{z-index:1;pointer-events:auto;touch-action:none}
+.fs-btn{position:absolute;right:14px;bottom:14px;z-index:2;width:42px;height:42px;padding:0;font-size:22px;color:#f2f4ff;background:linear-gradient(135deg,rgba(139,119,255,.96),rgba(69,164,255,.96));border:1px solid rgba(255,255,255,.24);border-radius:13px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+[data-mode=preview] #axisControls,[data-mode=axis] #previewControls{display:none}
+
+.axis-sidebar{display:flex;flex-direction:column;gap:12px;padding:13px;background:rgba(11,18,30,.52);border:1px solid rgba(157,177,211,.13);border-radius:12px}
+.bone-picker{gap:5px}
+.bone-picker label{margin:0;font-size:10px;font-weight:800;letter-spacing:.1em;color:#95a9c8}
+.bone-picker select{width:100%;padding:9px 10px}
+.axis-mode-toggle{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.mode-btn{padding:8px 4px;font-size:11px;color:var(--text);background:var(--surface2);box-shadow:none;border-radius:8px;opacity:.7}
+.axis-readout{padding:12px;background:rgba(10,17,29,.58);border:1px solid rgba(157,177,211,.12);border-radius:11px}
+.readout-group+.readout-group{margin-top:8px;padding-top:8px;border-top:1px solid rgba(154,177,213,.1)}
+.group-label{display:block;margin-bottom:4px;font-size:11px;color:#bac2de}
+.readout-row{display:flex;gap:6px}
+.readout-row .form-group{flex:1 1 0;min-width:0}
+.readout-row input{width:100%;min-width:0;padding:7px}
+.axis-reset-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.axis-reset-actions button{min-height:36px;padding:7px;font-size:11px}
+
+.viewport-card.full{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;margin:0;padding:clamp(8px,1.5vw,16px);border-radius:0;background:linear-gradient(145deg,#192435,#0e1623)}
+.full .axis-editor-layout{flex:1;min-height:0;grid-template-rows:minmax(0,1fr) auto}
+.full[data-mode=axis] .axis-editor-layout{grid-template-rows:minmax(0,42fr) minmax(0,58fr)}
+.full #canvas-container{min-height:0}
+.full .axis-sidebar{overflow-y:auto}
+@container (min-width:600px){
+  [data-mode=axis] .axis-editor-layout{grid-template-columns:minmax(0,1fr) clamp(240px,36%,340px)}
+  .full[data-mode=axis] .axis-editor-layout{grid-template-rows:minmax(0,1fr)}
+}
+
+.modal-overlay{display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.6)}
+.modal-box{width:100%;max-width:480px;max-height:100%;overflow-y:auto;padding:20px;background:#1c2635;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.modal-box label{display:block;margin-bottom:6px;font-size:12px;color:#bac2de}
+.modal-box p{margin:8px 0 0;font-size:12px;line-height:1.4;color:#bac2de}
+.modal-box textarea{height:160px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:15px}
+.btn-cancel{color:var(--text);background:var(--panel);border:1px solid var(--border);box-shadow:none}
+.import-error{display:none;margin-top:8px;font-size:12px;color:var(--danger)}
+
+@media (max-height:560px){
+  body{padding:10px;gap:10px}
+  :root{--cv-h:clamp(170px,calc(100dvh - 160px),340px)}
+  .card{padding:10px;border-radius:12px}
+  .viewport-heading{margin-bottom:8px}
+  .full .axis-sidebar{gap:6px;padding:8px}
+  .full .axis-readout{padding:8px}
+  .full .readout-group+.readout-group{margin-top:5px;padding-top:5px}
+  .full .bone-picker label{display:none}
+  .full .group-label{margin-bottom:2px;font-size:10px}
+  .full .readout-row .form-group label{margin-bottom:1px;font-size:10px}
+  .full .readout-row input{padding:3px 5px;font-size:12px}
+  .full .bone-picker select{padding:6px 8px}
+  .full .mode-btn,.full .axis-reset-actions button{min-height:26px;padding:3px}
+}
+@media (max-width:768px),(max-width:900px) and (orientation:portrait){
+  :root{--cv-h:280px}
+  body{flex-direction:column;height:auto;min-height:100dvh;gap:14px;padding:10px;overflow:visible}
+  body.noscroll{height:100dvh;overflow:hidden}
+  .left-panel{flex:none;max-height:max(60dvh,220px);padding-right:5px}
+  .right-panel{width:100%;overflow:visible}
+}
+</style>
 </head>
 <body>
-    <div class="left-panel">
-        <h1>Player Animator <span style="color:#a99cff;">Studio</span></h1>
-        <div class="card">
-            <div class="toggle-group">
-                <label class="toggle-label">
-                    <input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms
-                </label>
-                <label class="toggle-label">
-                    <input type="checkbox" id="playerRiding" onchange="onRidingToggle()"> Player Riding
-                </label>
-                <label class="toggle-label">
-                    <input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs
-                </label>
-            </div>
-        </div>
-        <div id="bonesContainer"></div>
-        <button onclick="addBone()" style="margin-bottom:30px;width:100%;">+ Add New Bone</button>
+<div class="left-panel">
+    <h1>Player Animator <span>Studio</span></h1>
+    <div class="card toggle-group">
+        <label class="toggle-label"><input type="checkbox" id="mirrorArms" checked onchange="generate()"> Mirror Arms</label>
+        <label class="toggle-label"><input type="checkbox" id="playerRiding"> Player Riding</label>
+        <label class="toggle-label"><input type="checkbox" id="mirrorLegs" onchange="generate()"> Mirror Legs</label>
     </div>
-    <div class="right-panel">
-        <div class="card viewport-card" id="viewportCard" style="margin-bottom:0;">
-            <div class="flex-between viewport-heading">
-                <div>
-                    <h2 id="viewportTitle">3D Live Preview</h2>
-                    <div class="viewport-subtitle">POSE • ANIMATE • PREVIEW</div>
-                </div>
-                <div class="view-tabs">
-                    <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
-                    <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
-                </div>
-            </div>
-            <div id="axisEditorLayout" class="axis-editor-layout">
-                <aside id="axisControls" class="axis-sidebar" style="display:none;">
-                    <div class="axis-side-header">
-                        <span class="sidebar-kicker">TRANSFORM PANEL</span>
-                    </div>
-                    <div class="form-group bone-picker">
-                        <label for="boneSelect">SELECT BONE</label>
-                        <select id="boneSelect" onchange="selectBone(this.value)">
-                            <option value="root">Root</option>
-                            <option value="waist">Body / Waist</option>
-                            <option value="head">Head</option>
-                            <option value="rightArm">Right Arm</option>
-                            <option value="leftArm">Left Arm</option>
-                            <option value="rightLeg">Right Leg</option>
-                            <option value="leftLeg">Left Leg</option>
-                        </select>
-                    </div>
-                    <div class="mode-toggle axis-mode-toggle">
-                        <button class="mode-btn active" id="modeRotateBtn" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
-                        <button class="mode-btn" id="modeTranslateBtn" onclick="setGizmoMode('translate')">✥ Move</button>
-                        <button class="mode-btn" id="modeScaleBtn" onclick="setGizmoMode('scale')" disabled>⤢ Scale</button>
-                    </div>
-                    <div id="axisReadout" class="axis-readout"></div>
-                    <div class="axis-reset-actions">
-                        <button class="danger" onclick="resetBonePose()">Reset Bone</button>
-                        <button onclick="resetAllPose()">Reset All</button>
-                    </div>
-                    <p class="hint axis-hint">Select a bone, then drag the gizmo or edit its values. Drag empty space to orbit the camera.</p>
-                </aside>
-                <div id="canvas-container">
-                    <button class="axis-float-fullscreen" id="axisFullscreenToggle" onclick="toggleAxisFullscreen()" aria-label="Toggle fullscreen" title="Fullscreen">⛶</button>
-                </div>
-                <div id="previewControls" class="flex-between preview-controls">
-                    <button onclick="togglePlay()">Ⅱ / ▶ Play</button>
-                    <p class="hint" style="margin:0;">Drag: Rotate camera&nbsp; • &nbsp;Scroll: Zoom</p>
-                </div>
+    <div id="bonesContainer"></div>
+    <button onclick="addBone()" style="margin-bottom:30px;width:100%">+ Add New Bone</button>
+</div>
+<div class="right-panel">
+    <div class="card viewport-card" id="viewportCard" data-mode="preview">
+        <div class="flex-between viewport-heading">
+            <h2 id="viewportTitle">3D Live Preview</h2>
+            <div class="view-tabs">
+                <button class="view-tab active" id="tabPreview" onclick="setViewMode('preview')">Live Preview</button>
+                <button class="view-tab" id="tabAxis" onclick="setViewMode('axis')">Axis Editor</button>
             </div>
         </div>
-        <div class="card" style="margin-bottom:0;">
-            <h2>Custom Skin</h2>
-            <div style="margin-top:10px;display:flex;gap:10px;">
-                <button onclick="document.getElementById('fileUpload').click()">Upload Image</button>
-                <button onclick="resetSkin()">Reset Default</button>
-                <input type="file" id="fileUpload" accept="image/*" onchange="uploadSkin(event)">
+        <div class="axis-editor-layout">
+            <div id="canvas-container">
+                <button class="fs-btn" id="fsBtn" onclick="toggleFullscreen()" title="Fullscreen" aria-label="Fullscreen">⛶</button>
             </div>
-        </div>
-        <div class="card" style="flex:1;display:flex;flex-direction:column;margin-bottom:0;">
-            <div class="flex-between" style="margin-bottom:10px;">
-                <h2>Stop_Expression (playanimation)</h2>
-                <div style="display:flex;gap:8px;">
-                    <button onclick="copyCode()">Copy</button>
-                    <button onclick="openImportModal()">Import</button>
+            <div id="previewControls"><button onclick="togglePlay()">Ⅱ / ▶ Play</button></div>
+            <aside id="axisControls" class="axis-sidebar">
+                <div class="form-group bone-picker">
+                    <label for="boneSelect">SELECT BONE</label>
+                    <select id="boneSelect" onchange="selectBone(this.value)"></select>
                 </div>
-            </div>
-            <textarea id="output" readonly style="flex:1;"></textarea>
+                <div class="axis-mode-toggle">
+                    <button class="mode-btn" data-mode="rotate" onclick="setGizmoMode('rotate')">⟳ Rotate</button>
+                    <button class="mode-btn" data-mode="move" onclick="setGizmoMode('move')">✥ Move</button>
+                    <button class="mode-btn" data-mode="scale" onclick="setGizmoMode('scale')">⤢ Scale</button>
+                </div>
+                <div id="axisReadout" class="axis-readout"></div>
+                <div class="axis-reset-actions">
+                    <button class="danger" onclick="resetBonePose()">Reset Bone</button>
+                    <button onclick="resetAllPose()">Reset All</button>
+                </div>
+            </aside>
         </div>
     </div>
+    <div class="card">
+        <h2 style="margin-bottom:10px">Custom Skin</h2>
+        <div style="display:flex;gap:10px">
+            <button onclick="$('fileUpload').click()">Upload Image</button>
+            <button onclick="resetSkin()">Reset Default</button>
+            <input type="file" id="fileUpload" accept="image/*" onchange="uploadSkin(event)">
+        </div>
+    </div>
+    <div class="card expr">
+        <div class="flex-between" style="margin-bottom:10px">
+            <h2>Stop_Expression (playanimation)</h2>
+            <div style="display:flex;gap:8px">
+                <button onclick="copyCode()">Copy</button>
+                <button onclick="openImportModal()">Import</button>
+            </div>
+        </div>
+        <textarea id="output" readonly></textarea>
+    </div>
+</div>
 
-    <div id="importOverlay" class="modal-overlay">
-        <div class="modal-box">
-            <div id="importPhaseInput">
-                <h2>Import Stop_Expression</h2>
-                <p class="hint" style="margin-top:0;">Paste a Stop_Expression code below, then tap Import.</p>
-                <label for="importInput">Stop_Expression code</label>
-                <textarea id="importInput" placeholder="Paste your Stop_Expression here..."></textarea>
-                <div id="importError" class="import-error"></div>
-                <div class="modal-actions">
-                    <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
-                    <button onclick="attemptImport()">Import</button>
-                </div>
+<div id="importOverlay" class="modal-overlay">
+    <div class="modal-box">
+        <div id="importPhaseInput">
+            <h2>Import Stop_Expression</h2>
+            <label for="importInput" style="margin-top:12px">Stop_Expression code</label>
+            <textarea id="importInput" placeholder="Paste your Stop_Expression here..."></textarea>
+            <div id="importError" class="import-error"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+                <button onclick="attemptImport()">Import</button>
             </div>
-            <div id="importPhaseConfirm" style="display:none;">
-                <h2>Replace all keyframes?</h2>
-                <p class="hint" style="margin-top:0;">Do you want to import this? If you continue, all of your current keyframe progress will be lost and replaced with the imported data.</p>
-                <div class="modal-actions">
-                    <button class="btn-cancel" onclick="cancelImportConfirm()">Cancel</button>
-                    <button class="danger" onclick="confirmReplaceImport()">Replace</button>
-                </div>
+        </div>
+        <div id="importPhaseConfirm" style="display:none">
+            <h2>Replace all keyframes?</h2>
+            <p>All current keyframes will be replaced with the imported data.</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="cancelImportConfirm()">Cancel</button>
+                <button class="danger" onclick="confirmReplaceImport()">Replace</button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png";
-        const boneVariables = [
-            "v.root.x", "v.root.z",
-            "v.root.xpos", "v.root.ypos", "v.root.zpos",
-            "v.body.x", "v.body.y", "v.body.z",
-            "v.body.xpos", "v.body.ypos",
-            "v.body_head.xzscale", "v.body_head.yscale",
-            "v.head.x", "v.head.y", "v.head.z",
-            "v.head.xpos", "v.head.ypos", "v.head.zpos",
-            "v.rightleg.x", "v.leftleg.x",
-            "v.rightarm.x", "v.rightarm.y", "v.rightarm.z", "v.rightarm.ypos",
-            "v.leftarm.x", "v.leftarm.y", "v.leftarm.z", "v.leftarm.ypos"
-        ];
-        const easeList = [
-            "lerp", "ease_in_sine", "ease_out_sine", "ease_in_out_sine",
-            "ease_in_quad", "ease_out_quad", "ease_in_out_quad",
-            "ease_in_cubic", "ease_out_cubic", "ease_in_out_cubic",
-            "ease_in_quart", "ease_out_quart", "ease_in_out_quart",
-            "ease_in_quint", "ease_out_quint", "ease_in_out_quint",
-            "ease_in_expo", "ease_out_expo", "ease_in_out_expo",
-            "ease_in_circ", "ease_out_circ", "ease_in_out_circ",
-            "ease_in_back", "ease_out_back", "ease_in_out_back",
-            "ease_in_elastic", "ease_out_elastic", "ease_in_out_elastic",
-            "ease_in_bounce", "ease_out_bounce", "ease_in_out_bounce"
-        ];
-        let data = [
-            { bone: 'v.rightarm.x', segments: [
-                { start: 0, dur: 0.5, val1: 0, val2: -90, ease: 'ease_out_back' },
-                { start: 0.5, dur: 0.5, val1: 0, val2: 0, ease: 'ease_in_out_sine' }
-            ] }
-        ];
+<script>
+const $ = id => document.getElementById(id);
+const DEG = Math.PI / 180;
+const r2 = v => Math.round(v * 100) / 100;
+const DEFAULT_TEXTURE_URL = "https://raw.githubusercontent.com/Azizanzz0/Image/refs/heads/main/IMG_5351.png";
 
-        const trashIcon =
-            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#11111b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-        const keyframeIcon =
-            `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px;"><path d="M12 2L22 12L12 22L2 12L12 2Z"/></svg>`;
+const boneVariables = [
+    "v.root.x", "v.root.z", "v.root.xpos", "v.root.ypos", "v.root.zpos",
+    "v.body.x", "v.body.y", "v.body.z", "v.body.xpos", "v.body.ypos",
+    "v.body_head.xzscale", "v.body_head.yscale",
+    "v.head.x", "v.head.y", "v.head.z", "v.head.xpos", "v.head.ypos", "v.head.zpos",
+    "v.rightleg.x", "v.leftleg.x",
+    "v.rightarm.x", "v.rightarm.y", "v.rightarm.z", "v.rightarm.ypos",
+    "v.leftarm.x", "v.leftarm.y", "v.leftarm.z", "v.leftarm.ypos"
+];
+const invertedBones = ["v.rightarm.y", "v.leftarm.y", "v.rightarm.z", "v.leftarm.z", "v.head.y", "v.head.z", "v.body.y", "v.body.z"];
 
-        function renderBones() {
-            const container = document.getElementById('bonesContainer');
-            container.innerHTML = '';
-            data.forEach((bData, bIndex) => {
-                let boneOptions = boneVariables.map(v =>
-                    `<option value="${v}" ${bData.bone === v ? 'selected' : ''}>${v}</option>`).join('');
-                let html =
-                    `<div class="card bone-card"><div class="flex-between"><div class="form-group"><select onchange="updateBone(${bIndex}, this.value)" style="font-weight:bold;font-size:14px;">${boneOptions}</select></div><button class="danger" onclick="removeBone(${bIndex})" title="Remove Bone">${trashIcon}</button></div><div id="segments-${bIndex}">`;
-                bData.segments.forEach((seg, sIndex) => {
-                    let easeOptions = easeList.map(e => {
-                        let label = e === 'lerp' ? 'lerp (linear)' : e.replace(/_/g, ' ');
-                        return `<option value="${e}" ${seg.ease === e ? 'selected' : ''}>${label}</option>`;
-                    }).join('');
-                    html +=
-                        `<div class="segment"><div class="form-group" style="width:20px;"><label>#${sIndex + 1}</label></div><div class="form-group start-group" style="width:55px;"><label>Start</label><input type="number" step="0.1" id="start-${bIndex}-${sIndex}" value="${seg.start}" onchange="validateStart(${bIndex}, ${sIndex}, this.value)"><span id="err-${bIndex}-${sIndex}" class="error-msg"></span></div><div class="form-group" style="width:55px;"><label>Dur</label><input type="number" step="0.1" value="${seg.dur}" oninput="updateSeg(${bIndex}, ${sIndex}, 'dur', this.value)"></div>${sIndex === 0 ? `<div class="form-group" style="width:60px;"><label>From</label><input type="number" value="${seg.val1}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val1', this.value)"></div>` : ''}<div class="form-group" style="width:60px;"><label>To</label><input type="number" value="${seg.val2}" oninput="updateSeg(${bIndex}, ${sIndex}, 'val2', this.value)"></div><div class="form-group"><label>Ease</label><select onchange="updateSeg(${bIndex}, ${sIndex}, 'ease', this.value)">${easeOptions}</select></div><div class="form-group"><button class="danger" style="margin-top:15px;" onclick="removeSeg(${bIndex}, ${sIndex})" title="Remove Keyframe">${trashIcon}</button></div></div>`;
-                });
-                html += `</div><br><button onclick="addSeg(${bIndex})">${keyframeIcon} Add Keyframe</button></div>`;
-                container.innerHTML += html;
-            });
+const bounceOut = t => {
+    const n = 7.5625, d = 2.75;
+    if (t < 1 / d) return n * t * t;
+    if (t < 2 / d) return n * (t -= 1.5 / d) * t + 0.75;
+    if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + 0.9375;
+    return n * (t -= 2.625 / d) * t + 0.984375;
+};
+const EASE_IN = {
+    sine: t => 1 - Math.cos(t * Math.PI / 2),
+    quad: t => t ** 2, cubic: t => t ** 3, quart: t => t ** 4, quint: t => t ** 5,
+    expo: t => t ? 2 ** (10 * t - 10) : 0,
+    circ: t => 1 - Math.sqrt(1 - t * t),
+    back: t => 2.70158 * t ** 3 - 1.70158 * t * t,
+    elastic: t => t && t < 1 ? -(2 ** (10 * t - 10)) * Math.sin((t * 10 - 10.75) * 2 * Math.PI / 3) : t,
+    bounce: t => 1 - bounceOut(1 - t)
+};
+const EASINGS = { lerp: t => t };
+for (const [n, f] of Object.entries(EASE_IN)) {
+    EASINGS[`ease_in_${n}`] = f;
+    EASINGS[`ease_out_${n}`] = t => 1 - f(1 - t);
+    EASINGS[`ease_in_out_${n}`] = t => t < .5 ? f(2 * t) / 2 : 1 - f(2 - 2 * t) / 2;
+}
+const c2 = 1.70158 * 1.525, c5 = 2 * Math.PI / 4.5;
+EASINGS.ease_in_out_back = t => t < .5
+    ? ((2 * t) ** 2 * ((c2 + 1) * 2 * t - c2)) / 2
+    : ((2 * t - 2) ** 2 * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2;
+EASINGS.ease_in_out_elastic = t => t === 0 || t === 1 ? t : t < .5
+    ? -(2 ** (20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) / 2
+    : (2 ** (-20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1;
+const easeList = Object.keys(EASINGS);
+const getEase = (name, t) => (EASINGS[name] || EASINGS.lerp)(Math.min(Math.max(t, 0), 1));
+
+let data = [{ bone: 'v.rightarm.x', segments: [
+    { start: 0, dur: 0.5, val1: 0, val2: -90, ease: 'ease_out_back' },
+    { start: 0.5, dur: 0.5, val1: 0, val2: 0, ease: 'ease_in_out_sine' }
+] }];
+
+const trashIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#11111b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+const keyframeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px"><path d="M12 2L22 12L12 22L2 12Z"/></svg>';
+
+function renderBones() {
+    $('bonesContainer').innerHTML = data.map((bd, b) => {
+        const boneOpts = boneVariables.map(v => `<option value="${v}"${bd.bone === v ? ' selected' : ''}>${v}</option>`).join('');
+        const field = (label, w, attrs) => `<div class="form-group" style="width:${w}px"><label>${label}</label><input type="number" ${attrs}></div>`;
+        const segs = bd.segments.map((sg, s) => {
+            const easeOpts = easeList.map(e => `<option value="${e}"${sg.ease === e ? ' selected' : ''}>${e === 'lerp' ? 'lerp (linear)' : e.replace(/_/g, ' ')}</option>`).join('');
+            return `<div class="segment">
+                <div class="form-group" style="width:20px"><label>#${s + 1}</label></div>
+                <div class="form-group start-group" style="width:55px"><label>Start</label><input type="number" step="0.1" id="start-${b}-${s}" value="${sg.start}" onchange="validateStart(${b},${s},this.value)"><span id="err-${b}-${s}" class="error-msg"></span></div>
+                ${field('Dur', 55, `step="0.1" value="${sg.dur}" oninput="updateSeg(${b},${s},'dur',this.value)"`)}
+                ${s ? '' : field('From', 60, `step="any" value="${sg.val1}" oninput="updateSeg(${b},${s},'val1',this.value)"`)}
+                ${field('To', 60, `step="any" value="${sg.val2}" oninput="updateSeg(${b},${s},'val2',this.value)"`)}
+                <div class="form-group"><label>Ease</label><select onchange="updateSeg(${b},${s},'ease',this.value)">${easeOpts}</select></div>
+                <div class="form-group"><button class="danger" style="margin-top:15px" onclick="removeSeg(${b},${s})" title="Remove Keyframe">${trashIcon}</button></div>
+            </div>`;
+        }).join('');
+        return `<div class="card bone-card"><div class="flex-between"><div class="form-group"><select onchange="updateBone(${b},this.value)" style="font-weight:bold;font-size:14px">${boneOpts}</select></div><button class="danger" onclick="removeBone(${b})" title="Remove Bone">${trashIcon}</button></div>${segs}<br><button onclick="addSeg(${b})">${keyframeIcon} Add Keyframe</button></div>`;
+    }).join('');
+    generate();
+}
+
+function addBone() { data.push({ bone: boneVariables[0], segments: [{ start: 0, dur: 0.5, val1: 0, val2: 45, ease: 'lerp' }] }); renderBones(); }
+function removeBone(b) { data.splice(b, 1); renderBones(); }
+function removeSeg(b, s) { data[b].segments.splice(s, 1); renderBones(); }
+function updateBone(b, val) { data[b].bone = val; generate(); }
+function updateSeg(b, s, key, val) { data[b].segments[s][key] = key === 'ease' ? val : parseFloat(val) || 0; generate(); }
+
+function addSeg(b) {
+    const segs = data[b].segments, last = getEffectiveSegments(segs).pop();
+    segs.push({ start: last ? r2(last.start + last.dur) : 0, dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' });
+    renderBones();
+}
+
+function validateStart(b, s, val) {
+    const v = parseFloat(val) || 0, prev = data[b].segments[s - 1];
+    if (prev) {
+        const minEnd = r2(prev.start + prev.dur);
+        if (Math.abs(v - prev.start) > 1e-6 && v < minEnd) {
+            const input = $(`start-${b}-${s}`), err = $(`err-${b}-${s}`);
+            input.style.color = input.style.borderColor = 'var(--danger)';
+            err.textContent = `Use ${prev.start} or ≥ ${minEnd}`;
+            err.classList.add('show');
+            data[b].segments[s].start = minEnd;
             generate();
+            setTimeout(() => {
+                input.style.color = input.style.borderColor = '';
+                err.classList.remove('show');
+                input.value = minEnd;
+            }, 2000);
+            return;
         }
+    }
+    updateSeg(b, s, 'start', v);
+}
 
-        function addBone() { data.push({ bone: boneVariables[0], segments: [{ start: 0, dur: 0.5, val1: 0,
-                val2: 45, ease: 'lerp' }] }); renderBones(); }
+function getEffectiveSegments(segs) {
+    const seen = new Set();
+    return segs.filter(s => { const k = (+s.start || 0).toFixed(6); return !seen.has(k) && seen.add(k); });
+}
 
-        function removeBone(i) { data.splice(i, 1); renderBones(); }
+function interp(sg, from, to) {
+    const start = +sg.start || 0, dur = Math.max(+sg.dur || 0, 1e-4);
+    return `math.${sg.ease}(${from},${to},math.min(${start ? `(q.state_time-${start})` : 'q.state_time'}/${dur},1))`;
+}
 
-        function addSeg(bIndex) {
-            let segs = data[bIndex].segments;
-            const effective = getEffectiveSegments(segs);
-            const last = effective[effective.length - 1];
-            let start = last ? Number((last.start + last.dur).toFixed(2)) : 0;
-            segs.push({ start: Number(start.toFixed(2)), dur: 1, val1: 0, val2: 0, ease: 'ease_out_sine' });
-            renderBones();
+function buildBoneStatement(segs, name) {
+    const f = getEffectiveSegments(segs), n = f.length;
+    if (!n) return '';
+    let expr = '';
+    for (let i = n - 1; i >= 0; i--) {
+        const cur = interp(f[i], i ? f[i - 1].val2 : f[0].val1, f[i].val2);
+        expr = i === n - 1 ? cur : `q.state_time<${f[i + 1].start}?${cur}:${i < n - 2 ? `(${expr})` : expr}`;
+    }
+    const start = +f[0].start || 0;
+    return start ? `q.state_time>=${start}?{${name}=${expr};};` : `${name}=${expr};`;
+}
+
+const MIRRORS = [
+    ['mirrorArms', 'v.rightarm.x', 'v.leftarm.x', 1], ['mirrorArms', 'v.rightarm.y', 'v.leftarm.y', -1],
+    ['mirrorArms', 'v.rightarm.z', 'v.leftarm.z', -1], ['mirrorArms', 'v.rightarm.ypos', 'v.leftarm.ypos', 1],
+    ['mirrorLegs', 'v.rightleg.x', 'v.leftleg.x', 1]
+];
+const activeMirrors = has => MIRRORS.flatMap(([chk, r, l, sign]) =>
+    !$(chk).checked || has(r) === has(l) ? [] : has(r) ? [[l, r, sign]] : [[r, l, sign]]);
+
+function generate() {
+    const used = new Set(data.map(b => b.bone));
+    $('output').value = data.map(b => buildBoneStatement(b.segments, b.bone)).join('')
+        + activeMirrors(k => used.has(k)).map(([to, from, sign]) => `${to}=${sign < 0 ? '-' : ''}${from};`).join('');
+}
+
+function copyCode() {
+    const o = $('output');
+    o.select();
+    o.setSelectionRange(0, o.value.length);
+    document.execCommand('copy');
+}
+
+let pendingImport = null;
+const show = (id, on) => $(id).style.display = on ? 'block' : 'none';
+
+function splitTop(s, sep) {
+    const parts = [];
+    let depth = 0, last = 0;
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (c === '(' || c === '{') depth++;
+        else if (c === ')' || c === '}') depth--;
+        else if (c === sep && !depth) { parts.push(s.slice(last, i)); last = i + 1; }
+    }
+    parts.push(s.slice(last));
+    return parts;
+}
+
+function splitTernary(s) {
+    let depth = 0, q = -1, c = -1;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (ch === '(') depth++;
+        else if (ch === ')') depth--;
+        else if (!depth && ch === '?' && q < 0) q = i;
+        else if (!depth && ch === ':' && q >= 0 && c < 0) c = i;
+    }
+    return q < 0 || c < 0 ? null : { t: s.slice(q + 1, c).trim(), f: s.slice(c + 1).trim() };
+}
+
+function stripOuterParens(s) {
+    s = s.trim();
+    while (s[0] === '(' && s[s.length - 1] === ')') {
+        let depth = 0, wraps = true;
+        for (let i = 0; i < s.length; i++) {
+            if (s[i] === '(') depth++;
+            else if (s[i] === ')' && --depth === 0 && i !== s.length - 1) { wraps = false; break; }
         }
+        if (!wraps) break;
+        s = s.slice(1, -1).trim();
+    }
+    return s;
+}
 
-        function removeSeg(bIndex, sIndex) { data[bIndex].segments.splice(sIndex, 1); renderBones(); }
+function parseMathCall(s) {
+    const m = stripOuterParens(s).match(/^math\.([a-zA-Z_]+)\((.*)\)$/s);
+    if (!m) return null;
+    const args = splitTop(m[2], ',');
+    if (args.length < 3) return null;
+    const mm = stripOuterParens(args.slice(2).join(',')).match(/^math\.min\((.+)\/([\d.]+)\s*,\s*1\)$/s);
+    if (!mm) return null;
+    const sub = mm[1].trim().match(/^\(?\s*q\.state_time\s*-\s*([\d.]+)\s*\)?$/);
+    return { val1: args[0].trim(), val2: args[1].trim(), ease: m[1], dur: parseFloat(mm[2]), start: sub ? parseFloat(sub[1]) : 0 };
+}
 
-        function updateBone(bIndex, val) { data[bIndex].bone = val; generate(); }
+function parseBoneChain(s) {
+    s = stripOuterParens(s);
+    const sp = splitTernary(s);
+    if (!sp) { const c = parseMathCall(s); return c && [c]; }
+    const head = parseMathCall(sp.t), rest = head && parseBoneChain(sp.f);
+    return rest && [head, ...rest];
+}
 
-        function updateSeg(bIndex, sIndex, key, val) { data[bIndex].segments[sIndex][key] = key === 'ease' ?
-                val : parseFloat(val) || 0; generate(); }
+function unwrapGateBlock(st) {
+    const m = st.match(/^q\.state_time\s*>=\s*[\d.]+\s*\?\s*\{(.+)\}$/s);
+    return m ? m[1].trim().replace(/;$/, '').trim() : st;
+}
 
-        function validateStart(bIndex, sIndex, val) {
-            let numVal = parseFloat(val) || 0;
-            if (sIndex > 0) {
-                const prevSeg = data[bIndex].segments[sIndex - 1];
-                const minEnd = Number((prevSeg.start + prevSeg.dur).toFixed(2));
-                const isDuplicateTime = Math.abs(numVal - prevSeg.start) < 0.000001;
-                if (!isDuplicateTime && numVal < minEnd) {
-                    const inputEl = document.getElementById(`start-${bIndex}-${sIndex}`);
-                    const errEl = document.getElementById(`err-${bIndex}-${sIndex}`);
-                    inputEl.style.color = "var(--danger)";
-                    inputEl.style.borderColor = "var(--danger)";
-                    errEl.innerText = `Use ${prevSeg.start} or ≥ ${minEnd}`;
-                    errEl.classList.add('show');
-                    data[bIndex].segments[sIndex].start = minEnd;
-                    generate();
-                    setTimeout(() => {
-                        if (inputEl && errEl) {
-                            inputEl.style.color = "";
-                            inputEl.style.borderColor = "";
-                            errEl.classList.remove('show');
-                            inputEl.value = minEnd;
-                        }
-                    }, 2000);
-                    return;
-                }
-            }
-            updateSeg(bIndex, sIndex, 'start', numVal);
+function parseStopExpression(text) {
+    const map = {}, order = [];
+    let mirrorArms = false, mirrorLegs = false;
+    splitTop(text, ';').map(s => s.trim()).filter(Boolean).forEach(raw => {
+        const m = unwrapGateBlock(raw).match(/^(v\.\w+\.\w+)\s*=\s*(.+)$/s);
+        if (!m) return;
+        const [, name, rhs] = m, ref = rhs.trim().match(/^-?\s*(v\.\w+\.\w+)$/);
+        if (ref) {
+            if (name.includes('arm') && ref[1].includes('arm')) mirrorArms = true;
+            if (name.includes('leg') && ref[1].includes('leg')) mirrorLegs = true;
+            return;
         }
+        const chain = parseBoneChain(rhs.trim());
+        if (!chain) return;
+        if (!map[name]) { map[name] = []; order.push(name); }
+        map[name].push(...chain);
+    });
+    return {
+        mirrorArms, mirrorLegs,
+        data: order.map(name => ({
+            bone: name,
+            segments: map[name].sort((a, b) => a.start - b.start).map((c, i) => ({
+                start: c.start, dur: c.dur, val1: i ? 0 : parseFloat(c.val1) || 0, val2: parseFloat(c.val2) || 0,
+                ease: easeList.includes(c.ease) ? c.ease : 'lerp'
+            }))
+        }))
+    };
+}
 
-        function getEffectiveSegments(segments) {
-            const seen = new Set();
-            return (segments || []).filter(segment => {
-                const start = Number(segment.start) || 0;
-                const key = start.toFixed(6);
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        }
+function openImportModal() {
+    $('importInput').value = '';
+    show('importError', false); show('importPhaseInput', true); show('importPhaseConfirm', false);
+    $('importOverlay').style.display = 'flex';
+}
+function closeImportModal() { $('importOverlay').style.display = 'none'; pendingImport = null; }
+function cancelImportConfirm() { show('importPhaseInput', true); show('importPhaseConfirm', false); }
+function attemptImport() {
+    const text = $('importInput').value.trim(), parsed = text && parseStopExpression(text);
+    if (!parsed || !parsed.data.length) {
+        $('importError').textContent = text
+            ? "This doesn't look like a valid Stop_Expression. Please check the code and try again."
+            : 'Please paste a Stop_Expression first.';
+        return show('importError', true);
+    }
+    show('importError', false);
+    pendingImport = parsed;
+    show('importPhaseInput', false); show('importPhaseConfirm', true);
+}
+function confirmReplaceImport() {
+    if (!pendingImport) return;
+    data = pendingImport.data;
+    $('mirrorArms').checked = pendingImport.mirrorArms;
+    $('mirrorLegs').checked = pendingImport.mirrorLegs;
+    closeImportModal();
+    renderBones();
+}
 
-        function buildInterpolation(segment, fromValue, toValue) {
-            const ease = segment.ease === 'lerp' ? 'lerp' : segment.ease;
-            const start = Number(segment.start) || 0;
-            const duration = Math.max(Number(segment.dur) || 0, 0.0001);
-            const elapsed = start === 0 ? 'q.state_time' : `(q.state_time-${start})`;
-            return `math.${ease}(${fromValue},${toValue},math.min(${elapsed}/${duration},1))`;
-        }
+const container = $('canvas-container');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+container.appendChild(renderer.domElement);
+const gizmoCanvas = document.createElement('canvas');
+gizmoCanvas.className = 'gizmo';
+container.appendChild(gizmoCanvas);
+const gctx = gizmoCanvas.getContext('2d');
+const controls = new THREE.OrbitControls(camera, gizmoCanvas);
+camera.position.set(30, 24, 60);
+controls.target.set(0, 15, 0);
+controls.update();
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+dirLight.position.set(10, 20, 10);
+scene.add(dirLight);
 
-        function buildKeyframeExpression(segments, boneVarName) {
-            const frames = getEffectiveSegments(segments);
-            if (!frames.length) return '';
-            if (frames.length === 1) {
-                return buildInterpolation(frames[0], frames[0].val1, frames[0].val2);
-            }
-
-            const count = frames.length;
-            const first = buildInterpolation(frames[0], frames[0].val1, frames[0].val2);
-            if (count === 2) {
-                const second = buildInterpolation(frames[1], boneVarName, frames[1].val2);
-                return `q.state_time<${frames[1].start}?${first}:${second}`;
-            }
-            if (count === 3) {
-                const second = buildInterpolation(frames[1], frames[0].val2, frames[1].val2);
-                const third = buildInterpolation(frames[2], frames[1].val2, frames[2].val2);
-                return `q.state_time<${frames[1].start}?${first}:(q.state_time<${frames[2].start}?${second}:${third})`;
-            }
-
-            let expression = buildInterpolation(frames[count - 1], frames[count - 2].val2, frames[count - 1].val2);
-            for (let i = count - 2; i >= 0; i--) {
-                const fromValue = i === 0 ? frames[0].val1 : frames[i - 1].val2;
-                const current = buildInterpolation(frames[i], fromValue, frames[i].val2);
-                expression = `q.state_time<${frames[i + 1].start}?${current}:(${expression})`;
-            }
-            return expression;
-        }
-
-        function buildBoneStatement(segments, boneVarName) {
-            const frames = getEffectiveSegments(segments);
-            if (!frames.length) return '';
-            const expression = buildKeyframeExpression(frames, boneVarName);
-            const firstStart = Number(frames[0].start) || 0;
-            if (firstStart === 0) return `${boneVarName}=${expression};`;
-            return `q.state_time>=${firstStart}?{${boneVarName}=${expression};};`;
-        }
-
-        function generate() {
-            let mirrorArms = document.getElementById('mirrorArms').checked;
-            let mirrorLegs = document.getElementById('mirrorLegs').checked;
-            let outStr = "";
-            let used = new Set();
-            data.forEach(bData => {
-                used.add(bData.bone);
-                if (!bData.segments || bData.segments.length === 0) return;
-                outStr += buildBoneStatement(bData.segments, bData.bone);
-            });
-            if (mirrorArms) {
-                if (used.has("v.rightarm.x") && !used.has("v.leftarm.x")) outStr +=
-                    `v.leftarm.x=v.rightarm.x;`;
-                else if (used.has("v.leftarm.x") && !used.has("v.rightarm.x")) outStr +=
-                    `v.rightarm.x=v.leftarm.x;`;
-                if (used.has("v.rightarm.y") && !used.has("v.leftarm.y")) outStr +=
-                    `v.leftarm.y=-v.rightarm.y;`;
-                else if (used.has("v.leftarm.y") && !used.has("v.rightarm.y")) outStr +=
-                    `v.rightarm.y=-v.leftarm.y;`;
-                if (used.has("v.rightarm.z") && !used.has("v.leftarm.z")) outStr +=
-                    `v.leftarm.z=-v.rightarm.z;`;
-                else if (used.has("v.leftarm.z") && !used.has("v.rightarm.z")) outStr +=
-                    `v.rightarm.z=-v.leftarm.z;`;
-                if (used.has("v.rightarm.ypos") && !used.has("v.leftarm.ypos")) outStr +=
-                    `v.leftarm.ypos=v.rightarm.ypos;`;
-                else if (used.has("v.leftarm.ypos") && !used.has("v.rightarm.ypos")) outStr +=
-                    `v.rightarm.ypos=v.leftarm.ypos;`;
-            }
-            if (mirrorLegs) {
-                if (used.has("v.rightleg.x") && !used.has("v.leftleg.x")) outStr +=
-                    `v.leftleg.x=v.rightleg.x;`;
-                else if (used.has("v.leftleg.x") && !used.has("v.rightleg.x")) outStr +=
-                    `v.rightleg.x=v.leftleg.x;`;
-            }
-            document.getElementById('output').value = outStr;
-        }
-
-        function onRidingToggle() {
-            if (viewMode === 'axis') {
-                attachGizmo();
-                renderAxisReadout();
-            }
-        }
-
-        function copyCode() {
-            let outputBox = document.getElementById('output');
-            outputBox.select();
-            document.execCommand('copy');
-        }
-
-        
-        let pendingImportResult = null;
-
-        function splitTopLevelCommas(str) {
-            let depth = 0;
-            let parts = [];
-            let last = 0;
-            for (let i = 0; i < str.length; i++) {
-                const c = str[i];
-                if (c === '(') depth++;
-                else if (c === ')') depth--;
-                else if (c === ',' && depth === 0) {
-                    parts.push(str.slice(last, i));
-                    last = i + 1;
-                }
-            }
-            parts.push(str.slice(last));
-            return parts;
-        }
-
-        function splitTopLevelTernary(str) {
-            let depth = 0;
-            let qIndex = -1,
-                colonIndex = -1;
-            for (let i = 0; i < str.length; i++) {
-                const c = str[i];
-                if (c === '(') depth++;
-                else if (c === ')') depth--;
-                else if (c === '?' && depth === 0 && qIndex === -1) qIndex = i;
-                else if (c === ':' && depth === 0 && qIndex !== -1 && colonIndex === -1) colonIndex =
-                    i;
-            }
-            if (qIndex === -1 || colonIndex === -1) return null;
-            return {
-                truePart: str.slice(qIndex + 1, colonIndex).trim(),
-                falsePart: str.slice(colonIndex + 1).trim()
-            };
-        }
-
-        function stripOuterParens(str) {
-            str = str.trim();
-            while (str[0] === '(' && str[str.length - 1] === ')') {
-                let depth = 0,
-                    fullyWraps = true;
-                for (let i = 0; i < str.length; i++) {
-                    if (str[i] === '(') depth++;
-                    else if (str[i] === ')') {
-                        depth--;
-                        if (depth === 0 && i !== str.length - 1) { fullyWraps = false; break; }
-                    }
-                }
-                if (!fullyWraps) break;
-                str = str.slice(1, -1).trim();
-            }
-            return str;
-        }
-
-        function parseMathCall(str) {
-            str = stripOuterParens(str.trim());
-            const m = str.match(/^math\.([a-zA-Z_]+)\((.*)\)$/s);
-            if (!m) return null;
-            const easeRaw = m[1];
-            const args = splitTopLevelCommas(m[2]);
-            if (args.length < 3) return null;
-            const val1Expr = args[0].trim();
-            const val2Expr = args[1].trim();
-            const minExpr = stripOuterParens(args.slice(2).join(',').trim());
-            const minMatch = minExpr.match(/^math\.min\((.+)\/([\d.]+)\s*,\s*1\)$/s);
-            if (!minMatch) return null;
-            let timeExpr = minMatch[1].trim();
-            const dur = parseFloat(minMatch[2]);
-            let start = 0;
-            let sub = timeExpr.match(/^\(?\s*q\.state_time\s*-\s*([\d.]+)\s*\)?$/);
-            if (sub) start = parseFloat(sub[1]);
-            return { val1Expr, val2Expr, ease: easeRaw, dur, start };
-        }
-
-        function parseBoneChain(str) {
-            str = stripOuterParens(str.trim());
-            const split = splitTopLevelTernary(str);
-            if (!split) {
-                const call = parseMathCall(str);
-                return call ? [call] : null;
-            }
-            const trueCall = parseMathCall(split.truePart);
-            if (!trueCall) return null;
-            const restChain = parseBoneChain(split.falsePart);
-            if (!restChain) return null;
-            return [trueCall, ...restChain];
-        }
-
-        function splitTopLevelStatements(text) {
-            let depth = 0;
-            let parts = [];
-            let last = 0;
-            for (let i = 0; i < text.length; i++) {
-                const c = text[i];
-                if (c === '(' || c === '{') depth++;
-                else if (c === ')' || c === '}') depth--;
-                else if (c === ';' && depth === 0) {
-                    parts.push(text.slice(last, i));
-                    last = i + 1;
-                }
-            }
-            const tail = text.slice(last);
-            parts.push(tail);
-            return parts.map(s => s.trim()).filter(s => s.length > 0);
-        }
-
-        function unwrapGateBlock(statement) {
-            const m = statement.match(/^q\.state_time\s*>=\s*[\d.]+\s*\?\s*\{(.+)\}$/s);
-            if (!m) return statement;
-            let inner = m[1].trim();
-            if (inner.endsWith(';')) inner = inner.slice(0, -1).trim();
-            return inner;
-        }
-
-        function parseStopExpression(text) {
-            const statements = splitTopLevelStatements(text);
-            const boneMap = {};
-            const order = [];
-            let mirrorArms = false;
-            let mirrorLegs = false;
-            const mirrorArmVars = new Set([
-                'v.leftarm.x', 'v.rightarm.x', 'v.leftarm.y', 'v.rightarm.y',
-                'v.leftarm.z', 'v.rightarm.z', 'v.leftarm.ypos', 'v.rightarm.ypos'
-            ]);
-            statements.forEach(rawSt => {
-                const st = unwrapGateBlock(rawSt);
-                const m = st.match(/^(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\s*=\s*(.+)$/s);
-                if (!m) return;
-                const boneName = m[1];
-                const rhs = m[2].trim();
-                const mirrorMatch = rhs.match(/^-?\s*(v\.[a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)$/);
-                if (mirrorMatch) {
-                    const refBone = mirrorMatch[1];
-                    if (mirrorArmVars.has(boneName) && refBone.includes('arm')) mirrorArms = true;
-                    if (boneName.includes('leg') && refBone.includes('leg')) mirrorLegs = true;
-                    return;
-                }
-                const chain = parseBoneChain(rhs);
-                if (!chain) return;
-                if (!boneMap[boneName]) { boneMap[boneName] = []; order.push(boneName); }
-                boneMap[boneName].push(...chain);
-            });
-            const parsedData = order.map(boneName => {
-                const sortedChain = boneMap[boneName].slice().sort((a, b) => a.start - b.start);
-                const segments = sortedChain.map((call, idx) => {
-                    let val1 = 0;
-                    if (idx === 0) {
-                        const n = parseFloat(call.val1Expr);
-                        val1 = isNaN(n) ? 0 : n;
-                    }
-                    const n2 = parseFloat(call.val2Expr);
-                    const val2 = isNaN(n2) ? 0 : n2;
-                    const ease = easeList.includes(call.ease) ? call.ease : 'lerp';
-                    return { start: call.start, dur: call.dur, val1, val2, ease };
-                });
-                return { bone: boneName, segments };
-            });
-            return { data: parsedData, mirrorArms, mirrorLegs };
-        }
-
-        function openImportModal() {
-            document.getElementById('importInput').value = '';
-            document.getElementById('importError').style.display = 'none';
-            document.getElementById('importPhaseInput').style.display = 'block';
-            document.getElementById('importPhaseConfirm').style.display = 'none';
-            document.getElementById('importOverlay').style.display = 'flex';
-        }
-
-        function closeImportModal() {
-            document.getElementById('importOverlay').style.display = 'none';
-            pendingImportResult = null;
-        }
-
-        function attemptImport() {
-            const text = document.getElementById('importInput').value.trim();
-            const errEl = document.getElementById('importError');
-            if (!text) {
-                errEl.textContent = 'Please paste a Stop_Expression first.';
-                errEl.style.display = 'block';
-                return;
-            }
-            const parsed = parseStopExpression(text);
-            if (!parsed.data.length) {
-                errEl.textContent =
-                    "This doesn't look like a valid Stop_Expression. Please check the code and try again.";
-                errEl.style.display = 'block';
-                return;
-            }
-            errEl.style.display = 'none';
-            pendingImportResult = parsed;
-            document.getElementById('importPhaseInput').style.display = 'none';
-            document.getElementById('importPhaseConfirm').style.display = 'block';
-        }
-
-        function cancelImportConfirm() {
-            document.getElementById('importPhaseInput').style.display = 'block';
-            document.getElementById('importPhaseConfirm').style.display = 'none';
-        }
-
-        function confirmReplaceImport() {
-            if (!pendingImportResult) return;
-            data = pendingImportResult.data;
-            document.getElementById('mirrorArms').checked = pendingImportResult.mirrorArms;
-            document.getElementById('mirrorLegs').checked = pendingImportResult.mirrorLegs;
-            pendingImportResult = null;
-            closeImportModal();
-            renderBones();
-        }
-
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1,
-        1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        camera.position.set(30, 24, 60);
-        controls.target.set(0, 15, 0);
-        controls.update();
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        dirLight.position.set(10, 20, 10);
-        scene.add(dirLight);
-
-        function createMinecraftBoxGeometry(size, uvOffset, inflate = 0, mirror = false) {
-            const [w, h, d] = size;
-            const geom = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2);
-            const [u, v] = uvOffset;
-            const tw = 64,
-                th = 64;
-            let faces;
-            if (!mirror) {
-                faces = [
-                    [u + d + w, v + d, d, h],
-                    [u, v + d, d, h],
-                    [u + d, v, w, d],
-                    [u + d + w, v, w, d],
-                    [u + d, v + d, w, h],
-                    [u + d + w + d, v + d, w, h]
-                ];
-            } else {
-                faces = [
-                    [u, v + d, d, h],
-                    [u + d + w, v + d, d, h],
-                    [u + d + w, v, -w, d],
-                    [u + d + w + w, v, -w, d],
-                    [u + d + w, v + d, -w, h],
-                    [u + d + w + d + w, v + d, -w, h]
-                ];
-            }
-            const uvAttr = geom.attributes.uv;
-            let pos = 0;
-            faces.forEach(([x, y, fw, fh]) => {
-                const u0 = x / tw,
-                    v0 = 1 - (y + fh) / th;
-                const u1 = (x + fw) / tw,
-                    v1 = 1 - y / th;
-                uvAttr.setXY(pos++, u0, v1);
-                uvAttr.setXY(pos++, u1, v1);
-                uvAttr.setXY(pos++, u0, v0);
-                uvAttr.setXY(pos++, u1, v0);
-            });
-            uvAttr.needsUpdate = true;
-            return geom;
-        }
-
-        const textureLoader = new THREE.TextureLoader();
-        let skinTexture = null;
-        const baseMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 });
-        const outerMaterial = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true,
-            alphaTest: 0.5, side: THREE.DoubleSide });
-
-        const modelBones = [
-            { name: "root", pivot: [0, 0, 0] },
-            { name: "waist", parent: "root", pivot: [0, 12, 0] },
-            { name: "body", parent: "waist", pivot: [0, 24, 0], cubes: [
-                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 16], outer: false },
-                { origin: [-4, 12, -2], size: [8, 12, 4], uv: [16, 32], outer: true, inflate: 0.25 }
-            ] },
-            { name: "head", parent: "body", pivot: [0, 24, 0], cubes: [
-                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [0, 0], outer: false },
-                { origin: [-4, 24, -4], size: [8, 8, 8], uv: [32, 0], outer: true, inflate: 0.5 }
-            ] },
-            { name: "leftArm", parent: "body", pivot: [5, 22, 0], cubes: [
-                { origin: [4, 12, -2], size: [4, 12, 4], uv: [32, 48], outer: false },
-                { origin: [4, 12, -2], size: [4, 12, 4], uv: [48, 48], outer: true, inflate: 0.25 }
-            ] },
-            { name: "rightArm", parent: "body", pivot: [-5, 22, 0], cubes: [
-                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 16], outer: false },
-                { origin: [-8, 12, -2], size: [4, 12, 4], uv: [40, 32], outer: true, inflate: 0.25 }
-            ] },
-            { name: "leftLeg", parent: "root", pivot: [1.9, 12, 0], cubes: [
-                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [16, 48], outer: false },
-                { origin: [-0.1, 0, -2], size: [4, 12, 4], uv: [0, 48], outer: true, inflate: 0.25 }
-            ] },
-            { name: "rightLeg", parent: "root", pivot: [-1.9, 12, 0], cubes: [
-                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 16], outer: false },
-                { origin: [-3.9, 0, -2], size: [4, 12, 4], uv: [0, 32], outer: true, inflate: 0.25 }
-            ] }
-        ];
-
-        const selectableMeshes = [];
-        const boneObjects = {};
-        modelBones.forEach(b => {
-            const group = new THREE.Group();
-            group.rotation.order = 'ZYX';
-            if (b.cubes) {
-                b.cubes.forEach(c => {
-                    const geom = createMinecraftBoxGeometry(c.size, c.uv, c.inflate || 0, c
-                        .mirror || false);
-                    const mat = c.outer ? outerMaterial : baseMaterial;
-                    const mesh = new THREE.Mesh(geom, mat);
-                    mesh.position.set(
-                        c.origin[0] + c.size[0] / 2 - b.pivot[0],
-                        c.origin[1] + c.size[1] / 2 - b.pivot[1],
-                        c.origin[2] + c.size[2] / 2 - b.pivot[2]
-                    );
-                    mesh.userData.boneName = b.name;
-                    selectableMeshes.push(mesh);
-                    group.add(mesh);
-                });
-            }
-            boneObjects[b.name] = group;
+function boxGeometry([w, h, d], [u, v], inflate) {
+    const g = new THREE.BoxGeometry(w + inflate * 2, h + inflate * 2, d + inflate * 2), uv = g.attributes.uv;
+    let i = 0;
+    [[u + d + w, v + d, d, h], [u, v + d, d, h], [u + d, v, w, d], [u + d + w, v, w, d], [u + d, v + d, w, h], [u + d + w + d, v + d, w, h]]
+        .forEach(([x, y, fw, fh]) => {
+            const u0 = x / 64, u1 = (x + fw) / 64, v0 = 1 - (y + fh) / 64, v1 = 1 - y / 64;
+            uv.setXY(i++, u0, v1); uv.setXY(i++, u1, v1); uv.setXY(i++, u0, v0); uv.setXY(i++, u1, v0);
         });
+    return g;
+}
 
-        modelBones.forEach(b => {
-            const group = boneObjects[b.name];
-            const parentPivot = b.parent ? (modelBones.find(x => x.name === b.parent).pivot || [0, 0,
-                0]) : [0, 0, 0];
-            const initX = b.pivot[0] - parentPivot[0];
-            const initY = b.pivot[1] - parentPivot[1];
-            const initZ = b.pivot[2] - parentPivot[2];
-            group.userData.initialPos = { x: initX, y: initY, z: initZ };
-            group.position.set(initX, initY, initZ);
-            if (b.parent) boneObjects[b.parent].add(group);
-            else scene.add(group);
+const baseMat = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1 });
+const outerMat = new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0.1, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+const cube = (origin, size, uv, outer, inflate = 0) => ({ origin, size, uv, outer, inflate });
+const box = (origin, size, uvBase, uvOuter, inflate) => [cube(origin, size, uvBase, false), cube(origin, size, uvOuter, true, inflate)];
+
+const modelBones = [
+    { name: 'root', pivot: [0, 0, 0] },
+    { name: 'waist', parent: 'root', pivot: [0, 12, 0] },
+    { name: 'body', parent: 'waist', pivot: [0, 24, 0], cubes: box([-4, 12, -2], [8, 12, 4], [16, 16], [16, 32], 0.25) },
+    { name: 'head', parent: 'body', pivot: [0, 24, 0], cubes: box([-4, 24, -4], [8, 8, 8], [0, 0], [32, 0], 0.5) },
+    { name: 'leftArm', parent: 'body', pivot: [5, 22, 0], cubes: box([4, 12, -2], [4, 12, 4], [32, 48], [48, 48], 0.25) },
+    { name: 'rightArm', parent: 'body', pivot: [-5, 22, 0], cubes: box([-8, 12, -2], [4, 12, 4], [40, 16], [40, 32], 0.25) },
+    { name: 'leftLeg', parent: 'root', pivot: [1.9, 12, 0], cubes: box([-0.1, 0, -2], [4, 12, 4], [16, 48], [0, 48], 0.25) },
+    { name: 'rightLeg', parent: 'root', pivot: [-1.9, 12, 0], cubes: box([-3.9, 0, -2], [4, 12, 4], [0, 16], [0, 32], 0.25) }
+];
+
+const boneObjects = {};
+modelBones.forEach(b => {
+    const group = new THREE.Group();
+    group.rotation.order = 'ZYX';
+    (b.cubes || []).forEach(c => {
+        const mesh = new THREE.Mesh(boxGeometry(c.size, c.uv, c.inflate), c.outer ? outerMat : baseMat);
+        mesh.position.set(...c.origin.map((o, i) => o + c.size[i] / 2 - b.pivot[i]));
+        group.add(mesh);
+    });
+    boneObjects[b.name] = group;
+});
+modelBones.forEach(b => {
+    const group = boneObjects[b.name], pp = b.parent ? modelBones.find(x => x.name === b.parent).pivot : [0, 0, 0];
+    group.position.set(...b.pivot.map((v, i) => v - pp[i]));
+    group.userData.home = group.position.clone();
+    (b.parent ? boneObjects[b.parent] : scene).add(group);
+});
+
+function setTexture(tex) {
+    tex.magFilter = tex.minFilter = THREE.NearestFilter;
+    [baseMat, outerMat].forEach(m => { m.map = tex; m.color.setHex(0xffffff); m.needsUpdate = true; });
+}
+function resetSkin() { new THREE.TextureLoader().load(DEFAULT_TEXTURE_URL, setTexture); }
+function uploadSkin(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => { const tex = new THREE.Texture(img); tex.needsUpdate = true; setTexture(tex); URL.revokeObjectURL(img.src); };
+    img.src = URL.createObjectURL(file);
+    e.target.value = '';
+}
+
+const BONES = {
+    root: { label: 'Root', prefix: 'v.root', rotate: 'xz', move: 'xyz' },
+    waist: { label: 'Body / Waist', prefix: 'v.body', rotate: 'xyz', move: 'xy', scale: true },
+    head: { label: 'Head', prefix: 'v.head', rotate: 'xyz', move: 'xyz' },
+    rightArm: { label: 'Right Arm', prefix: 'v.rightarm', rotate: 'xyz', move: 'y' },
+    leftArm: { label: 'Left Arm', prefix: 'v.leftarm', rotate: 'xyz', move: 'y' },
+    rightLeg: { label: 'Right Leg', prefix: 'v.rightleg', rotate: 'x', move: '' },
+    leftLeg: { label: 'Left Leg', prefix: 'v.leftleg', rotate: 'x', move: '' }
+};
+const SCALE_KEYS = { xz: 'v.body_head.xzscale', y: 'v.body_head.yscale' };
+const RIDING = { rightLeg: { x: -81, y: -18 }, leftLeg: { x: -81, y: 18 } };
+const modeAxes = (b, mode) => mode === 'scale' ? (b.scale ? 'xyz' : '') : b[mode];
+const ridingOffset = (bone, axis) => $('playerRiding').checked ? RIDING[bone]?.[axis] || 0 : 0;
+const mapName = k => k.includes('rightarm') ? 'rightArm' : k.includes('leftarm') ? 'leftArm'
+    : k.includes('rightleg') ? 'rightLeg' : k.includes('leftleg') ? 'leftLeg'
+    : k.includes('body') ? 'waist' : k.includes('head') ? 'head' : 'root';
+
+let viewMode = 'preview', selectedBone = 'rightArm', gizmoMode = 'rotate', manualPose = {};
+const viewportCard = $('viewportCard');
+
+function resetBonesToBindPose() {
+    for (const [name, b] of Object.entries(boneObjects)) {
+        b.position.copy(b.userData.home);
+        b.rotation.set(ridingOffset(name, 'x') * DEG, ridingOffset(name, 'y') * DEG, 0);
+        b.scale.set(1, 1, 1);
+    }
+}
+
+function applyValuesToBones(values) {
+    for (const [key, val] of Object.entries(values)) {
+        const b = boneObjects[mapName(key)], leaf = key.split('.').pop();
+        if (leaf === 'xzscale') b.scale.x = b.scale.z = val;
+        else if (leaf === 'yscale') b.scale.y = val;
+        else if (leaf.endsWith('pos')) b.position[leaf[0]] = b.userData.home[leaf[0]] + val;
+        else b.rotation[leaf] += (invertedBones.includes(key) ? -val : val) * DEG;
+    }
+}
+
+const AXES = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
+const AXCOL = { x: '#ff3d4f', y: '#2be25c', z: '#3f6dff' };
+const HILITE = '#ffe14a';
+const raycaster = new THREE.Raycaster(), ndc = new THREE.Vector2();
+let hoverAxis = null, drag = null, viewW = 1, viewH = 1;
+
+function eventRay(e) {
+    const r = gizmoCanvas.getBoundingClientRect();
+    ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    return raycaster.ray.clone();
+}
+
+function planeBasis(axis) {
+    const helper = Math.abs(axis.y) < 0.9 ? AXES.y : AXES.x;
+    const u = new THREE.Vector3().crossVectors(helper, axis).normalize();
+    return { u, v: new THREE.Vector3().crossVectors(axis, u).normalize() };
+}
+
+function closestLineParameter(point, dir, ray) {
+    const w = new THREE.Vector3().subVectors(point, ray.origin);
+    const b = dir.dot(ray.direction), den = 1 - b * b;
+    return Math.abs(den) < 1e-4 ? null : (b * ray.direction.dot(w) - dir.dot(w)) / den;
+}
+
+function project(p) {
+    const v = p.clone().project(camera);
+    return v.z < -1 || v.z > 1 || !isFinite(v.x + v.y) ? null : [(v.x + 1) * viewW / 2, (1 - v.y) * viewH / 2];
+}
+
+function segDist(px, py, a, b) {
+    const dx = b[0] - a[0], dy = b[1] - a[1], len = dx * dx + dy * dy;
+    const t = len ? Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / len)) : 0;
+    return Math.hypot(px - a[0] - dx * t, py - a[1] - dy * t);
+}
+
+function gizmoLayout() {
+    const axes = viewMode === 'axis' && modeAxes(BONES[selectedBone], gizmoMode);
+    if (!axes) return null;
+    const obj = boneObjects[selectedBone], mode = gizmoMode;
+    obj.updateWorldMatrix(true, false);
+    camera.updateMatrixWorld();
+    const pivot = obj.getWorldPosition(new THREE.Vector3()), center = project(pivot);
+    if (!center) return null;
+    const base = mode === 'scale' ? obj.getWorldQuaternion(new THREE.Quaternion()) : obj.parent.getWorldQuaternion(new THREE.Quaternion());
+    const qy = new THREE.Quaternion().setFromAxisAngle(AXES.y, obj.rotation.y);
+    const qz = new THREE.Quaternion().setFromAxisAngle(AXES.z, obj.rotation.z);
+    const dirOf = a => {
+        const v = AXES[a].clone();
+        if (mode === 'rotate') { if (a === 'x') v.applyQuaternion(qy); if (a !== 'z') v.applyQuaternion(qz); }
+        return v.applyQuaternion(base).normalize();
+    };
+    const len = camera.position.distanceTo(pivot) * Math.tan(camera.fov * DEG / 2) * 0.34, handles = {};
+    [...axes].forEach(a => {
+        const dir = dirOf(a);
+        if (mode === 'rotate') {
+            const { u, v } = planeBasis(dir), pts = [];
+            for (let i = 0; i <= 72; i++) {
+                const t = i / 72 * Math.PI * 2;
+                const p = project(pivot.clone().addScaledVector(u, Math.cos(t) * .8 * len).addScaledVector(v, Math.sin(t) * .8 * len));
+                if (!p) return;
+                pts.push(p);
+            }
+            handles[a] = { dir, pts };
+        } else {
+            const end = project(pivot.clone().addScaledVector(dir, len));
+            if (end) handles[a] = { dir, end };
+        }
+    });
+    return { obj, mode, pivot, center, len, handles };
+}
+
+function hitTest(x, y, touch) {
+    const L = gizmoLayout();
+    if (!L) return null;
+    let best = null, bestDist = touch ? 25 : 14;
+    for (const [a, h] of Object.entries(L.handles)) {
+        let d = Infinity;
+        if (h.pts) for (let i = 0; i < h.pts.length - 1; i++) d = Math.min(d, segDist(x, y, h.pts[i], h.pts[i + 1]));
+        else {
+            const [cx, cy] = L.center;
+            d = segDist(x, y, [cx + (h.end[0] - cx) * .12, cy + (h.end[1] - cy) * .12], h.end);
+        }
+        if (d < bestDist) { bestDist = d; best = a; }
+    }
+    return best;
+}
+
+function drawGizmo() {
+    gctx.clearRect(0, 0, viewW, viewH);
+    const L = gizmoLayout();
+    if (!L) return;
+    gctx.lineCap = gctx.lineJoin = 'round';
+    const stroke = color => {
+        gctx.strokeStyle = 'rgba(0,0,0,.45)'; gctx.lineWidth = 5; gctx.stroke();
+        gctx.strokeStyle = color; gctx.lineWidth = 2.7; gctx.stroke();
+    };
+    for (const [a, h] of Object.entries(L.handles)) {
+        const color = a === hoverAxis ? HILITE : AXCOL[a];
+        gctx.beginPath();
+        if (h.pts) { h.pts.forEach(([x, y], i) => i ? gctx.lineTo(x, y) : gctx.moveTo(x, y)); stroke(color); continue; }
+        const [x0, y0] = L.center, [x1, y1] = h.end, len = Math.hypot(x1 - x0, y1 - y0) || 1;
+        const ux = (x1 - x0) / len, uy = (y1 - y0) / len, px = -uy, py = ux, arrow = L.mode === 'move', cut = arrow ? 15 : 6;
+        const bx = x1 - ux * cut, by = y1 - uy * cut;
+        gctx.moveTo(x0, y0); gctx.lineTo(bx, by); stroke(color);
+        gctx.beginPath();
+        if (arrow) {
+            gctx.moveTo(x1 + ux * 2, y1 + uy * 2); gctx.lineTo(bx + px * 7, by + py * 7); gctx.lineTo(bx - px * 7, by - py * 7);
+        } else {
+            const s = 6.5, cx = x1 - ux, cy = y1 - uy;
+            gctx.moveTo(cx + (ux + px) * s, cy + (uy + py) * s); gctx.lineTo(cx + (ux - px) * s, cy + (uy - py) * s);
+            gctx.lineTo(cx - (ux + px) * s, cy - (uy + py) * s); gctx.lineTo(cx - (ux - px) * s, cy - (uy - py) * s);
+        }
+        gctx.closePath();
+        gctx.fillStyle = color; gctx.strokeStyle = 'rgba(0,0,0,.5)'; gctx.lineWidth = 1.5;
+        gctx.stroke(); gctx.fill();
+    }
+    gctx.fillStyle = '#fff';
+    gctx.beginPath(); gctx.arc(L.center[0], L.center[1], 3.5, 0, Math.PI * 2); gctx.fill();
+}
+
+function planeAngle(d, ray) {
+    const hit = ray.intersectPlane(d.plane, new THREE.Vector3());
+    if (!hit) return null;
+    hit.sub(d.pivot);
+    return Math.atan2(hit.dot(d.basis.v), hit.dot(d.basis.u));
+}
+
+function startDrag(axis, e) {
+    const L = gizmoLayout(), h = L && L.handles[axis];
+    if (!h) return false;
+    const ray = eventRay(e), obj = L.obj;
+    const d = { axis, mode: L.mode, obj, pivot: L.pivot, dir: h.dir, len: L.len, id: e.pointerId };
+    if (L.mode === 'rotate') {
+        d.plane = new THREE.Plane().setFromNormalAndCoplanarPoint(h.dir, L.pivot);
+        d.basis = planeBasis(h.dir);
+        d.last = planeAngle(d, ray);
+        if (d.last === null) return false;
+        d.sum = 0;
+        d.start = obj.rotation[axis];
+    } else {
+        d.t0 = closestLineParameter(L.pivot, h.dir, ray);
+        if (d.t0 === null) return false;
+        d.start = L.mode === 'move' ? obj.position[axis] : axis === 'y' ? obj.scale.y : obj.scale.x;
+        d.parentScale = obj.parent.getWorldScale(new THREE.Vector3())[axis] || 1;
+    }
+    drag = d;
+    controls.enabled = false;
+    gizmoCanvas.style.cursor = 'grabbing';
+    try { gizmoCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+    return true;
+}
+
+function updateDrag(e) {
+    const d = drag;
+    if (!d || d.id !== e.pointerId) return;
+    const ray = eventRay(e), o = d.obj;
+    if (d.mode === 'rotate') {
+        const a = planeAngle(d, ray);
+        if (a === null) return;
+        let delta = a - d.last;
+        delta -= Math.round(delta / (2 * Math.PI)) * 2 * Math.PI;
+        d.sum += delta;
+        d.last = a;
+        o.rotation[d.axis] = d.start + d.sum;
+    } else {
+        const t = closestLineParameter(d.pivot, d.dir, ray);
+        if (t === null) return;
+        const dt = t - d.t0;
+        if (d.mode === 'move') o.position[d.axis] = d.start + dt / d.parentScale;
+        else {
+            const s = Math.max(0.01, d.start * (1 + dt / d.len));
+            if (d.axis === 'y') o.scale.y = s;
+            else o.scale.x = o.scale.z = s;
+        }
+    }
+    commitDrag(d);
+}
+
+function commitDrag(d) {
+    const b = BONES[selectedBone], o = d.obj;
+    if (d.mode === 'rotate') {
+        const key = `${b.prefix}.${d.axis}`, deg = o.rotation[d.axis] / DEG - ridingOffset(selectedBone, d.axis);
+        manualPose[key] = r2(invertedBones.includes(key) ? -deg : deg);
+    } else if (d.mode === 'move') {
+        manualPose[`${b.prefix}.${d.axis}pos`] = r2(o.position[d.axis] - o.userData.home[d.axis]);
+    } else {
+        manualPose[d.axis === 'y' ? SCALE_KEYS.y : SCALE_KEYS.xz] = r2(d.axis === 'y' ? o.scale.y : o.scale.x);
+    }
+    syncReadout();
+}
+
+function endDrag(e) {
+    if (!drag || (e && drag.id !== e.pointerId)) return;
+    drag = null;
+    controls.enabled = true;
+    gizmoCanvas.style.cursor = '';
+}
+
+const localXY = e => { const r = gizmoCanvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+gizmoCanvas.addEventListener('pointermove', e => {
+    if (drag) return updateDrag(e);
+    hoverAxis = viewMode === 'axis' ? hitTest(...localXY(e), e.pointerType === 'touch') : null;
+    gizmoCanvas.style.cursor = hoverAxis ? 'grab' : '';
+});
+gizmoCanvas.addEventListener('pointerleave', () => { if (!drag) hoverAxis = null; });
+container.addEventListener('pointerdown', e => {
+    if (e.target !== gizmoCanvas || viewMode !== 'axis') return;
+    const axis = hitTest(...localXY(e), e.pointerType === 'touch');
+    if (axis && startDrag(axis, e)) { e.preventDefault(); e.stopPropagation(); }
+}, true);
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => gizmoCanvas.addEventListener(t, endDrag));
+
+function renderAxisReadout() {
+    const b = BONES[selectedBone];
+    const field = (label, key, on, def) => `<div class="form-group"><label>${label}</label>` + (key
+        ? `<input type="number" step="0.01" data-key="${key}" data-def="${def}" value="${manualPose[key] ?? def}"${on ? ` onchange="setPoseValue('${key}',this.value)"` : ' disabled'}>`
+        : '<input disabled placeholder="—">') + '</div>';
+    const xyz = (sfx, on, def) => [...'xyz'].map(a => field(a.toUpperCase(), `${b.prefix}.${a}${sfx}`, on.includes(a), def)).join('');
+    const group = (title, html) => `<div class="readout-group"><span class="group-label">${title}</span><div class="readout-row">${html}</div></div>`;
+    $('axisReadout').innerHTML = group('ROTATION · DEG', xyz('', b.rotate, 0)) + group('POSITION', xyz('pos', b.move, 0))
+        + group('SCALE', field('XZ', b.scale && SCALE_KEYS.xz, b.scale, 1) + field('Y', b.scale && SCALE_KEYS.y, b.scale, 1));
+}
+
+function syncReadout() {
+    $('axisReadout').querySelectorAll('input[data-key]').forEach(i => { i.value = manualPose[i.dataset.key] ?? i.dataset.def; });
+}
+
+function setPoseValue(key, val) {
+    const v = parseFloat(val);
+    manualPose[key] = Number.isFinite(v) ? v : key.endsWith('scale') ? 1 : 0;
+    syncReadout();
+}
+
+function updateModeButtons() {
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === gizmoMode);
+        btn.disabled = !modeAxes(BONES[selectedBone], btn.dataset.mode);
+    });
+}
+
+function selectBone(name) {
+    if (!BONES[name]) return;
+    selectedBone = name;
+    $('boneSelect').value = name;
+    if (!modeAxes(BONES[name], gizmoMode)) gizmoMode = 'rotate';
+    updateModeButtons();
+    renderAxisReadout();
+}
+
+function setGizmoMode(mode) {
+    if (!modeAxes(BONES[selectedBone], mode)) return;
+    gizmoMode = mode;
+    updateModeButtons();
+}
+
+function resetBonePose() {
+    const b = BONES[selectedBone];
+    [...b.rotate].forEach(a => delete manualPose[`${b.prefix}.${a}`]);
+    [...b.move].forEach(a => delete manualPose[`${b.prefix}.${a}pos`]);
+    if (b.scale) Object.values(SCALE_KEYS).forEach(k => delete manualPose[k]);
+    renderAxisReadout();
+}
+
+function resetAllPose() { manualPose = {}; renderAxisReadout(); }
+
+function setViewMode(mode) {
+    viewMode = viewportCard.dataset.mode = mode;
+    $('tabPreview').classList.toggle('active', mode === 'preview');
+    $('tabAxis').classList.toggle('active', mode === 'axis');
+    $('viewportTitle').textContent = mode === 'axis' ? 'Axis Editor' : '3D Live Preview';
+    hoverAxis = null;
+    endDrag();
+}
+
+function setFullscreen(on) {
+    viewportCard.classList.toggle('full', on);
+    document.body.classList.toggle('noscroll', on);
+    const btn = $('fsBtn');
+    btn.textContent = on ? '⤢' : '⛶';
+    btn.title = btn.ariaLabel = on ? 'Exit fullscreen' : 'Fullscreen';
+}
+function toggleFullscreen() { setFullscreen(!viewportCard.classList.contains('full')); }
+addEventListener('keydown', e => { if (e.key === 'Escape') setFullscreen(false); });
+
+let isPlaying = true, animTime = 0;
+const clock = new THREE.Clock();
+function togglePlay() { isPlaying = !isPlaying; }
+
+function previewValues(dt) {
+    if (isPlaying) animTime += dt;
+    const total = Math.max(0.1, ...data.flatMap(b => b.segments.map(s => s.start + s.dur)));
+    const t = animTime % total, vals = {};
+    data.forEach(b => {
+        let v = 0;
+        getEffectiveSegments(b.segments).forEach((s, i) => {
+            if (!i) v = s.val1;
+            if (t >= s.start) v += (s.val2 - v) * getEase(s.ease, (t - s.start) / Math.max(s.dur, 1e-4));
         });
+        vals[b.bone] = v;
+    });
+    activeMirrors(k => k in vals).forEach(([to, from, sign]) => vals[to] = sign * vals[from]);
+    return vals;
+}
 
-        function applyTexture(texture) {
-            texture.magFilter = THREE.NearestFilter;
-            texture.minFilter = THREE.NearestFilter;
-            baseMaterial.map = texture;
-            baseMaterial.color.setHex(0xffffff);
-            baseMaterial.needsUpdate = true;
-            outerMaterial.map = texture;
-            outerMaterial.color.setHex(0xffffff);
-            outerMaterial.needsUpdate = true;
-        }
+function animate() {
+    requestAnimationFrame(animate);
+    const dt = clock.getDelta();
+    resetBonesToBindPose();
+    applyValuesToBones(viewMode === 'preview' ? previewValues(dt) : manualPose);
+    controls.update();
+    renderer.render(scene, camera);
+    drawGizmo();
+}
 
-        function loadTextureFromUrl(url) {
-            textureLoader.load(url, (tex) => { skinTexture = tex;
-                applyTexture(skinTexture); });
-        }
+function resizeViewport() {
+    viewW = Math.max(container.clientWidth, 1);
+    viewH = Math.max(container.clientHeight, 1);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    camera.aspect = viewW / viewH;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(viewW, viewH, false);
+    gizmoCanvas.width = Math.round(viewW * dpr);
+    gizmoCanvas.height = Math.round(viewH * dpr);
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resizeViewport);
+if (window.ResizeObserver) new ResizeObserver(resizeViewport).observe(container);
 
-        function resetSkin() { loadTextureFromUrl(DEFAULT_TEXTURE_URL); }
-
-        function uploadSkin(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => { const texture = new THREE.Texture(img);
-                    texture.needsUpdate = true;
-                    applyTexture(texture); };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-            event.target.value = '';
-        }
-        loadTextureFromUrl(DEFAULT_TEXTURE_URL);
-
-        
-        let viewMode = 'preview';
-        let manualPose = {};
-        let selectedBone = null;
-        let gizmoMode = 'rotate';
-
-        const boneVarPrefix = {
-            root: 'v.root',
-            waist: 'v.body',
-            head: 'v.head',
-            rightArm: 'v.rightarm',
-            leftArm: 'v.leftarm',
-            rightLeg: 'v.rightleg',
-            leftLeg: 'v.leftleg'
-        };
-        const boneAxisConfig = {
-            root: { rotate: ['x', 'z'], translate: ['x', 'y', 'z'], scale: [] },
-            waist: { rotate: ['x', 'y', 'z'], translate: ['x', 'y'], scale: ['xz', 'y'] },
-            head: { rotate: ['x', 'y', 'z'], translate: ['x', 'y', 'z'], scale: [] },
-            rightArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
-            leftArm: { rotate: ['x', 'y', 'z'], translate: ['y'], scale: [] },
-            rightLeg: { rotate: ['x'], translate: [], scale: [] },
-            leftLeg: { rotate: ['x'], translate: [], scale: [] }
-        };
-        const scaleVarMap = {
-            waist: { xz: 'v.body_head.xzscale', y: 'v.body_head.yscale' }
-        };
-        const boneDisplayName = {
-            root: 'Root',
-            waist: 'Body / Waist',
-            head: 'Head',
-            rightArm: 'Right Arm',
-            leftArm: 'Left Arm',
-            rightLeg: 'Right Leg',
-            leftLeg: 'Left Leg'
-        };
-        const invertedBones = ["v.rightarm.y", "v.leftarm.y", "v.rightarm.z", "v.leftarm.z", "v.head.y",
-            "v.head.z", "v.body.y", "v.body.z"
-        ];
-
-        function mapName(str) {
-            if (str.includes("rightarm")) return "rightArm";
-            if (str.includes("leftarm")) return "leftArm";
-            if (str.includes("rightleg")) return "rightLeg";
-            if (str.includes("leftleg")) return "leftLeg";
-            if (str.includes("body")) return "waist";
-            if (str.includes("head")) return "head";
-            return "root";
-        }
-
-        function isRidingEnabled() {
-            const el = document.getElementById('playerRiding');
-            return el ? el.checked : false;
-        }
-
-        function getRidingOffsetDeg(boneName, axis) {
-            if (!isRidingEnabled()) return 0;
-            if (boneName === 'rightLeg' && axis === 'x') return -81;
-            if (boneName === 'rightLeg' && axis === 'y') return -18;
-            if (boneName === 'leftLeg' && axis === 'x') return -81;
-            if (boneName === 'leftLeg' && axis === 'y') return 18;
-            return 0;
-        }
-
-        function resetBonesToBindPose() {
-            Object.values(boneObjects).forEach(b => {
-                b.rotation.set(0, 0, 0);
-                b.scale.set(1, 1, 1);
-                if (b.userData.initialPos) {
-                    b.position.set(b.userData.initialPos.x, b.userData.initialPos.y, b.userData
-                        .initialPos.z);
-                }
-            });
-            if (isRidingEnabled()) {
-                const rightLeg = boneObjects['rightLeg'];
-                const leftLeg = boneObjects['leftLeg'];
-                if (rightLeg) {
-                    rightLeg.rotation.x = -81 * (Math.PI / 180);
-                    rightLeg.rotation.y = -18 * (Math.PI / 180);
-                }
-                if (leftLeg) {
-                    leftLeg.rotation.x = -81 * (Math.PI / 180);
-                    leftLeg.rotation.y = 18 * (Math.PI / 180);
-                }
-            }
-        }
-
-        function applyValuesToBones(values) {
-            for (const [key, val] of Object.entries(values)) {
-                const targetBone = boneObjects[mapName(key)];
-                if (!targetBone) continue;
-                if (key.endsWith(".ypos")) {
-                    targetBone.position.y = targetBone.userData.initialPos.y + val;
-                    continue;
-                }
-                if (key.endsWith(".xpos")) {
-                    targetBone.position.x = targetBone.userData.initialPos.x + val;
-                    continue;
-                }
-                if (key.endsWith(".zpos")) {
-                    targetBone.position.z = targetBone.userData.initialPos.z + val;
-                    continue;
-                }
-                if (key === 'v.body_head.xzscale') {
-                    targetBone.scale.x = val;
-                    targetBone.scale.z = val;
-                    continue;
-                }
-                if (key === 'v.body_head.yscale') {
-                    targetBone.scale.y = val;
-                    continue;
-                }
-                let rad = val * (Math.PI / 180);
-                if (invertedBones.includes(key)) rad = -rad;
-                if (key.endsWith(".x")) targetBone.rotation.x += rad;
-                if (key.endsWith(".y")) targetBone.rotation.y += rad;
-                if (key.endsWith(".z")) targetBone.rotation.z += rad;
-            }
-        }
-
-        const transformControls = new THREE.TransformControls(camera, renderer.domElement);
-        if (typeof transformControls.setSpace === 'function') transformControls.setSpace('local');
-        else transformControls.space = 'local';
-        if (typeof transformControls.setSize === 'function') transformControls.setSize(1.5);
-        else transformControls.size = 1.5;
-        transformControls.addEventListener('dragging-changed', (event) => {
-            controls.enabled = !event.value;
-        });
-        transformControls.addEventListener('objectChange', onGizmoChange);
-        scene.add(transformControls);
-
-        const raycaster = new THREE.Raycaster();
-        const pointerNDC = new THREE.Vector2();
-        let pointerDownPos = null;
-
-        renderer.domElement.addEventListener('pointerdown', (e) => {
-            pointerDownPos = { x: e.clientX, y: e.clientY };
-        });
-
-        renderer.domElement.addEventListener('pointerup', (e) => {
-            if (viewMode !== 'axis') return;
-            if (!pointerDownPos) return;
-            const wasGizmoInteraction = transformControls.dragging || transformControls.axis;
-            const dx = e.clientX - pointerDownPos.x;
-            const dy = e.clientY - pointerDownPos.y;
-            pointerDownPos = null;
-            if (wasGizmoInteraction) return;
-            if (Math.sqrt(dx * dx + dy * dy) > 4) return;
-            const rect = renderer.domElement.getBoundingClientRect();
-            pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(pointerNDC, camera);
-            const intersects = raycaster.intersectObjects(selectableMeshes, false);
-            if (intersects.length > 0) {
-                let hitName = intersects[0].object.userData.boneName;
-                if (hitName === 'body') hitName = 'waist';
-                selectBone(hitName);
-            }
-        });
-
-        function setViewMode(mode) {
-            if (mode === 'preview' && document.getElementById('viewportCard').classList.contains('axis-fullscreen')) {
-                toggleAxisFullscreen(false);
-            }
-            viewMode = mode;
-            document.getElementById('tabPreview').classList.toggle('active', mode === 'preview');
-            document.getElementById('tabAxis').classList.toggle('active', mode === 'axis');
-            document.getElementById('previewControls').style.display = mode === 'preview' ? 'flex' : 'none';
-            document.getElementById('axisControls').style.display = mode === 'axis' ? 'flex' : 'none';
-            document.getElementById('viewportTitle').textContent = mode === 'preview' ? '3D Live Preview' : 'Axis Editor';
-            if (mode === 'axis') {
-                if (!selectedBone) selectedBone = 'rightArm';
-                selectBone(selectedBone);
-            } else {
-                transformControls.detach();
-            }
-            requestAnimationFrame(resizeViewport);
-        }
-
-        function toggleAxisFullscreen(force) {
-            if (viewMode !== 'axis' && force !== false) setViewMode('axis');
-            const card = document.getElementById('viewportCard');
-            const active = typeof force === 'boolean' ? force : !card.classList.contains('axis-fullscreen');
-            card.classList.toggle('axis-fullscreen', active);
-            document.body.classList.toggle('axis-fullscreen-active', active);
-            const button = document.getElementById('axisFullscreenToggle');
-            if (button) { button.textContent = active ? '↙' : '⛶'; button.title = active ? 'Exit fullscreen' : 'Fullscreen'; }
-            requestAnimationFrame(() => requestAnimationFrame(resizeViewport));
-        }
-
-        document.addEventListener('keydown', event => {
-            if (event.key === 'Escape' && document.getElementById('viewportCard').classList.contains('axis-fullscreen')) {
-                toggleAxisFullscreen(false);
-            }
-        });
-
-        function selectBone(name) {
-            selectedBone = name;
-            const sel = document.getElementById('boneSelect');
-            if (sel) sel.value = name;
-            const cfg = boneAxisConfig[name];
-            if (gizmoMode === 'translate' && cfg.translate.length === 0) {
-                gizmoMode = 'rotate';
-            }
-            if (gizmoMode === 'scale' && cfg.scale.length === 0) {
-                gizmoMode = 'rotate';
-            }
-            updateModeButtons();
-            attachGizmo();
-            renderAxisReadout();
-        }
-
-        function setGizmoMode(mode) {
-            gizmoMode = mode;
-            updateModeButtons();
-            attachGizmo();
-            renderAxisReadout();
-        }
-
-        function updateModeButtons() {
-            const rotateBtn = document.getElementById('modeRotateBtn');
-            const translateBtn = document.getElementById('modeTranslateBtn');
-            const scaleBtn = document.getElementById('modeScaleBtn');
-            if (!rotateBtn || !translateBtn || !scaleBtn) return;
-            rotateBtn.classList.toggle('active', gizmoMode === 'rotate');
-            translateBtn.classList.toggle('active', gizmoMode === 'translate');
-            scaleBtn.classList.toggle('active', gizmoMode === 'scale');
-            const cfg = selectedBone ? boneAxisConfig[selectedBone] : null;
-            translateBtn.disabled = !cfg || cfg.translate.length === 0;
-            scaleBtn.disabled = !cfg || cfg.scale.length === 0;
-        }
-
-        function attachGizmo() {
-            if (!selectedBone) { transformControls.detach(); return; }
-            const cfg = boneAxisConfig[selectedBone];
-            let axesForMode;
-            if (gizmoMode === 'rotate') axesForMode = cfg.rotate;
-            else if (gizmoMode === 'translate') axesForMode = cfg.translate;
-            else axesForMode = cfg.scale;
-            if (!axesForMode || axesForMode.length === 0) { transformControls.detach(); return; }
-            if (typeof transformControls.setMode === 'function') transformControls.setMode(gizmoMode);
-            else transformControls.mode = gizmoMode;
-            if (gizmoMode === 'scale') {
-                transformControls.showX = axesForMode.includes('xz') || axesForMode.includes('x');
-                transformControls.showY = axesForMode.includes('y');
-                transformControls.showZ = false;
-            } else {
-                transformControls.showX = axesForMode.includes('x');
-                transformControls.showY = axesForMode.includes('y');
-                transformControls.showZ = axesForMode.includes('z');
-            }
-            transformControls.attach(boneObjects[selectedBone]);
-        }
-
-        function onGizmoChange() {
-            if (!selectedBone) return;
-            const bone = boneObjects[selectedBone];
-            const prefix = boneVarPrefix[selectedBone];
-            const cfg = boneAxisConfig[selectedBone];
-
-            if (gizmoMode === 'rotate') {
-                cfg.rotate.forEach(axis => {
-                    const key = `${prefix}.${axis}`;
-                    const offset = getRidingOffsetDeg(selectedBone, axis);
-                    let deg = bone.rotation[axis] * (180 / Math.PI);
-                    deg = deg - offset;
-                    if (invertedBones.includes(key)) deg = -deg;
-                    manualPose[key] = Math.round(deg * 100) / 100;
-                });
-            } else if (gizmoMode === 'translate') {
-                cfg.translate.forEach(axis => {
-                    const key = `${prefix}.${axis}pos`;
-                    const delta = bone.position[axis] - bone.userData.initialPos[axis];
-                    manualPose[key] = Math.round(delta * 100) / 100;
-                });
-            } else if (gizmoMode === 'scale') {
-                const varMap = scaleVarMap[selectedBone];
-                if (varMap) {
-                    cfg.scale.forEach(axis => {
-                        if (axis === 'xz') {
-                            bone.scale.z = bone.scale.x;
-                            manualPose[varMap.xz] = Math.round(bone.scale.x * 100) / 100;
-                        } else if (axis === 'y') {
-                            manualPose[varMap.y] = Math.round(bone.scale.y * 100) / 100;
-                        }
-                    });
-                }
-            }
-            renderAxisReadout();
-        }
-
-        function renderAxisReadout() {
-            const cont = document.getElementById('axisReadout');
-            if (!cont) return;
-            if (!selectedBone) {
-                cont.innerHTML = '<p class="hint" style="margin:0;">Select a body part to edit.</p>';
-                return;
-            }
-            const prefix = boneVarPrefix[selectedBone];
-            const cfg = boneAxisConfig[selectedBone];
-            const axisField = (axis, supported, key, fallback = 0) => {
-                const value = manualPose[key] !== undefined ? manualPose[key] : fallback;
-                return `<div class="form-group"><label>${axis}</label><input type="number" step="0.01" value="${value}" ${supported ? `onchange="setPoseValue('${key}', this.value)"` : 'disabled'}></div>`;
-            };
-            let html = `<div class="readout-title">${boneDisplayName[selectedBone]}</div>`;
-            html += '<div class="readout-group"><label class="group-label">ROTATION · DEG</label><div class="readout-row">';
-            ['x', 'y', 'z'].forEach(axis => {
-                const key = `${prefix}.${axis}`;
-                html += axisField(axis.toUpperCase(), cfg.rotate.includes(axis), key, 0);
-            });
-            html += '</div></div>';
-            html += '<div class="readout-group"><label class="group-label">POSITION</label><div class="readout-row">';
-            ['x', 'y', 'z'].forEach(axis => {
-                const key = `${prefix}.${axis}pos`;
-                html += axisField(axis.toUpperCase(), cfg.translate.includes(axis), key, 0);
-            });
-            html += '</div></div>';
-            html += '<div class="readout-group"><label class="group-label">SCALE</label><div class="readout-row">';
-            const scaleAxes = [
-                { axis: 'xz', label: 'XZ', key: scaleVarMap[selectedBone]?.xz },
-                { axis: 'y', label: 'Y', key: scaleVarMap[selectedBone]?.y }
-            ];
-            scaleAxes.forEach(item => {
-                if (item.key) html += axisField(item.label, cfg.scale.includes(item.axis), item.key, 1);
-                else html += `<div class="form-group"><label>${item.label}</label><input type="number" value="—" disabled></div>`;
-            });
-            html += '</div></div>';
-            cont.innerHTML = html;
-        }
-
-        function setPoseValue(key, valStr) {
-            manualPose[key] = parseFloat(valStr) || 0;
-            renderAxisReadout();
-        }
-
-        function resetBonePose() {
-            if (!selectedBone) return;
-            const prefix = boneVarPrefix[selectedBone];
-            const cfg = boneAxisConfig[selectedBone];
-            cfg.rotate.forEach(axis => delete manualPose[`${prefix}.${axis}`]);
-            cfg.translate.forEach(axis => delete manualPose[`${prefix}.${axis}pos`]);
-            cfg.scale.forEach(axis => {
-                const varMap = scaleVarMap[selectedBone];
-                if (varMap && varMap[axis]) delete manualPose[varMap[axis]];
-            });
-            renderAxisReadout();
-        }
-
-        function resetAllPose() {
-            manualPose = {};
-            renderAxisReadout();
-        }
-
-        
-        let isPlaying = true;
-        let animTime = 0;
-        const clock = new THREE.Clock();
-
-        function togglePlay() { isPlaying = !isPlaying; }
-
-        function bounceOut(t) {
-            const n1 = 7.5625,
-                d1 = 2.75;
-            if (t < 1 / d1) return n1 * t * t;
-            else if (t < 2 / d1) return n1 * (t -= 1.5 / d1) * t + 0.75;
-            else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
-            else return n1 * (t -= 2.625 / d1) * t + 0.984375;
-        }
-
-        function getEase(name, t) {
-            t = Math.max(0, Math.min(1, t));
-            if (name === 'lerp') return t;
-            if (name === 'ease_in_sine') return 1 - Math.cos((t * Math.PI) / 2);
-            if (name === 'ease_out_sine') return Math.sin((t * Math.PI) / 2);
-            if (name === 'ease_in_out_sine') return -(Math.cos(Math.PI * t) - 1) / 2;
-            if (name === 'ease_in_quad') return t * t;
-            if (name === 'ease_out_quad') return 1 - (1 - t) * (1 - t);
-            if (name === 'ease_in_out_quad') return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) /
-                2;
-            if (name === 'ease_in_cubic') return t * t * t;
-            if (name === 'ease_out_cubic') return 1 - Math.pow(1 - t, 3);
-            if (name === 'ease_in_out_cubic') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2,
-                3) / 2;
-            if (name === 'ease_in_quart') return t * t * t * t;
-            if (name === 'ease_out_quart') return 1 - Math.pow(1 - t, 4);
-            if (name === 'ease_in_out_quart') return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t +
-                2, 4) / 2;
-            if (name === 'ease_in_quint') return t * t * t * t * t;
-            if (name === 'ease_out_quint') return 1 - Math.pow(1 - t, 5);
-            if (name === 'ease_in_out_quint') return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 *
-                t + 2, 5) / 2;
-            if (name === 'ease_in_expo') return t === 0 ? 0 : Math.pow(2, 10 * t - 10);
-            if (name === 'ease_out_expo') return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-            if (name === 'ease_in_out_expo') { if (t === 0) return 0; if (t === 1) return 1; return t <
-                    0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2; }
-            if (name === 'ease_in_circ') return 1 - Math.sqrt(1 - Math.pow(t, 2));
-            if (name === 'ease_out_circ') return Math.sqrt(1 - Math.pow(t - 1, 2));
-            if (name === 'ease_in_out_circ') return t < 0.5 ? (1 - Math.sqrt(1 - Math.pow(2 * t, 2))) /
-                2 : (Math.sqrt(1 - Math.pow(-2 * t + 2, 2)) + 1) / 2;
-            if (name === 'ease_in_back') { const c1 = 1.70158,
-                    c3 = c1 + 1; return c3 * t * t * t - c1 * t * t; }
-            if (name === 'ease_out_back') { const c1 = 1.70158,
-                    c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-            if (name === 'ease_in_out_back') { const c1 = 1.70158,
-                    c2 = c1 * 1.525; return t < 0.5 ? (Math.pow(2 * t, 2) * ((c2 + 1) * 2 * t - c2)) /
-                    2 : (Math.pow(2 * t - 2, 2) * ((c2 + 1) * (t * 2 - 2) + c2) + 2) / 2; }
-            if (name === 'ease_in_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
-                    1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4); }
-            if (name === 'ease_out_elastic') { const c4 = (2 * Math.PI) / 3; return t === 0 ? 0 : t ===
-                    1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1; }
-            if (name === 'ease_in_out_elastic') { const c5 = (2 * Math.PI) / 4.5; return t === 0 ? 0 : t ===
-                    1 ? 1 : t < 0.5 ? -(Math.pow(2, 20 * t - 10) * Math.sin((20 * t - 11.125) * c5)) /
-                    2 : (Math.pow(2, -20 * t + 10) * Math.sin((20 * t - 11.125) * c5)) / 2 + 1; }
-            if (name === 'ease_in_bounce') return 1 - bounceOut(1 - t);
-            if (name === 'ease_out_bounce') return bounceOut(t);
-            if (name === 'ease_in_out_bounce') return t < 0.5 ? (1 - bounceOut(1 - 2 * t)) / 2 : (1 +
-                bounceOut(2 * t - 1)) / 2;
-            return t;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            let dt = clock.getDelta();
-            resetBonesToBindPose();
-            if (viewMode === 'preview') {
-                if (isPlaying) animTime += dt;
-                let maxDur = 0;
-                data.forEach(bData => {
-                    bData.segments.forEach(seg => { let end = seg.start + seg.dur; if (end >
-                            maxDur) maxDur = end; });
-                });
-                let totalAnimDuration = Math.max(maxDur, 0.1);
-                let t = animTime % totalAnimDuration;
-                let currentValues = {};
-                data.forEach(bData => {
-                    let val = 0;
-                    getEffectiveSegments(bData.segments).forEach((seg, idx) => {
-                        if (idx === 0) val = seg.val1;
-                        if (t >= seg.start) {
-                            let progress = Math.min((t - seg.start) / seg.dur, 1);
-                            val = val + (seg.val2 - val) * getEase(seg.ease, progress);
-                        }
-                    });
-                    currentValues[bData.bone] = val;
-                });
-                if (document.getElementById('mirrorArms').checked) {
-                    if (currentValues["v.rightarm.x"] !== undefined && currentValues["v.leftarm.x"] ===
-                        undefined) currentValues["v.leftarm.x"] = currentValues["v.rightarm.x"];
-                    else if (currentValues["v.leftarm.x"] !== undefined && currentValues["v.rightarm.x"] ===
-                        undefined) currentValues["v.rightarm.x"] = currentValues["v.leftarm.x"];
-                    if (currentValues["v.rightarm.y"] !== undefined && currentValues["v.leftarm.y"] ===
-                        undefined) currentValues["v.leftarm.y"] = -currentValues["v.rightarm.y"];
-                    else if (currentValues["v.leftarm.y"] !== undefined && currentValues["v.rightarm.y"] ===
-                        undefined) currentValues["v.rightarm.y"] = -currentValues["v.leftarm.y"];
-                    if (currentValues["v.rightarm.z"] !== undefined && currentValues["v.leftarm.z"] ===
-                        undefined) currentValues["v.leftarm.z"] = -currentValues["v.rightarm.z"];
-                    else if (currentValues["v.leftarm.z"] !== undefined && currentValues["v.rightarm.z"] ===
-                        undefined) currentValues["v.rightarm.z"] = -currentValues["v.leftarm.z"];
-                    if (currentValues["v.rightarm.ypos"] !== undefined && currentValues["v.leftarm.ypos"] ===
-                        undefined) currentValues["v.leftarm.ypos"] = currentValues["v.rightarm.ypos"];
-                    else if (currentValues["v.leftarm.ypos"] !== undefined && currentValues[
-                        "v.rightarm.ypos"] === undefined) currentValues["v.rightarm.ypos"] = currentValues[
-                        "v.leftarm.ypos"];
-                }
-                if (document.getElementById('mirrorLegs').checked) {
-                    if (currentValues["v.rightleg.x"] !== undefined && currentValues["v.leftleg.x"] ===
-                        undefined) currentValues["v.leftleg.x"] = currentValues["v.rightleg.x"];
-                    else if (currentValues["v.leftleg.x"] !== undefined && currentValues["v.rightleg.x"] ===
-                        undefined) currentValues["v.rightleg.x"] = currentValues["v.leftleg.x"];
-                }
-                applyValuesToBones(currentValues);
-            } else {
-                applyValuesToBones(manualPose);
-            }
-            controls.update();
-            renderer.render(scene, camera);
-        }
-
-        renderBones();
-        animate();
-        function resizeViewport() {
-            const w = Math.max(container.clientWidth, 1);
-            const h = Math.max(container.clientHeight, 1);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w, h);
-        }
-
-        window.addEventListener('resize', resizeViewport);
-        window.togglePlay = togglePlay;
-        window.copyCode = copyCode;
-        window.addBone = addBone;
-        window.removeBone = removeBone;
-        window.addSeg = addSeg;
-        window.removeSeg = removeSeg;
-        window.updateBone = updateBone;
-        window.updateSeg = updateSeg;
-        window.generate = generate;
-        window.resetSkin = resetSkin;
-        window.uploadSkin = uploadSkin;
-        window.validateStart = validateStart;
-        window.setViewMode = setViewMode;
-        window.toggleAxisFullscreen = toggleAxisFullscreen;
-        window.selectBone = selectBone;
-        window.setGizmoMode = setGizmoMode;
-        window.setPoseValue = setPoseValue;
-        window.resetBonePose = resetBonePose;
-        window.resetAllPose = resetAllPose;
-        window.onRidingToggle = onRidingToggle;
-        window.openImportModal = openImportModal;
-        window.closeImportModal = closeImportModal;
-        window.attemptImport = attemptImport;
-        window.cancelImportConfirm = cancelImportConfirm;
-        window.confirmReplaceImport = confirmReplaceImport;
-    </script>
+$('boneSelect').innerHTML = Object.entries(BONES).map(([k, b]) => `<option value="${k}">${b.label}</option>`).join('');
+selectBone('rightArm');
+renderBones();
+resetSkin();
+resizeViewport();
+animate();
+</script>
 </body>
 </html>
